@@ -169,15 +169,17 @@ function Services() {
 
         <div className="popular-services-row">
           {popularServices.slice(0, 5).map((service) => (
-            <motion.article
+            <motion.div
               className="popular-service-card"
               key={service.title}
               whileHover={{ y: -6 }}
             >
-              <span>{service.icon}</span>
-              <strong>{service.title}</strong>
-              <small>{service.price}</small>
-            </motion.article>
+              <Link to="/artisans">
+                <span>{service.icon}</span>
+                <strong>{service.title}</strong>
+                <small>{service.price}</small>
+              </Link>
+            </motion.div>
           ))}
         </div>
       </section>
@@ -228,8 +230,8 @@ function Services() {
                 <span>{service.price}</span>
                 <span>{service.duration}</span>
               </div>
-              <Link className="service-book-link" to="/bookings">
-                Book Service
+              <Link className="service-book-link" to="/artisans">
+                Find Artisan
               </Link>
             </motion.article>
           ))}
