@@ -1,4 +1,5 @@
 import EmptyState from '../components/EmptyState.jsx'
+import RoleNotice from '../components/RoleNotice.jsx'
 import { archivedMessages, chats } from '../data/bookings.js'
 
 function Messages() {
@@ -9,6 +10,8 @@ function Messages() {
         <h1>Chat safely before and during bookings</h1>
         <p>Keep service details, quotes, and arrival updates in one trusted inbox.</p>
       </section>
+
+      <RoleNotice />
 
       <section className="messages-layout">
         <div className="list-panel">

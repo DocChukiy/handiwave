@@ -11,6 +11,9 @@ import {
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { BrowserRouter, NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import AuthProvider from './auth/AuthProvider.jsx'
+import { useAuth } from './auth/useAuth.js'
+import ProtectedRoute from './components/ProtectedRoute.jsx'
 import AdminDashboard from './pages/AdminDashboard.jsx'
 import ArtisanProfile from './pages/ArtisanProfile.jsx'
 import Artisans from './pages/Artisans.jsx'
@@ -66,13 +69,41 @@ function AnimatedRoutes() {
           <Route path="/services" element={<Services />} />
           <Route path="/artisans" element={<Artisans />} />
           <Route path="/artisan-profile" element={<ArtisanProfile />} />
-          <Route path="/bookings" element={<Bookings />} />
+          <Route
+            path="/bookings"
+            element={(
+              <ProtectedRoute allowedRoles={['customer', 'artisan', 'admin']}>
+                <Bookings />
+              </ProtectedRoute>
+            )}
+          />
           <Route path="/reels" element={<Reels />} />
-          <Route path="/wallet" element={<Wallet />} />
-          <Route path="/messages" element={<Messages />} />
+          <Route
+            path="/wallet"
+            element={(
+              <ProtectedRoute allowedRoles={['customer', 'artisan', 'admin']}>
+                <Wallet />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/messages"
+            element={(
+              <ProtectedRoute allowedRoles={['customer', 'artisan', 'admin']}>
+                <Messages />
+              </ProtectedRoute>
+            )}
+          />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route
+            path="/admin"
+            element={(
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            )}
+          />
         </Routes>
       </motion.div>
     </AnimatePresence>
@@ -80,6 +111,7 @@ function AnimatedRoutes() {
 }
 
 function AppShell() {
+  const { isAuthenticated, logout, user } = useAuth()
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem('handiwave-theme')
 
@@ -147,6 +179,22 @@ function AppShell() {
           </nav>
 
           <div className="nav-actions">
+            {isAuthenticated && (
+              <div className="role-pill">
+                <span>{user.role}</span>
+                <strong>{user.name}</strong>
+              </div>
+            )}
+            {user?.role === 'admin' && (
+              <NavLink className="login-button" to="/admin">
+                Admin
+              </NavLink>
+            )}
+            {user?.role === 'artisan' && (
+              <NavLink className="login-button" to="/artisans">
+                Artisan View
+              </NavLink>
+            )}
             <button
               className="theme-toggle"
               type="button"
@@ -158,12 +206,20 @@ function AppShell() {
               {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
               <span>{isDarkMode ? 'Light' : 'Dark'}</span>
             </button>
-            <NavLink className="login-button" to="/login">
-              Login
-            </NavLink>
-            <NavLink className="signup-button" to="/signup">
-              Sign Up
-            </NavLink>
+            {isAuthenticated ? (
+              <button className="signup-button" type="button" onClick={logout}>
+                Logout
+              </button>
+            ) : (
+              <>
+                <NavLink className="login-button" to="/login">
+                  Login
+                </NavLink>
+                <NavLink className="signup-button" to="/signup">
+                  Sign Up
+                </NavLink>
+              </>
+            )}
           </div>
         </header>
 
@@ -260,7 +316,9 @@ function AppShell() {
 function App() {
   return (
     <BrowserRouter>
-      <AppShell />
+      <AuthProvider>
+        <AppShell />
+      </AuthProvider>
     </BrowserRouter>
   )
 }

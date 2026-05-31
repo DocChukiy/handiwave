@@ -3279,6 +3279,114 @@
   margin: 0;
 }
 
+.role-pill {
+  align-items: center;
+  background: rgba(236, 253, 245, 0.9);
+  border: 1px solid rgba(22, 163, 74, 0.18);
+  border-radius: 999px;
+  color: #064e3b;
+  display: inline-flex;
+  gap: 8px;
+  padding: 8px 12px;
+}
+
+.role-pill span {
+  background: #16a34a;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 900;
+  padding: 4px 8px;
+  text-transform: uppercase;
+}
+
+.role-pill strong {
+  font-size: 0.85rem;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.role-notice {
+  align-items: center;
+  background:
+    linear-gradient(135deg, rgba(236, 253, 245, 0.96), rgba(239, 246, 255, 0.9)),
+    linear-gradient(135deg, rgba(22, 163, 74, 0.12), transparent);
+  border: 1px solid rgba(22, 163, 74, 0.16);
+  border-radius: 24px;
+  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.06);
+  display: flex;
+  gap: 16px;
+  padding: 18px;
+}
+
+.role-notice > span {
+  background: linear-gradient(135deg, #16a34a, #0ea5e9);
+  border-radius: 16px;
+  color: #ffffff;
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  font-weight: 900;
+  padding: 10px 12px;
+  text-transform: uppercase;
+}
+
+.role-notice h2,
+.role-notice p {
+  margin: 0;
+}
+
+.role-notice h2 {
+  color: #0f172a;
+  font-size: 1.05rem;
+}
+
+.role-notice p {
+  color: #64748b;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.role-selector {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+}
+
+.role-selector.two-column {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.role-selector button {
+  background: rgba(248, 250, 252, 0.94);
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 18px;
+  color: #0f172a;
+  cursor: pointer;
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  text-align: left;
+}
+
+.role-selector button.active {
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.13), rgba(14, 165, 233, 0.1));
+  border-color: rgba(22, 163, 74, 0.38);
+  box-shadow: 0 14px 34px rgba(22, 163, 74, 0.12);
+}
+
+.role-selector strong {
+  font-size: 0.95rem;
+}
+
+.role-selector span {
+  color: #64748b;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
 .loading-preview {
   display: grid;
   gap: 16px;
@@ -3475,6 +3583,31 @@ a:active {
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
 }
 
+:root[data-theme='dark'] .role-pill,
+:root[data-theme='dark'] .role-notice,
+:root[data-theme='dark'] .role-selector button {
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.9)),
+    linear-gradient(135deg, rgba(16, 185, 129, 0.08), transparent);
+  border-color: rgba(148, 163, 184, 0.14);
+  color: #f8fafc;
+}
+
+:root[data-theme='dark'] .role-selector button.active {
+  border-color: rgba(52, 211, 153, 0.34);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+}
+
+:root[data-theme='dark'] .role-notice h2,
+:root[data-theme='dark'] .role-selector strong {
+  color: #f8fafc;
+}
+
+:root[data-theme='dark'] .role-notice p,
+:root[data-theme='dark'] .role-selector span {
+  color: #94a3b8;
+}
+
 :root[data-theme='dark'] .skeleton-card,
 :root[data-theme='dark'] .recent-artisan-card,
 :root[data-theme='dark'] .empty-state.compact {
@@ -3507,7 +3640,8 @@ a:active {
 
 @media (max-width: 900px) {
   .loading-preview,
-  .recently-viewed-row {
+  .recently-viewed-row,
+  .role-selector.two-column {
     grid-template-columns: 1fr;
   }
 }

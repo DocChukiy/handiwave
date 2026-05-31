@@ -1,4 +1,5 @@
 import Button from '../components/Button.jsx'
+import RoleNotice from '../components/RoleNotice.jsx'
 import { transactions } from '../data/bookings.js'
 import { showToast } from '../utils/toast.js'
 
@@ -24,6 +25,8 @@ function Wallet() {
           </Button>
         </div>
       </section>
+
+      <RoleNotice />
 
       <section className="list-panel">
         {transactions.map((item) => (

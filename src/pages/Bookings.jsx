@@ -1,4 +1,5 @@
 import EmptyState from '../components/EmptyState.jsx'
+import RoleNotice from '../components/RoleNotice.jsx'
 import { bookings, pastBookings } from '../data/bookings.js'
 import { showToast } from '../utils/toast.js'
 
@@ -16,6 +17,8 @@ function Bookings() {
         <div><strong>1</strong><span>Completed</span></div>
         <div><strong>98%</strong><span>Success rate</span></div>
       </section>
+
+      <RoleNotice />
 
       <section className="booking-layout">
         <form className="booking-form">

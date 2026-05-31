@@ -1,3 +1,4 @@
+import RoleNotice from '../components/RoleNotice.jsx'
 import { adminStats, verificationQueue } from '../data/admin.js'
 
 function AdminDashboard() {
@@ -12,6 +13,8 @@ function AdminDashboard() {
       <section className="summary-grid">
         {adminStats.map((item) => <div key={item.label}><strong>{item.value}</strong><span>{item.label}</span></div>)}
       </section>
+
+      <RoleNotice />
 
       <section className="admin-layout">
         <div className="list-panel">
