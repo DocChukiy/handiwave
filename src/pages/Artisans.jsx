@@ -15,6 +15,8 @@ const artisans = [
     location: 'Lagos',
     price: 'From NGN 7,500',
     priceValue: 7500,
+    topRated: true,
+    verified: true,
   },
   {
     name: 'Musa Usman',
@@ -26,6 +28,8 @@ const artisans = [
     location: 'Abuja',
     price: 'From NGN 8,500',
     priceValue: 8500,
+    topRated: true,
+    verified: true,
   },
   {
     name: 'Chika Eze',
@@ -37,6 +41,8 @@ const artisans = [
     location: 'Port Harcourt',
     price: 'From NGN 12,000',
     priceValue: 12000,
+    topRated: true,
+    verified: true,
   },
   {
     name: 'Bayo Ibrahim',
@@ -48,6 +54,8 @@ const artisans = [
     location: 'Lagos',
     price: 'From NGN 6,000',
     priceValue: 6000,
+    topRated: false,
+    verified: true,
   },
   {
     name: 'Joy Nwosu',
@@ -59,6 +67,8 @@ const artisans = [
     location: 'Lagos',
     price: 'From NGN 5,000',
     priceValue: 5000,
+    topRated: true,
+    verified: true,
   },
   {
     name: 'Femi Lawal',
@@ -70,6 +80,8 @@ const artisans = [
     location: 'Ibadan',
     price: 'From NGN 25,000',
     priceValue: 25000,
+    topRated: false,
+    verified: true,
   },
 ]
 
@@ -187,7 +199,10 @@ function Artisans() {
                   .map((part) => part[0])
                   .join('')}
               </div>
-              <span className="verified-badge">Verified</span>
+              <div className="artisan-badge-row">
+                {artisan.verified && <span className="verified-badge">Verified</span>}
+                {artisan.topRated && <span className="top-rated-badge">Top Rated</span>}
+              </div>
               <h3>{artisan.name}</h3>
               <p>
                 {artisan.skill} in {artisan.area}, {artisan.location}
@@ -195,11 +210,15 @@ function Artisans() {
               <strong className="price-note">{artisan.price}</strong>
               <div className="mini-metrics">
                 <span>
-                  <strong>{artisan.rating}</strong> Rating
+                  <strong>{artisan.rating}</strong> ★ Rating
                 </span>
                 <span>
                   <strong>{artisan.jobs}</strong> Jobs
                 </span>
+              </div>
+              <div className="trust-indicators">
+                <span>ID checked</span>
+                <span>Escrow safe</span>
               </div>
               <div className="person-actions">
                 <Link className="service-book-link" to="/artisan-profile">

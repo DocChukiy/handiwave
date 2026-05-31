@@ -28,18 +28,27 @@ const reviews = [
   {
     name: 'Tomi A.',
     rating: '5.0',
+    stars: '★★★★★',
+    date: 'May 18, 2026',
+    initials: 'TA',
     comment:
       'Ada was punctual, professional, and explained every issue before fixing it.',
   },
   {
     name: 'Damilola K.',
     rating: '4.9',
+    stars: '★★★★★',
+    date: 'May 10, 2026',
+    initials: 'DK',
     comment:
       'Very neat work. The lighting upgrade changed the whole feel of my living room.',
   },
   {
     name: 'Mrs. Eze',
     rating: '5.0',
+    stars: '★★★★★',
+    date: 'April 28, 2026',
+    initials: 'ME',
     comment:
       'I felt safe booking through Handiwave. The job was done quickly and cleanly.',
   },
@@ -56,7 +65,10 @@ function ArtisanProfile() {
       >
         <div className="profile-image-card">
           <div className="large-profile-image">AO</div>
-          <span className="profile-verified-badge">Verified artisan</span>
+          <div className="profile-badge-stack">
+            <span className="profile-verified-badge">Verified artisan</span>
+            <span className="top-rated-badge">Top Rated</span>
+          </div>
         </div>
 
         <div className="profile-summary">
@@ -70,7 +82,7 @@ function ArtisanProfile() {
           <div className="profile-stats">
             <span>
               <strong>4.9</strong>
-              Rating
+              Average rating
             </span>
             <span>
               <strong>186</strong>
@@ -80,6 +92,12 @@ function ArtisanProfile() {
               <strong>6 yrs</strong>
               Experience
             </span>
+          </div>
+
+          <div className="safety-strip">
+            <span>ID checked</span>
+            <span>Skills verified</span>
+            <span>Escrow protected</span>
           </div>
 
           <div className="profile-actions">
@@ -161,7 +179,18 @@ function ArtisanProfile() {
             <p className="section-kicker">Customer reviews</p>
             <h2>What customers say</h2>
           </div>
-          <span>98% positive</span>
+          <span>4.9 average • 186 jobs</span>
+        </div>
+
+        <div className="rating-summary-card">
+          <div>
+            <strong>4.9</strong>
+            <span>★★★★★</span>
+          </div>
+          <p>
+            Based on recent verified bookings. Customers highlight punctuality,
+            clean finishing, and transparent pricing.
+          </p>
         </div>
 
         <div className="reviews-grid">
@@ -171,10 +200,15 @@ function ArtisanProfile() {
               key={review.name}
               whileHover={{ y: -6 }}
             >
-              <div>
-                <strong>{review.name}</strong>
+              <div className="review-header">
+                <div className="review-avatar">{review.initials}</div>
+                <div>
+                  <strong>{review.name}</strong>
+                  <small>{review.date}</small>
+                </div>
                 <span>{review.rating}</span>
               </div>
+              <div className="review-stars">{review.stars}</div>
               <p>{review.comment}</p>
             </motion.article>
           ))}
