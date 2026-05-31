@@ -1,154 +1,15 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-
-const serviceCategories = [
-  {
-    icon: '⚡',
-    title: 'Electrician',
-    description: 'Fix wiring, lighting, sockets, and power issues safely.',
-  },
-  {
-    icon: '🚰',
-    title: 'Plumber',
-    description: 'Repair leaks, taps, pipes, toilets, and water systems.',
-  },
-  {
-    icon: '🎨',
-    title: 'Painter',
-    description: 'Refresh homes and offices with neat interior painting.',
-  },
-  {
-    icon: '✨',
-    title: 'Cleaner',
-    description: 'Book reliable cleaning for homes, apartments, and offices.',
-  },
-  {
-    icon: '🪚',
-    title: 'Carpenter',
-    description: 'Get furniture repairs, fittings, shelves, and woodwork.',
-  },
-  {
-    icon: '❄️',
-    title: 'AC Repair',
-    description: 'Service, install, and repair air conditioners quickly.',
-  },
-  {
-    icon: '🔧',
-    title: 'Generator Repair',
-    description: 'Keep your generator running with trusted technicians.',
-  },
-  {
-    icon: '🔌',
-    title: 'Appliance Repair',
-    description: 'Repair fridges, washing machines, cookers, and more.',
-  },
-  {
-    icon: '🚗',
-    title: 'Mechanic',
-    description: 'Find mechanics for diagnostics, repairs, and servicing.',
-  },
-  {
-    icon: '💈',
-    title: 'Hair Stylist / Barber',
-    description: 'Book grooming, styling, cuts, braids, and beauty services.',
-  },
-]
-
-const featuredArtisans = [
-  {
-    initials: 'AO',
-    name: 'Ada Okafor',
-    skill: 'Certified Electrician',
-    rating: '4.9',
-    completedJobs: '186',
-    location: 'Lekki, Lagos',
-  },
-  {
-    initials: 'MU',
-    name: 'Musa Usman',
-    skill: 'AC Repair Specialist',
-    rating: '4.8',
-    completedJobs: '142',
-    location: 'Wuse, Abuja',
-  },
-  {
-    initials: 'CE',
-    name: 'Chika Eze',
-    skill: 'Professional Cleaner',
-    rating: '5.0',
-    completedJobs: '211',
-    location: 'GRA, Port Harcourt',
-  },
-  {
-    initials: 'BI',
-    name: 'Bayo Ibrahim',
-    skill: 'Plumber',
-    rating: '4.7',
-    completedJobs: '128',
-    location: 'Yaba, Lagos',
-  },
-]
-
-const howItWorksSteps = [
-  {
-    icon: '🔎',
-    title: 'Search for a service',
-    description: 'Find the exact home service you need in your area.',
-  },
-  {
-    icon: '👷',
-    title: 'Choose an artisan',
-    description: 'Compare verified professionals by skill, rating, and location.',
-  },
-  {
-    icon: '💬',
-    title: 'Book and chat',
-    description: 'Schedule the job and confirm details before they arrive.',
-  },
-  {
-    icon: '🛡️',
-    title: 'Get the job done safely',
-    description: 'Complete your service with trusted support and secure payments.',
-  },
-]
-
-const reelsPreview = [
-  {
-    initials: 'AO',
-    artisan: 'Ada Okafor',
-    category: 'Electrician',
-    caption: 'Installed modern LED lighting for a Lekki apartment.',
-    likes: '2.4k',
-  },
-  {
-    initials: 'MU',
-    artisan: 'Musa Usman',
-    category: 'AC Repair',
-    caption: 'Quick AC servicing before the afternoon heat hits.',
-    likes: '1.8k',
-  },
-  {
-    initials: 'CE',
-    artisan: 'Chika Eze',
-    category: 'Cleaner',
-    caption: 'Deep-cleaned a shortlet and had it guest-ready fast.',
-    likes: '3.1k',
-  },
-  {
-    initials: 'BI',
-    artisan: 'Bayo Ibrahim',
-    category: 'Plumber',
-    caption: 'Fixed a hidden kitchen leak without breaking tiles.',
-    likes: '1.5k',
-  },
-]
-
-const trustedMarkets = ['Lagos', 'Abuja', 'Port Harcourt', 'Ibadan', 'Enugu']
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0 },
-}
+import {
+  ArtisanCard,
+  ReelCard,
+  ServiceCategoryCard,
+} from '../components/cards.jsx'
+import { featuredArtisans } from '../data/artisans.js'
+import { howItWorksSteps, trustedMarkets } from '../data/home.js'
+import { reelsPreview } from '../data/reels.js'
+import { serviceCategories } from '../data/services.js'
+import { cardVariants } from '../utils/animations.js'
 
 function Home() {
   return (
@@ -270,19 +131,7 @@ function Home() {
           transition={{ staggerChildren: 0.08 }}
         >
           {serviceCategories.map((category) => (
-            <motion.article
-              className="category-card"
-              key={category.title}
-              variants={cardVariants}
-              transition={{ duration: 0.45, ease: 'easeOut' }}
-              whileHover={{ y: -8, scale: 1.02 }}
-            >
-              <span className="category-icon" aria-hidden="true">
-                {category.icon}
-              </span>
-              <h3>{category.title}</h3>
-              <p>{category.description}</p>
-            </motion.article>
+            <ServiceCategoryCard category={category} key={category.title} />
           ))}
         </motion.div>
       </section>
@@ -305,42 +154,7 @@ function Home() {
           transition={{ staggerChildren: 0.1 }}
         >
           {featuredArtisans.map((artisan) => (
-            <motion.article
-              className="featured-artisan-card"
-              key={artisan.name}
-              variants={cardVariants}
-              transition={{ duration: 0.45, ease: 'easeOut' }}
-              whileHover={{ y: -8 }}
-            >
-              <div className="profile-image-placeholder">
-                <span>{artisan.initials}</span>
-              </div>
-
-              <div className="artisan-card-header">
-                <div>
-                  <h3>{artisan.name}</h3>
-                  <p>{artisan.skill}</p>
-                </div>
-                <span className="verified-badge">Verified</span>
-              </div>
-
-              <div className="artisan-metrics">
-                <span>
-                  <strong>{artisan.rating}</strong>
-                  Rating
-                </span>
-                <span>
-                  <strong>{artisan.completedJobs}</strong>
-                  Jobs
-                </span>
-              </div>
-
-              <p className="artisan-location">{artisan.location}</p>
-
-              <Link className="book-now-button" to="/bookings">
-                Book Now
-              </Link>
-            </motion.article>
+            <ArtisanCard artisan={artisan} featured key={artisan.name} />
           ))}
         </motion.div>
       </section>
@@ -399,38 +213,7 @@ function Home() {
           transition={{ staggerChildren: 0.1 }}
         >
           {reelsPreview.map((reel) => (
-            <motion.article
-              className="reel-card"
-              key={`${reel.artisan}-${reel.category}`}
-              variants={cardVariants}
-              transition={{ duration: 0.45, ease: 'easeOut' }}
-              whileHover={{ y: -8, scale: 1.01 }}
-            >
-              <div className="video-placeholder">
-                <div className="play-button" aria-hidden="true">
-                  ▶
-                </div>
-                <div className="reel-side-actions">
-                  <span className="like-icon" aria-label={`${reel.likes} likes`}>
-                    ♥
-                  </span>
-                  <small>{reel.likes}</small>
-                </div>
-                <div className="reel-overlay">
-                  <div className="reel-profile">
-                    <span>{reel.initials}</span>
-                    <div>
-                      <strong>{reel.artisan}</strong>
-                      <p>{reel.category}</p>
-                    </div>
-                  </div>
-                  <p className="reel-caption">{reel.caption}</p>
-                  <Link className="reel-book-button" to="/bookings">
-                    Book
-                  </Link>
-                </div>
-              </div>
-            </motion.article>
+            <ReelCard key={`${reel.artisan}-${reel.category}`} preview reel={reel} />
           ))}
         </motion.div>
       </section>

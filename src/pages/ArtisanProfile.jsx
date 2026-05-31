@@ -1,62 +1,10 @@
 import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
-
-const skills = [
-  'Electrical wiring',
-  'Smart lighting',
-  'Inverter setup',
-  'Fault diagnosis',
-  'Safety inspection',
-]
-
-const portfolio = [
-  {
-    title: 'Lekki apartment lighting',
-    detail: 'Installed recessed LEDs and smart switches',
-  },
-  {
-    title: 'Victoria Island office repair',
-    detail: 'Resolved power trips and upgraded sockets',
-  },
-  {
-    title: 'Ikoyi inverter setup',
-    detail: 'Connected inverter backup for key appliances',
-  },
-]
-
-const reviews = [
-  {
-    name: 'Tomi A.',
-    rating: '5.0',
-    stars: '★★★★★',
-    date: 'May 18, 2026',
-    initials: 'TA',
-    comment:
-      'Ada was punctual, professional, and explained every issue before fixing it.',
-  },
-  {
-    name: 'Damilola K.',
-    rating: '4.9',
-    stars: '★★★★★',
-    date: 'May 10, 2026',
-    initials: 'DK',
-    comment:
-      'Very neat work. The lighting upgrade changed the whole feel of my living room.',
-  },
-  {
-    name: 'Mrs. Eze',
-    rating: '5.0',
-    stars: '★★★★★',
-    date: 'April 28, 2026',
-    initials: 'ME',
-    comment:
-      'I felt safe booking through Handiwave. The job was done quickly and cleanly.',
-  },
-]
-
-function showToast(message) {
-  window.dispatchEvent(new CustomEvent('handiwave-toast', { detail: message }))
-}
+import Button from '../components/Button.jsx'
+import SectionHeader from '../components/SectionHeader.jsx'
+import SkeletonPreview from '../components/Skeletons.jsx'
+import { ReviewCard } from '../components/cards.jsx'
+import { profilePortfolio, profileSkills, reviews } from '../data/reviews.js'
+import { showToast } from '../utils/toast.js'
 
 function ArtisanProfile() {
   return (
@@ -105,12 +53,12 @@ function ArtisanProfile() {
           </div>
 
           <div className="profile-actions">
-            <Link className="primary-cta" to="/bookings">
+            <Button className="primary-cta" to="/bookings">
               Book Now
-            </Link>
-            <Link className="secondary-cta" to="/messages">
+            </Button>
+            <Button className="secondary-cta" to="/messages">
               Chat
-            </Link>
+            </Button>
           </div>
         </div>
 
@@ -146,7 +94,7 @@ function ArtisanProfile() {
         >
           <p className="section-kicker">Skills</p>
           <div className="skills-list">
-            {skills.map((skill) => (
+            {profileSkills.map((skill) => (
               <span key={skill}>{skill}</span>
             ))}
           </div>
@@ -154,16 +102,10 @@ function ArtisanProfile() {
       </section>
 
       <section className="portfolio-section">
-        <div className="services-section-header">
-          <div>
-            <p className="section-kicker">Portfolio</p>
-            <h2>Recent work</h2>
-          </div>
-          <span>3 projects</span>
-        </div>
+        <SectionHeader count="3 projects" kicker="Portfolio" title="Recent work" />
 
         <div className="portfolio-grid">
-          {portfolio.map((item) => (
+          {profilePortfolio.map((item) => (
             <motion.article
               className="portfolio-card"
               key={item.title}
@@ -178,13 +120,11 @@ function ArtisanProfile() {
       </section>
 
       <section className="reviews-section">
-        <div className="services-section-header">
-          <div>
-            <p className="section-kicker">Customer reviews</p>
-            <h2>What customers say</h2>
-          </div>
-          <span>4.9 average • 186 jobs</span>
-        </div>
+        <SectionHeader
+          count="4.9 average • 186 jobs"
+          kicker="Customer reviews"
+          title="What customers say"
+        />
 
         <div className="rating-summary-card">
           <div>
@@ -204,33 +144,16 @@ function ArtisanProfile() {
           </button>
         </div>
 
-        <div className="loading-preview review-loading-preview" aria-label="Review loading placeholder">
-          <div className="skeleton-card review-skeleton">
-            <span className="skeleton-avatar"></span>
-            <span className="skeleton-line wide"></span>
-            <span className="skeleton-line"></span>
-            <span className="skeleton-line short"></span>
-          </div>
-        </div>
+        <SkeletonPreview
+          className="review-loading-preview"
+          count={1}
+          label="Review loading placeholder"
+          type="review"
+        />
 
         <div className="reviews-grid">
           {reviews.map((review) => (
-            <motion.article
-              className="review-card"
-              key={review.name}
-              whileHover={{ y: -6 }}
-            >
-              <div className="review-header">
-                <div className="review-avatar">{review.initials}</div>
-                <div>
-                  <strong>{review.name}</strong>
-                  <small>{review.date}</small>
-                </div>
-                <span>{review.rating}</span>
-              </div>
-              <div className="review-stars">{review.stars}</div>
-              <p>{review.comment}</p>
-            </motion.article>
+            <ReviewCard key={review.name} review={review} />
           ))}
         </div>
       </section>

@@ -1,92 +1,16 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-
-const categories = ['All', 'Electrician', 'AC Repair', 'Cleaner', 'Plumber', 'Beauty', 'Painter']
-const locations = ['All locations', 'Lagos', 'Abuja', 'Port Harcourt', 'Ibadan']
-
-const artisans = [
-  {
-    name: 'Ada Okafor',
-    skill: 'Electrician',
-    category: 'Electrician',
-    rating: 4.9,
-    jobs: 186,
-    area: 'Lekki',
-    location: 'Lagos',
-    price: 'From NGN 7,500',
-    priceValue: 7500,
-    topRated: true,
-    verified: true,
-  },
-  {
-    name: 'Musa Usman',
-    skill: 'AC Repair',
-    category: 'AC Repair',
-    rating: 4.8,
-    jobs: 142,
-    area: 'Wuse',
-    location: 'Abuja',
-    price: 'From NGN 8,500',
-    priceValue: 8500,
-    topRated: true,
-    verified: true,
-  },
-  {
-    name: 'Chika Eze',
-    skill: 'Cleaner',
-    category: 'Cleaner',
-    rating: 5.0,
-    jobs: 211,
-    area: 'GRA',
-    location: 'Port Harcourt',
-    price: 'From NGN 12,000',
-    priceValue: 12000,
-    topRated: true,
-    verified: true,
-  },
-  {
-    name: 'Bayo Ibrahim',
-    skill: 'Plumber',
-    category: 'Plumber',
-    rating: 4.7,
-    jobs: 128,
-    area: 'Yaba',
-    location: 'Lagos',
-    price: 'From NGN 6,000',
-    priceValue: 6000,
-    topRated: false,
-    verified: true,
-  },
-  {
-    name: 'Joy Nwosu',
-    skill: 'Hair Stylist',
-    category: 'Beauty',
-    rating: 4.9,
-    jobs: 97,
-    area: 'Surulere',
-    location: 'Lagos',
-    price: 'From NGN 5,000',
-    priceValue: 5000,
-    topRated: true,
-    verified: true,
-  },
-  {
-    name: 'Femi Lawal',
-    skill: 'Painter',
-    category: 'Painter',
-    rating: 4.8,
-    jobs: 118,
-    area: 'Bodija',
-    location: 'Ibadan',
-    price: 'From NGN 25,000',
-    priceValue: 25000,
-    topRated: false,
-    verified: true,
-  },
-]
-
-const savedArtisans = []
-const recentlyViewedArtisans = artisans.slice(0, 3)
+import EmptyState from '../components/EmptyState.jsx'
+import SkeletonPreview from '../components/Skeletons.jsx'
+import SectionHeader from '../components/SectionHeader.jsx'
+import { ArtisanCard, RecentArtisanCard } from '../components/cards.jsx'
+import {
+  artisanCategories,
+  artisanLocations,
+  artisans,
+  recentlyViewedArtisans,
+  savedArtisans,
+} from '../data/artisans.js'
 
 function Artisans() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -143,7 +67,7 @@ function Artisans() {
       </section>
 
       <section className="category-filters" aria-label="Artisan categories">
-        {categories.map((category) => (
+        {artisanCategories.map((category) => (
           <button
             className={activeCategory === category ? 'active' : ''}
             key={category}
@@ -162,7 +86,7 @@ function Artisans() {
             value={locationFilter}
             onChange={(event) => setLocationFilter(event.target.value)}
           >
-            {locations.map((location) => (
+            {artisanLocations.map((location) => (
               <option key={location}>{location}</option>
             ))}
           </select>
@@ -193,13 +117,11 @@ function Artisans() {
       </section>
 
       <section className="saved-artisans-section">
-        <div className="services-section-header">
-          <div>
-            <p className="section-kicker">Saved artisans</p>
-            <h2>Your trusted shortlist</h2>
-          </div>
-          <span>{savedArtisans.length} saved</span>
-        </div>
+        <SectionHeader
+          count={`${savedArtisans.length} saved`}
+          kicker="Saved artisans"
+          title="Your trusted shortlist"
+        />
 
         {savedArtisans.length > 0 ? (
           <div className="starter-grid four">
@@ -212,109 +134,52 @@ function Artisans() {
             ))}
           </div>
         ) : (
-          <section className="empty-state compact">
-            <h2>No saved artisans yet</h2>
-            <p>Tap the save badge on artisans you want to book again later.</p>
-          </section>
+          <EmptyState compact title="No saved artisans yet">
+            Tap the save badge on artisans you want to book again later.
+          </EmptyState>
         )}
       </section>
 
-      <div className="loading-preview" aria-label="Artisan card loading placeholders">
-        {[1, 2, 3].map((item) => (
-          <div className="skeleton-card artisan-skeleton" key={item}>
-            <span className="skeleton-avatar"></span>
-            <span className="skeleton-line wide"></span>
-            <span className="skeleton-line"></span>
-            <span className="skeleton-line short"></span>
-          </div>
-        ))}
-      </div>
+      <SkeletonPreview label="Artisan card loading placeholders" type="artisan" />
 
       {filteredArtisans.length > 0 ? (
         <section className="starter-grid four">
           {filteredArtisans.map((artisan) => (
-            <article className="person-card" key={artisan.name}>
-              <div className="person-avatar">
-                {artisan.name
-                  .split(' ')
-                  .map((part) => part[0])
-                  .join('')}
-              </div>
-              <div className="artisan-badge-row">
-                {artisan.verified && <span className="verified-badge">Verified</span>}
-                {artisan.topRated && <span className="top-rated-badge">Top Rated</span>}
-                <span className="save-badge">Save</span>
-              </div>
-              <h3>{artisan.name}</h3>
-              <p>
-                {artisan.skill} in {artisan.area}, {artisan.location}
-              </p>
-              <strong className="price-note">{artisan.price}</strong>
-              <div className="mini-metrics">
-                <span>
-                  <strong>{artisan.rating}</strong> ★ Rating
-                </span>
-                <span>
-                  <strong>{artisan.jobs}</strong> Jobs
-                </span>
-              </div>
-              <div className="trust-indicators">
-                <span>ID checked</span>
-                <span>Escrow safe</span>
-              </div>
-              <div className="person-actions">
-                <Link className="service-book-link" to="/artisan-profile">
-                  View Profile
-                </Link>
-                <Link className="secondary-mini-link" to="/bookings">
-                  Book Now
-                </Link>
-              </div>
-            </article>
+            <ArtisanCard artisan={artisan} key={artisan.name} />
           ))}
         </section>
       ) : (
-        <section className="empty-state">
-          <h2>No artisans found</h2>
-          <p>Try another service, location, rating, or price range.</p>
-          <button
-            type="button"
-            onClick={() => {
-              setSearchTerm('')
-              setActiveCategory('All')
-              setLocationFilter('All locations')
-              setMinimumRating('0')
-              setMaximumPrice(30000)
-            }}
-          >
-            Reset filters
-          </button>
-        </section>
+        <EmptyState
+          action={(
+            <button
+              type="button"
+              onClick={() => {
+                setSearchTerm('')
+                setActiveCategory('All')
+                setLocationFilter('All locations')
+                setMinimumRating('0')
+                setMaximumPrice(30000)
+              }}
+            >
+              Reset filters
+            </button>
+          )}
+          title="No artisans found"
+        >
+          Try another service, location, rating, or price range.
+        </EmptyState>
       )}
 
       <section className="recently-viewed-section">
-        <div className="services-section-header">
-          <div>
-            <p className="section-kicker">Recently viewed</p>
-            <h2>Pick up where you left off</h2>
-          </div>
-          <Link to="/services">Explore services</Link>
-        </div>
+        <SectionHeader
+          action={<Link to="/services">Explore services</Link>}
+          kicker="Recently viewed"
+          title="Pick up where you left off"
+        />
 
         <div className="recently-viewed-row">
           {recentlyViewedArtisans.map((artisan) => (
-            <Link className="recent-artisan-card" key={artisan.name} to="/artisan-profile">
-              <span>
-                {artisan.name
-                  .split(' ')
-                  .map((part) => part[0])
-                  .join('')}
-              </span>
-              <div>
-                <strong>{artisan.name}</strong>
-                <p>{artisan.skill} • {artisan.location}</p>
-              </div>
-            </Link>
+            <RecentArtisanCard artisan={artisan} key={artisan.name} />
           ))}
         </div>
       </section>

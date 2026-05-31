@@ -1,8 +1,5 @@
 import { Link } from 'react-router-dom'
-
-function showToast(message) {
-  window.dispatchEvent(new CustomEvent('handiwave-toast', { detail: message }))
-}
+import { showToast } from '../utils/toast.js'
 
 function Login() {
   return (

@@ -1,137 +1,14 @@
 import { motion } from 'framer-motion'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-
-const categories = ['All', 'Repairs', 'Home Care', 'Installation', 'Auto', 'Beauty']
-const locations = ['All locations', 'Lagos', 'Abuja', 'Port Harcourt', 'Ibadan']
-
-const services = [
-  {
-    icon: '⚡',
-    title: 'Electrical Repairs',
-    category: 'Repairs',
-    description: 'Fix sockets, wiring, lighting, breakers, and power issues safely.',
-    price: 'From NGN 7,500',
-    priceValue: 7500,
-    rating: 4.9,
-    locations: ['Lagos', 'Ibadan'],
-    duration: 'Same day',
-    popular: true,
-  },
-  {
-    icon: '🚰',
-    title: 'Plumbing Service',
-    category: 'Repairs',
-    description: 'Repair leaks, blocked drains, taps, toilets, and water systems.',
-    price: 'From NGN 6,000',
-    priceValue: 6000,
-    rating: 4.7,
-    locations: ['Lagos', 'Port Harcourt'],
-    duration: '2-4 hours',
-    popular: true,
-  },
-  {
-    icon: '❄️',
-    title: 'AC Installation & Repair',
-    category: 'Installation',
-    description: 'Book AC servicing, installation, gas refill, and diagnostics.',
-    price: 'From NGN 8,500',
-    priceValue: 8500,
-    rating: 4.8,
-    locations: ['Abuja', 'Lagos'],
-    duration: 'Same day',
-    popular: true,
-  },
-  {
-    icon: '✨',
-    title: 'Deep Cleaning',
-    category: 'Home Care',
-    description: 'Reliable cleaning for apartments, offices, shortlets, and move-ins.',
-    price: 'From NGN 12,000',
-    priceValue: 12000,
-    rating: 5.0,
-    locations: ['Port Harcourt', 'Lagos'],
-    duration: '3-6 hours',
-    popular: true,
-  },
-  {
-    icon: '🎨',
-    title: 'Painting',
-    category: 'Home Care',
-    description: 'Refresh interiors and exteriors with clean professional finishing.',
-    price: 'From NGN 25,000',
-    priceValue: 25000,
-    rating: 4.8,
-    locations: ['Ibadan', 'Lagos'],
-    duration: '1-3 days',
-    popular: false,
-  },
-  {
-    icon: '🪚',
-    title: 'Carpentry',
-    category: 'Installation',
-    description: 'Furniture repairs, shelves, doors, cabinets, and custom fittings.',
-    price: 'From NGN 10,000',
-    priceValue: 10000,
-    rating: 4.6,
-    locations: ['Lagos', 'Abuja'],
-    duration: 'By quote',
-    popular: false,
-  },
-  {
-    icon: '🔧',
-    title: 'Generator Repair',
-    category: 'Repairs',
-    description: 'Service and repair petrol or diesel generators at your location.',
-    price: 'From NGN 9,000',
-    priceValue: 9000,
-    rating: 4.8,
-    locations: ['Lagos', 'Ibadan', 'Abuja'],
-    duration: 'Same day',
-    popular: true,
-  },
-  {
-    icon: '🔌',
-    title: 'Appliance Repair',
-    category: 'Repairs',
-    description: 'Fix fridges, washing machines, cookers, microwaves, and more.',
-    price: 'From NGN 8,000',
-    priceValue: 8000,
-    rating: 4.7,
-    locations: ['Port Harcourt', 'Lagos'],
-    duration: 'Same day',
-    popular: false,
-  },
-  {
-    icon: '🚗',
-    title: 'Mechanic',
-    category: 'Auto',
-    description: 'Diagnostics, servicing, battery checks, and emergency auto support.',
-    price: 'From NGN 10,000',
-    priceValue: 10000,
-    rating: 4.6,
-    locations: ['Lagos', 'Abuja'],
-    duration: '1-5 hours',
-    popular: false,
-  },
-  {
-    icon: '💈',
-    title: 'Hair Stylist / Barber',
-    category: 'Beauty',
-    description: 'Book cuts, styling, braids, grooming, and home beauty appointments.',
-    price: 'From NGN 5,000',
-    priceValue: 5000,
-    rating: 4.9,
-    locations: ['Lagos', 'Abuja'],
-    duration: '1-3 hours',
-    popular: true,
-  },
-]
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 22 },
-  visible: { opacity: 1, y: 0 },
-}
+import EmptyState from '../components/EmptyState.jsx'
+import SkeletonPreview from '../components/Skeletons.jsx'
+import { ServiceCard } from '../components/cards.jsx'
+import {
+  serviceFilterCategories,
+  serviceLocations,
+  services,
+} from '../data/services.js'
 
 function Services() {
   const [activeCategory, setActiveCategory] = useState('All')
@@ -234,7 +111,7 @@ function Services() {
         </div>
 
         <div className="category-filters" aria-label="Service categories">
-          {categories.map((category) => (
+          {serviceFilterCategories.map((category) => (
             <button
               className={activeCategory === category ? 'active' : ''}
               key={category}
@@ -253,7 +130,7 @@ function Services() {
               value={locationFilter}
               onChange={(event) => setLocationFilter(event.target.value)}
             >
-              {locations.map((location) => (
+              {serviceLocations.map((location) => (
                 <option key={location}>{location}</option>
               ))}
             </select>
@@ -283,16 +160,7 @@ function Services() {
           </label>
         </div>
 
-        <div className="loading-preview" aria-label="Service card loading placeholders">
-          {[1, 2, 3].map((item) => (
-            <div className="skeleton-card service-skeleton" key={item}>
-              <span className="skeleton-icon"></span>
-              <span className="skeleton-line wide"></span>
-              <span className="skeleton-line"></span>
-              <span className="skeleton-line short"></span>
-            </div>
-          ))}
-        </div>
+        <SkeletonPreview label="Service card loading placeholders" type="service" />
 
         <motion.div
           className="services-grid"
@@ -302,47 +170,29 @@ function Services() {
         >
           {filteredServices.length > 0 ? (
             filteredServices.map((service) => (
-              <motion.article
-                className="service-list-card"
-                key={service.title}
-                variants={cardVariants}
-                transition={{ duration: 0.35, ease: 'easeOut' }}
-                whileHover={{ y: -8, scale: 1.01 }}
-              >
-                <div className="service-card-top">
-                  <span className="service-icon">{service.icon}</span>
-                  <span className="service-category">{service.category}</span>
-                </div>
-                <h3>{service.title}</h3>
-                <p>{service.description}</p>
-                <div className="service-card-meta">
-                  <span>{service.price}</span>
-                  <span>{service.rating}+ rating</span>
-                  <span>{service.duration}</span>
-                  <span>{service.locations[0]}</span>
-                </div>
-                <Link className="service-book-link" to="/artisans">
-                  Find Artisan
-                </Link>
-              </motion.article>
+              <ServiceCard key={service.title} service={service} />
             ))
           ) : (
-            <section className="empty-state services-empty-state">
-              <h2>No services found</h2>
-              <p>Try another keyword, category, location, rating, or price range.</p>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveCategory('All')
-                  setSearchTerm('')
-                  setLocationFilter('All locations')
-                  setMinimumRating('0')
-                  setMaximumPrice(30000)
-                }}
-              >
-                Reset filters
-              </button>
-            </section>
+            <EmptyState
+              action={(
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveCategory('All')
+                    setSearchTerm('')
+                    setLocationFilter('All locations')
+                    setMinimumRating('0')
+                    setMaximumPrice(30000)
+                  }}
+                >
+                  Reset filters
+                </button>
+              )}
+              className="services-empty-state"
+              title="No services found"
+            >
+              Try another keyword, category, location, rating, or price range.
+            </EmptyState>
           )}
         </motion.div>
       </section>

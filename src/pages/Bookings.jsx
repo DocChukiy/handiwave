@@ -1,14 +1,6 @@
-const bookings = [
-  { service: 'AC Repair', artisan: 'Musa Usman', date: 'Today, 2:30 PM', status: 'Confirmed' },
-  { service: 'Deep Cleaning', artisan: 'Chika Eze', date: 'Tomorrow, 10:00 AM', status: 'Pending' },
-  { service: 'Electrical Repairs', artisan: 'Ada Okafor', date: 'Fri, 4:00 PM', status: 'Completed' },
-]
-
-const pastBookings = []
-
-function showToast(message) {
-  window.dispatchEvent(new CustomEvent('handiwave-toast', { detail: message }))
-}
+import EmptyState from '../components/EmptyState.jsx'
+import { bookings, pastBookings } from '../data/bookings.js'
+import { showToast } from '../utils/toast.js'
 
 function Bookings() {
   return (
@@ -74,10 +66,9 @@ function Bookings() {
           ))}
 
           {pastBookings.length === 0 && (
-            <article className="empty-state compact">
-              <h2>No past bookings yet</h2>
-              <p>Your completed service history will appear here after your first job.</p>
-            </article>
+            <EmptyState compact title="No past bookings yet">
+              Your completed service history will appear here after your first job.
+            </EmptyState>
           )}
         </div>
       </section>

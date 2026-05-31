@@ -1,10 +1,5 @@
-const chats = [
-  { name: 'Ada Okafor', message: 'I can arrive by 4 PM today.', time: '2 min' },
-  { name: 'Chika Eze', message: 'Please share apartment access details.', time: '18 min' },
-  { name: 'Support', message: 'Your payment is protected in escrow.', time: '1 hr' },
-]
-
-const archivedMessages = []
+import EmptyState from '../components/EmptyState.jsx'
+import { archivedMessages, chats } from '../data/bookings.js'
 
 function Messages() {
   return (
@@ -25,10 +20,9 @@ function Messages() {
           ))}
 
           {archivedMessages.length === 0 && (
-            <article className="empty-state compact">
-              <h2>No archived messages</h2>
-              <p>Older conversations will stay here when you archive them.</p>
-            </article>
+            <EmptyState compact title="No archived messages">
+              Older conversations will stay here when you archive them.
+            </EmptyState>
           )}
         </div>
         <div className="chat-preview-card">
