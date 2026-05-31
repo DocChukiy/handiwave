@@ -999,6 +999,90 @@
   transform: translateY(-1px);
 }
 
+.reels-page {
+  display: grid;
+  gap: clamp(34px, 5vw, 58px);
+  padding-bottom: clamp(72px, 8vw, 96px);
+}
+
+.reels-hero {
+  text-align: center;
+}
+
+.reels-hero h1,
+.reels-hero p {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.reels-showcase-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.premium-reel-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px;
+}
+
+.premium-reel-card .video-placeholder {
+  min-height: 560px;
+}
+
+.reel-location {
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 900;
+  left: 16px;
+  padding: 8px 11px;
+  position: absolute;
+  top: 16px;
+  z-index: 2;
+}
+
+.comment-icon {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  display: flex;
+  font-size: 1rem;
+  height: 44px;
+  justify-content: center;
+  margin-top: 10px;
+  width: 44px;
+}
+
+.reel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.reel-profile-button {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  color: #ffffff;
+  display: inline-flex;
+  font-weight: 900;
+  justify-content: center;
+  padding: 11px 18px;
+  text-decoration: none;
+  transition:
+    background-color 180ms ease,
+    transform 180ms ease;
+}
+
+.reel-profile-button:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
+}
+
 .final-cta-section {
   align-items: center;
   background:
@@ -2005,7 +2089,8 @@
 
   .featured-artisans-grid,
   .reels-grid,
-  .services-grid {
+  .services-grid,
+  .reels-showcase-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -2145,6 +2230,11 @@
   }
 
   .reels-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    text-align: left;
+  }
+
+  .reels-showcase-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     text-align: left;
   }
@@ -2346,8 +2436,21 @@
     grid-template-columns: 1fr;
   }
 
+  .reels-showcase-grid {
+    grid-template-columns: 1fr;
+  }
+
   .video-placeholder {
     min-height: 440px;
+  }
+
+  .premium-reel-card .video-placeholder {
+    min-height: 540px;
+  }
+
+  .reel-actions {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .final-cta-section {
