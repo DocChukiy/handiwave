@@ -54,6 +54,10 @@ const reviews = [
   },
 ]
 
+function showToast(message) {
+  window.dispatchEvent(new CustomEvent('handiwave-toast', { detail: message }))
+}
+
 function ArtisanProfile() {
   return (
     <div className="artisan-profile-page">
@@ -191,6 +195,22 @@ function ArtisanProfile() {
             Based on recent verified bookings. Customers highlight punctuality,
             clean finishing, and transparent pricing.
           </p>
+          <button
+            className="review-submit-button"
+            type="button"
+            onClick={() => showToast('Review submitted successfully.')}
+          >
+            Submit review
+          </button>
+        </div>
+
+        <div className="loading-preview review-loading-preview" aria-label="Review loading placeholder">
+          <div className="skeleton-card review-skeleton">
+            <span className="skeleton-avatar"></span>
+            <span className="skeleton-line wide"></span>
+            <span className="skeleton-line"></span>
+            <span className="skeleton-line short"></span>
+          </div>
         </div>
 
         <div className="reviews-grid">

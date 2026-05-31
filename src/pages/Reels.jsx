@@ -70,6 +70,16 @@ function Reels() {
         </p>
       </section>
 
+      <section className="loading-preview reels-loading-preview" aria-label="Reel loading placeholders">
+        {[1, 2, 3].map((item) => (
+          <div className="skeleton-card reel-skeleton" key={item}>
+            <span className="skeleton-line short"></span>
+            <span className="skeleton-line wide"></span>
+            <span className="skeleton-line"></span>
+          </div>
+        ))}
+      </section>
+
       <section className="reels-showcase-grid">
         {reels.map((reel, index) => (
           <motion.article

@@ -4,6 +4,8 @@ const chats = [
   { name: 'Support', message: 'Your payment is protected in escrow.', time: '1 hr' },
 ]
 
+const archivedMessages = []
+
 function Messages() {
   return (
     <div className="starter-page">
@@ -21,6 +23,13 @@ function Messages() {
               <span>{chat.time}</span>
             </article>
           ))}
+
+          {archivedMessages.length === 0 && (
+            <article className="empty-state compact">
+              <h2>No archived messages</h2>
+              <p>Older conversations will stay here when you archive them.</p>
+            </article>
+          )}
         </div>
         <div className="chat-preview-card">
           <h3>Ada Okafor</h3>

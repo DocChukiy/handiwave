@@ -4,6 +4,12 @@ const bookings = [
   { service: 'Electrical Repairs', artisan: 'Ada Okafor', date: 'Fri, 4:00 PM', status: 'Completed' },
 ]
 
+const pastBookings = []
+
+function showToast(message) {
+  window.dispatchEvent(new CustomEvent('handiwave-toast', { detail: message }))
+}
+
 function Bookings() {
   return (
     <div className="starter-page">
@@ -48,7 +54,12 @@ function Bookings() {
           <label>Notes
             <textarea placeholder="Describe the issue or service needed" />
           </label>
-          <button type="button">Confirm Booking</button>
+          <button
+            type="button"
+            onClick={() => showToast('Booking request sent successfully.')}
+          >
+            Confirm Booking
+          </button>
         </form>
 
         <div className="list-panel">
@@ -61,6 +72,13 @@ function Bookings() {
               <span>{booking.status}</span>
             </article>
           ))}
+
+          {pastBookings.length === 0 && (
+            <article className="empty-state compact">
+              <h2>No past bookings yet</h2>
+              <p>Your completed service history will appear here after your first job.</p>
+            </article>
+          )}
         </div>
       </section>
     </div>

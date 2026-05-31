@@ -4,6 +4,10 @@ const transactions = [
   { title: 'Cleaning service', amount: '-NGN 12,000', status: 'Released' },
 ]
 
+function showToast(message) {
+  window.dispatchEvent(new CustomEvent('handiwave-toast', { detail: message }))
+}
+
 function Wallet() {
   return (
     <div className="starter-page">
@@ -11,7 +15,22 @@ function Wallet() {
         <p className="section-kicker">Wallet</p>
         <h1>NGN 42,500</h1>
         <p>Available balance for safe bookings, escrow payments, and refunds.</p>
-        <div className="hero-actions"><button className="primary-cta" type="button">Top Up</button><button className="secondary-cta" type="button">Withdraw</button></div>
+        <div className="hero-actions">
+          <button
+            className="primary-cta"
+            type="button"
+            onClick={() => showToast('Wallet top up started.')}
+          >
+            Top Up
+          </button>
+          <button
+            className="secondary-cta"
+            type="button"
+            onClick={() => showToast('Withdrawal request created.')}
+          >
+            Withdraw
+          </button>
+        </div>
       </section>
 
       <section className="list-panel">

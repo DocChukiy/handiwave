@@ -85,6 +85,9 @@ const artisans = [
   },
 ]
 
+const savedArtisans = []
+const recentlyViewedArtisans = artisans.slice(0, 3)
+
 function Artisans() {
   const [searchTerm, setSearchTerm] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
@@ -189,6 +192,44 @@ function Artisans() {
         </label>
       </section>
 
+      <section className="saved-artisans-section">
+        <div className="services-section-header">
+          <div>
+            <p className="section-kicker">Saved artisans</p>
+            <h2>Your trusted shortlist</h2>
+          </div>
+          <span>{savedArtisans.length} saved</span>
+        </div>
+
+        {savedArtisans.length > 0 ? (
+          <div className="starter-grid four">
+            {savedArtisans.map((artisan) => (
+              <article className="person-card compact-person-card" key={artisan.name}>
+                <div className="person-avatar">{artisan.initials}</div>
+                <h3>{artisan.name}</h3>
+                <p>{artisan.skill}</p>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <section className="empty-state compact">
+            <h2>No saved artisans yet</h2>
+            <p>Tap the save badge on artisans you want to book again later.</p>
+          </section>
+        )}
+      </section>
+
+      <div className="loading-preview" aria-label="Artisan card loading placeholders">
+        {[1, 2, 3].map((item) => (
+          <div className="skeleton-card artisan-skeleton" key={item}>
+            <span className="skeleton-avatar"></span>
+            <span className="skeleton-line wide"></span>
+            <span className="skeleton-line"></span>
+            <span className="skeleton-line short"></span>
+          </div>
+        ))}
+      </div>
+
       {filteredArtisans.length > 0 ? (
         <section className="starter-grid four">
           {filteredArtisans.map((artisan) => (
@@ -202,6 +243,7 @@ function Artisans() {
               <div className="artisan-badge-row">
                 {artisan.verified && <span className="verified-badge">Verified</span>}
                 {artisan.topRated && <span className="top-rated-badge">Top Rated</span>}
+                <span className="save-badge">Save</span>
               </div>
               <h3>{artisan.name}</h3>
               <p>
@@ -249,6 +291,33 @@ function Artisans() {
           </button>
         </section>
       )}
+
+      <section className="recently-viewed-section">
+        <div className="services-section-header">
+          <div>
+            <p className="section-kicker">Recently viewed</p>
+            <h2>Pick up where you left off</h2>
+          </div>
+          <Link to="/services">Explore services</Link>
+        </div>
+
+        <div className="recently-viewed-row">
+          {recentlyViewedArtisans.map((artisan) => (
+            <Link className="recent-artisan-card" key={artisan.name} to="/artisan-profile">
+              <span>
+                {artisan.name
+                  .split(' ')
+                  .map((part) => part[0])
+                  .join('')}
+              </span>
+              <div>
+                <strong>{artisan.name}</strong>
+                <p>{artisan.skill} • {artisan.location}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
     </div>
   )
 }

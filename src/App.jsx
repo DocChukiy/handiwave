@@ -8,8 +8,9 @@ import {
   Share2,
   Sun,
 } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
-import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import AdminDashboard from './pages/AdminDashboard.jsx'
 import ArtisanProfile from './pages/ArtisanProfile.jsx'
 import Artisans from './pages/Artisans.jsx'
@@ -47,7 +48,38 @@ const serviceLinks = [
   'Generator Repair',
 ]
 
-function App() {
+function AnimatedRoutes() {
+  const location = useLocation()
+
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        className="route-shell"
+        key={location.pathname}
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.24, ease: 'easeOut' }}
+      >
+        <Routes location={location}>
+          <Route path="/" element={<Home />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/artisans" element={<Artisans />} />
+          <Route path="/artisan-profile" element={<ArtisanProfile />} />
+          <Route path="/bookings" element={<Bookings />} />
+          <Route path="/reels" element={<Reels />} />
+          <Route path="/wallet" element={<Wallet />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+        </Routes>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+
+function AppShell() {
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem('handiwave-theme')
 
@@ -59,6 +91,7 @@ function App() {
       ? 'dark'
       : 'light'
   })
+  const [toast, setToast] = useState(null)
 
   const isDarkMode = theme === 'dark'
 
@@ -67,12 +100,31 @@ function App() {
     localStorage.setItem('handiwave-theme', theme)
   }, [theme])
 
+  useEffect(() => {
+    function handleToast(event) {
+      setToast(event.detail)
+    }
+
+    window.addEventListener('handiwave-toast', handleToast)
+
+    return () => window.removeEventListener('handiwave-toast', handleToast)
+  }, [])
+
+  useEffect(() => {
+    if (!toast) {
+      return undefined
+    }
+
+    const toastTimer = window.setTimeout(() => setToast(null), 3200)
+
+    return () => window.clearTimeout(toastTimer)
+  }, [toast])
+
   function toggleTheme() {
     setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'))
   }
 
   return (
-    <BrowserRouter>
       <div className="app">
         <header className="navbar">
           <NavLink className="logo" to="/">
@@ -116,19 +168,7 @@ function App() {
         </header>
 
         <main className="page-content">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/services" element={<Services />} />
-            <Route path="/artisans" element={<Artisans />} />
-            <Route path="/artisan-profile" element={<ArtisanProfile />} />
-            <Route path="/bookings" element={<Bookings />} />
-            <Route path="/reels" element={<Reels />} />
-            <Route path="/wallet" element={<Wallet />} />
-            <Route path="/messages" element={<Messages />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-          </Routes>
+          <AnimatedRoutes />
         </main>
 
         <footer className="footer">
@@ -197,7 +237,30 @@ function App() {
             </div>
           </div>
         </footer>
+
+        <AnimatePresence>
+          {toast && (
+            <motion.div
+              className="toast"
+              role="status"
+              initial={{ opacity: 0, y: 20, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.96 }}
+              transition={{ duration: 0.22, ease: 'easeOut' }}
+            >
+              <span>Done</span>
+              <p>{toast}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+  )
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppShell />
     </BrowserRouter>
   )
 }

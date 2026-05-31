@@ -283,37 +283,67 @@ function Services() {
           </label>
         </div>
 
+        <div className="loading-preview" aria-label="Service card loading placeholders">
+          {[1, 2, 3].map((item) => (
+            <div className="skeleton-card service-skeleton" key={item}>
+              <span className="skeleton-icon"></span>
+              <span className="skeleton-line wide"></span>
+              <span className="skeleton-line"></span>
+              <span className="skeleton-line short"></span>
+            </div>
+          ))}
+        </div>
+
         <motion.div
           className="services-grid"
           initial="hidden"
           animate="visible"
           transition={{ staggerChildren: 0.06 }}
         >
-          {filteredServices.map((service) => (
-            <motion.article
-              className="service-list-card"
-              key={service.title}
-              variants={cardVariants}
-              transition={{ duration: 0.35, ease: 'easeOut' }}
-              whileHover={{ y: -8, scale: 1.01 }}
-            >
-              <div className="service-card-top">
-                <span className="service-icon">{service.icon}</span>
-                <span className="service-category">{service.category}</span>
-              </div>
-              <h3>{service.title}</h3>
-              <p>{service.description}</p>
-              <div className="service-card-meta">
-                <span>{service.price}</span>
-                <span>{service.rating}+ rating</span>
-                <span>{service.duration}</span>
-                <span>{service.locations[0]}</span>
-              </div>
-              <Link className="service-book-link" to="/artisans">
-                Find Artisan
-              </Link>
-            </motion.article>
-          ))}
+          {filteredServices.length > 0 ? (
+            filteredServices.map((service) => (
+              <motion.article
+                className="service-list-card"
+                key={service.title}
+                variants={cardVariants}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+                whileHover={{ y: -8, scale: 1.01 }}
+              >
+                <div className="service-card-top">
+                  <span className="service-icon">{service.icon}</span>
+                  <span className="service-category">{service.category}</span>
+                </div>
+                <h3>{service.title}</h3>
+                <p>{service.description}</p>
+                <div className="service-card-meta">
+                  <span>{service.price}</span>
+                  <span>{service.rating}+ rating</span>
+                  <span>{service.duration}</span>
+                  <span>{service.locations[0]}</span>
+                </div>
+                <Link className="service-book-link" to="/artisans">
+                  Find Artisan
+                </Link>
+              </motion.article>
+            ))
+          ) : (
+            <section className="empty-state services-empty-state">
+              <h2>No services found</h2>
+              <p>Try another keyword, category, location, rating, or price range.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveCategory('All')
+                  setSearchTerm('')
+                  setLocationFilter('All locations')
+                  setMinimumRating('0')
+                  setMaximumPrice(30000)
+                }}
+              >
+                Reset filters
+              </button>
+            </section>
+          )}
         </motion.div>
       </section>
     </div>

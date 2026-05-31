@@ -1,5 +1,9 @@
 import { Link } from 'react-router-dom'
 
+function showToast(message) {
+  window.dispatchEvent(new CustomEvent('handiwave-toast', { detail: message }))
+}
+
 function Login() {
   return (
     <div className="auth-page">
@@ -10,7 +14,12 @@ function Login() {
         <form className="auth-form">
           <label>Email address<input type="email" placeholder="you@example.com" /></label>
           <label>Password<input type="password" placeholder="Enter your password" /></label>
-          <button type="button">Login</button>
+          <button
+            type="button"
+            onClick={() => showToast('Login successful. Welcome back to Handiwave.')}
+          >
+            Login
+          </button>
         </form>
         <span>New here? <Link to="/signup">Create an account</Link></span>
       </section>
