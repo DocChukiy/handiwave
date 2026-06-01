@@ -15,6 +15,7 @@ import AuthProvider from './auth/AuthProvider.jsx'
 import { useAuth } from './auth/useAuth.js'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import AdminDashboard from './pages/AdminDashboard.jsx'
+import ArtisanOnboarding from './pages/ArtisanOnboarding.jsx'
 import ArtisanProfile from './pages/ArtisanProfile.jsx'
 import Artisans from './pages/Artisans.jsx'
 import Bookings from './pages/Bookings.jsx'
@@ -69,6 +70,14 @@ function AnimatedRoutes() {
           <Route path="/" element={<Home />} />
           <Route path="/services" element={<Services />} />
           <Route path="/artisans" element={<Artisans />} />
+          <Route
+            path="/artisan-onboarding"
+            element={(
+              <ProtectedRoute allowedRoles={['artisan']}>
+                <ArtisanOnboarding />
+              </ProtectedRoute>
+            )}
+          />
           <Route path="/artisan-profile" element={<ArtisanProfile />} />
           <Route
             path="/bookings"
@@ -201,8 +210,8 @@ function AppShell() {
               </NavLink>
             )}
             {user?.role === 'artisan' && (
-              <NavLink className="login-button" to="/artisans">
-                Artisan View
+              <NavLink className="login-button" to="/artisan-onboarding">
+                Onboarding
               </NavLink>
             )}
             <button

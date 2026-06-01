@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { AuthContext } from './authContext.js'
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient.js'
 import {
-  normalizeSupabaseUser,
+  getProfileForSupabaseUser,
   signInWithRole,
   signOut,
   signUpWithRole,
@@ -24,7 +24,7 @@ function AuthProvider({ children }) {
 
     let isMounted = true
 
-    supabase.auth.getSession().then(({ data, error }) => {
+    supabase.auth.getSession().then(async ({ data, error }) => {
       if (!isMounted) {
         return
       }
@@ -33,16 +33,30 @@ function AuthProvider({ children }) {
         setAuthError(error.message)
       }
 
+      const { data: profile, error: profileError } =
+        await getProfileForSupabaseUser(data.session?.user)
+
+      if (profileError) {
+        setAuthError(profileError.message)
+      }
+
       setSession(data.session)
-      setUser(normalizeSupabaseUser(data.session?.user))
+      setUser(profile)
       setIsLoading(false)
     })
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+      const { data: profile, error: profileError } =
+        await getProfileForSupabaseUser(nextSession?.user)
+
+      if (profileError) {
+        setAuthError(profileError.message)
+      }
+
       setSession(nextSession)
-      setUser(normalizeSupabaseUser(nextSession?.user))
+      setUser(profile)
       setIsLoading(false)
     })
 

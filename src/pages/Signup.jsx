@@ -43,7 +43,7 @@ function Signup() {
 
       if (session) {
         showToast(`${user.role} account created for ${user.name}.`)
-        navigate(user.role === 'artisan' ? '/messages' : '/bookings')
+        navigate(user.role === 'artisan' ? '/artisan-onboarding' : '/bookings')
       } else {
         showToast('Account created. Please check your email to confirm your signup.')
         navigate('/login')

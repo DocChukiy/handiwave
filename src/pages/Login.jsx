@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
+import { getArtisanByProfileId } from '../services/artisanService.js'
 import { showToast } from '../utils/toast.js'
 
 const roles = [
@@ -39,6 +40,19 @@ function Login() {
     try {
       const user = await login({ email, password, role: selectedRole })
       showToast(`Login successful as ${user.role}. Welcome back to Handiwave.`)
+
+      if (user.role === 'artisan') {
+        const { data: artisanProfile, error } = await getArtisanByProfileId(user.id)
+
+        if (error) {
+          setFormError(error.message)
+          return
+        }
+
+        navigate(artisanProfile ? '/messages' : '/artisan-onboarding')
+        return
+      }
+
       navigate(location.state?.from?.pathname || (user.role === 'admin' ? '/admin' : '/bookings'))
     } catch (error) {
       setFormError(error.message)

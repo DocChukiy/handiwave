@@ -1,4 +1,5 @@
 import { getSupabaseClient } from '../lib/supabaseClient.js'
+import { getProfileById } from './profileService.js'
 
 const validRoles = ['customer', 'artisan', 'admin']
 
@@ -19,6 +20,22 @@ export function normalizeSupabaseUser(supabaseUser, fallbackRole = 'customer') {
   }
 }
 
+export async function getProfileForSupabaseUser(supabaseUser, fallbackRole = 'customer') {
+  if (!supabaseUser) {
+    return {
+      data: null,
+      error: null,
+    }
+  }
+
+  const { data: profile, error } = await getProfileById(supabaseUser.id)
+
+  return {
+    data: profile || normalizeSupabaseUser(supabaseUser, fallbackRole),
+    error,
+  }
+}
+
 export async function signInWithRole({ email, password, role = 'customer' }) {
   const supabase = getSupabaseClient()
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -26,12 +43,14 @@ export async function signInWithRole({ email, password, role = 'customer' }) {
     password,
   })
 
+  const { data: profile, error: profileError } = await getProfileForSupabaseUser(data.user, role)
+
   return {
     data: {
       session: data.session,
-      user: normalizeSupabaseUser(data.user, role),
+      user: profile,
     },
-    error,
+    error: error || profileError,
   }
 }
 
@@ -55,12 +74,16 @@ export async function signUpWithRole({
     },
   })
 
+  const { data: profile, error: profileError } = data.session
+    ? await getProfileForSupabaseUser(data.user, role)
+    : { data: normalizeSupabaseUser(data.user, role), error: null }
+
   return {
     data: {
       session: data.session,
-      user: normalizeSupabaseUser(data.user, role),
+      user: profile,
     },
-    error,
+    error: error || profileError,
   }
 }
 
@@ -74,9 +97,10 @@ export async function signOut() {
 export async function getCurrentUser() {
   const supabase = getSupabaseClient()
   const { data, error } = await supabase.auth.getUser()
+  const { data: profile, error: profileError } = await getProfileForSupabaseUser(data.user)
 
   return {
-    data: normalizeSupabaseUser(data.user),
-    error,
+    data: profile,
+    error: error || profileError,
   }
 }
