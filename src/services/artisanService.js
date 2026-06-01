@@ -2,10 +2,71 @@ import { artisans } from '../data/artisans.js'
 import { getSupabaseClient } from '../lib/supabaseClient.js'
 import { updateProfile } from './profileService.js'
 
+function getInitials(name) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+}
+
+export function mapArtisanRow(artisan) {
+  const profile = artisan.profile || {}
+  const primaryService = artisan.primary_service || {}
+  const name = profile.full_name || artisan.business_name || 'Handiwave artisan'
+  const city = artisan.city || profile.city || 'Lagos'
+  const state = artisan.state || profile.state || 'Nigeria'
+  const serviceName = primaryService.name || 'General Service'
+  const priceValue = Number(artisan.starting_price) || 30000
+
+  return {
+    area: city,
+    category: primaryService.category || serviceName,
+    completedJobs: artisan.completed_jobs || 0,
+    featuredSkill: serviceName,
+    fullLocation: `${city}, ${state}`,
+    id: artisan.id,
+    initials: getInitials(name),
+    jobs: artisan.completed_jobs || 0,
+    location: state,
+    name,
+    price: artisan.starting_price
+      ? `From NGN ${priceValue.toLocaleString()}`
+      : 'By quote',
+    priceValue,
+    profileId: artisan.profile_id,
+    rating: Number(artisan.average_rating) || 0,
+    skill: serviceName,
+    topRated: Number(artisan.average_rating) >= 4.8,
+    verified: artisan.verification_status === 'verified',
+  }
+}
+
 export async function getArtisans() {
   return {
     data: artisans,
     error: null,
+  }
+}
+
+export async function getVerifiedArtisans() {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('artisans')
+    .select(`
+      *,
+      profile:profiles(id, full_name, email, avatar_url, city, state),
+      primary_service:services(id, name, category, icon)
+    `)
+    .eq('verification_status', 'verified')
+    .eq('is_available', true)
+    .order('average_rating', { ascending: false })
+
+  return {
+    data: (data || []).map(mapArtisanRow),
+    error,
   }
 }
 

@@ -1,26 +1,68 @@
 import { motion } from 'framer-motion'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import EmptyState from '../components/EmptyState.jsx'
 import SkeletonPreview from '../components/Skeletons.jsx'
 import { ServiceCard } from '../components/cards.jsx'
-import {
-  serviceFilterCategories,
-  serviceLocations,
-  services,
-} from '../data/services.js'
+import { getServices } from '../services/serviceService.js'
+
+const baseCategories = ['All']
+const baseLocations = ['All locations', 'Lagos', 'Abuja', 'Port Harcourt', 'Ibadan']
 
 function Services() {
   const [activeCategory, setActiveCategory] = useState('All')
+  const [availableServices, setAvailableServices] = useState([])
+  const [dataError, setDataError] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [locationFilter, setLocationFilter] = useState('All locations')
   const [minimumRating, setMinimumRating] = useState('0')
   const [maximumPrice, setMaximumPrice] = useState(30000)
 
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadServices() {
+      setDataError('')
+      setIsLoading(true)
+
+      try {
+        const { data, error } = await getServices()
+
+        if (!isMounted) {
+          return
+        }
+
+        if (error) {
+          setDataError(error.message)
+          setAvailableServices([])
+          return
+        }
+
+        setAvailableServices(data)
+      } catch (error) {
+        if (isMounted) {
+          setDataError(error.message)
+          setAvailableServices([])
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadServices()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   const filteredServices = useMemo(() => {
     const query = searchTerm.trim().toLowerCase()
 
-    return services.filter((service) => {
+    return availableServices.filter((service) => {
       const matchesCategory =
         activeCategory === 'All' || service.category === activeCategory
       const matchesSearch =
@@ -37,9 +79,18 @@ function Services() {
 
       return matchesCategory && matchesSearch && matchesLocation && matchesRating && matchesPrice
     })
-  }, [activeCategory, locationFilter, maximumPrice, minimumRating, searchTerm])
+  }, [activeCategory, availableServices, locationFilter, maximumPrice, minimumRating, searchTerm])
 
-  const popularServices = services.filter((service) => service.popular)
+  const popularServices = availableServices.filter((service) => service.popular)
+  const categories = useMemo(
+    () => [
+      ...new Set([
+        ...baseCategories,
+        ...availableServices.map((service) => service.category).filter(Boolean),
+      ]),
+    ],
+    [availableServices],
+  )
 
   return (
     <div className="services-page">
@@ -111,7 +162,7 @@ function Services() {
         </div>
 
         <div className="category-filters" aria-label="Service categories">
-          {serviceFilterCategories.map((category) => (
+          {categories.map((category) => (
             <button
               className={activeCategory === category ? 'active' : ''}
               key={category}
@@ -130,7 +181,7 @@ function Services() {
               value={locationFilter}
               onChange={(event) => setLocationFilter(event.target.value)}
             >
-              {serviceLocations.map((location) => (
+              {baseLocations.map((location) => (
                 <option key={location}>{location}</option>
               ))}
             </select>
@@ -162,16 +213,39 @@ function Services() {
 
         <SkeletonPreview label="Service card loading placeholders" type="service" />
 
+        {dataError && (
+          <p className="auth-error">
+            Supabase services could not load. {dataError}
+          </p>
+        )}
+
         <motion.div
           className="services-grid"
           initial="hidden"
           animate="visible"
           transition={{ staggerChildren: 0.06 }}
         >
-          {filteredServices.length > 0 ? (
+          {isLoading ? (
+            <SkeletonPreview label="Loading services" type="service" />
+          ) : dataError ? (
+            <EmptyState
+              action={<button type="button" onClick={() => window.location.reload()}>Retry</button>}
+              className="services-empty-state"
+              title="Unable to load services"
+            >
+              Please check your Supabase connection and try again.
+            </EmptyState>
+          ) : filteredServices.length > 0 ? (
             filteredServices.map((service) => (
               <ServiceCard key={service.title} service={service} />
             ))
+          ) : availableServices.length === 0 ? (
+            <EmptyState
+              className="services-empty-state"
+              title="No services in Supabase yet"
+            >
+              Run the Handiwave service seed SQL in Supabase to populate this page.
+            </EmptyState>
           ) : (
             <EmptyState
               action={(

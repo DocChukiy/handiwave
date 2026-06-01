@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import EmptyState from '../components/EmptyState.jsx'
 import SkeletonPreview from '../components/Skeletons.jsx'
@@ -11,18 +11,62 @@ import {
   recentlyViewedArtisans,
   savedArtisans,
 } from '../data/artisans.js'
+import { getVerifiedArtisans } from '../services/artisanService.js'
 
 function Artisans() {
   const [searchTerm, setSearchTerm] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
+  const [availableArtisans, setAvailableArtisans] = useState(artisans)
+  const [dataError, setDataError] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
   const [locationFilter, setLocationFilter] = useState('All locations')
   const [minimumRating, setMinimumRating] = useState('0')
   const [maximumPrice, setMaximumPrice] = useState(30000)
 
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadArtisans() {
+      setDataError('')
+      setIsLoading(true)
+
+      try {
+        const { data, error } = await getVerifiedArtisans()
+
+        if (!isMounted) {
+          return
+        }
+
+        if (error) {
+          setDataError(error.message)
+          setAvailableArtisans(artisans)
+          return
+        }
+
+        setAvailableArtisans(data.length > 0 ? data : artisans)
+      } catch (error) {
+        if (isMounted) {
+          setDataError(error.message)
+          setAvailableArtisans(artisans)
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadArtisans()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   const filteredArtisans = useMemo(() => {
     const query = searchTerm.trim().toLowerCase()
 
-    return artisans.filter((artisan) => {
+    return availableArtisans.filter((artisan) => {
       const matchesSearch =
         !query ||
         artisan.name.toLowerCase().includes(query) ||
@@ -44,7 +88,26 @@ function Artisans() {
         matchesPrice
       )
     })
-  }, [activeCategory, locationFilter, maximumPrice, minimumRating, searchTerm])
+  }, [activeCategory, availableArtisans, locationFilter, maximumPrice, minimumRating, searchTerm])
+
+  const categories = useMemo(
+    () => [
+      ...new Set([
+        ...artisanCategories,
+        ...availableArtisans.map((artisan) => artisan.category).filter(Boolean),
+      ]),
+    ],
+    [availableArtisans],
+  )
+  const locations = useMemo(
+    () => [
+      ...new Set([
+        ...artisanLocations,
+        ...availableArtisans.map((artisan) => artisan.location).filter(Boolean),
+      ]),
+    ],
+    [availableArtisans],
+  )
 
   return (
     <div className="starter-page">
@@ -67,7 +130,7 @@ function Artisans() {
       </section>
 
       <section className="category-filters" aria-label="Artisan categories">
-        {artisanCategories.map((category) => (
+        {categories.map((category) => (
           <button
             className={activeCategory === category ? 'active' : ''}
             key={category}
@@ -86,7 +149,7 @@ function Artisans() {
             value={locationFilter}
             onChange={(event) => setLocationFilter(event.target.value)}
           >
-            {artisanLocations.map((location) => (
+            {locations.map((location) => (
               <option key={location}>{location}</option>
             ))}
           </select>
@@ -142,7 +205,15 @@ function Artisans() {
 
       <SkeletonPreview label="Artisan card loading placeholders" type="artisan" />
 
-      {filteredArtisans.length > 0 ? (
+      {dataError && (
+        <p className="auth-error">
+          Supabase artisans could not load, so Handiwave is showing starter data. {dataError}
+        </p>
+      )}
+
+      {isLoading ? (
+        <SkeletonPreview label="Loading artisans" type="artisan" />
+      ) : filteredArtisans.length > 0 ? (
         <section className="starter-grid four">
           {filteredArtisans.map((artisan) => (
             <ArtisanCard artisan={artisan} key={artisan.name} />
