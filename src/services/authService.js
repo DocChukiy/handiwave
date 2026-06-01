@@ -1,35 +1,82 @@
-import { mockUsers } from '../auth/authContext.js'
+import { getSupabaseClient } from '../lib/supabaseClient.js'
 
-export async function signInWithRole(role = 'customer') {
+const validRoles = ['customer', 'artisan', 'admin']
+
+export function normalizeSupabaseUser(supabaseUser, fallbackRole = 'customer') {
+  if (!supabaseUser) {
+    return null
+  }
+
+  const metadata = supabaseUser.user_metadata || {}
+  const role = validRoles.includes(metadata.role) ? metadata.role : fallbackRole
+
   return {
-    data: mockUsers[role] || mockUsers.customer,
-    error: null,
+    id: supabaseUser.id,
+    email: supabaseUser.email,
+    name: metadata.name || metadata.full_name || supabaseUser.email || 'Handiwave user',
+    primarySkill: metadata.primary_skill || '',
+    role,
   }
 }
 
-export async function signUpWithRole({ email, name, role = 'customer' }) {
-  const fallbackUser = mockUsers[role] || mockUsers.customer
+export async function signInWithRole({ email, password, role = 'customer' }) {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
 
   return {
     data: {
-      ...fallbackUser,
-      email: email || fallbackUser.email,
-      name: name || fallbackUser.name,
+      session: data.session,
+      user: normalizeSupabaseUser(data.user, role),
     },
-    error: null,
+    error,
+  }
+}
+
+export async function signUpWithRole({
+  email,
+  name,
+  password,
+  primarySkill = '',
+  role = 'customer',
+}) {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        name,
+        primary_skill: primarySkill,
+        role,
+      },
+    },
+  })
+
+  return {
+    data: {
+      session: data.session,
+      user: normalizeSupabaseUser(data.user, role),
+    },
+    error,
   }
 }
 
 export async function signOut() {
-  return {
-    data: true,
-    error: null,
-  }
+  const supabase = getSupabaseClient()
+  const { error } = await supabase.auth.signOut()
+
+  return { data: true, error }
 }
 
 export async function getCurrentUser() {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase.auth.getUser()
+
   return {
-    data: null,
-    error: null,
+    data: normalizeSupabaseUser(data.user),
+    error,
   }
 }

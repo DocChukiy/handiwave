@@ -25,6 +25,7 @@ import Reels from './pages/Reels.jsx'
 import Services from './pages/Services.jsx'
 import Signup from './pages/Signup.jsx'
 import Wallet from './pages/Wallet.jsx'
+import { showToast } from './utils/toast.js'
 import './App.css'
 
 const navLinks = [
@@ -156,6 +157,15 @@ function AppShell() {
     setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'))
   }
 
+  async function handleLogout() {
+    try {
+      await logout()
+      showToast('You have been logged out.')
+    } catch (error) {
+      showToast(error.message)
+    }
+  }
+
   return (
       <div className="app">
         <header className="navbar">
@@ -207,7 +217,7 @@ function AppShell() {
               <span>{isDarkMode ? 'Light' : 'Dark'}</span>
             </button>
             {isAuthenticated ? (
-              <button className="signup-button" type="button" onClick={logout}>
+              <button className="signup-button" type="button" onClick={handleLogout}>
                 Logout
               </button>
             ) : (

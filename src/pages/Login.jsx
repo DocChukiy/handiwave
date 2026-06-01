@@ -22,15 +22,29 @@ const roles = [
 ]
 
 function Login() {
-  const { login } = useAuth()
+  const { authError, isLoading, login } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
+  const [email, setEmail] = useState('')
+  const [formError, setFormError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [password, setPassword] = useState('')
   const [selectedRole, setSelectedRole] = useState('customer')
 
-  function handleLogin() {
-    const user = login(selectedRole)
-    showToast(`Login successful as ${user.role}. Welcome back to Handiwave.`)
-    navigate(location.state?.from?.pathname || (user.role === 'admin' ? '/admin' : '/bookings'))
+  async function handleLogin(event) {
+    event.preventDefault()
+    setFormError('')
+    setIsSubmitting(true)
+
+    try {
+      const user = await login({ email, password, role: selectedRole })
+      showToast(`Login successful as ${user.role}. Welcome back to Handiwave.`)
+      navigate(location.state?.from?.pathname || (user.role === 'admin' ? '/admin' : '/bookings'))
+    } catch (error) {
+      setFormError(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -38,8 +52,8 @@ function Login() {
       <section className="auth-card">
         <p className="section-kicker">Welcome back</p>
         <h1>Log in to Handiwave</h1>
-        <p>Choose a mock role to preview the future authenticated experience.</p>
-        <form className="auth-form">
+        <p>Log in with Supabase Auth and continue with the right Handiwave role.</p>
+        <form className="auth-form" onSubmit={handleLogin}>
           <div className="role-selector" aria-label="Login role">
             {roles.map((role) => (
               <button
@@ -53,13 +67,16 @@ function Login() {
               </button>
             ))}
           </div>
-          <label>Email address<input type="email" placeholder="you@example.com" /></label>
-          <label>Password<input type="password" placeholder="Enter your password" /></label>
+          <label>Email address<input type="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
+          <label>Password<input type="password" placeholder="Enter your password" value={password} onChange={(event) => setPassword(event.target.value)} required /></label>
+          {(formError || authError) && (
+            <p className="auth-error">{formError || authError}</p>
+          )}
           <button
-            type="button"
-            onClick={handleLogin}
+            disabled={isSubmitting || isLoading}
+            type="submit"
           >
-            Login
+            {isSubmitting ? 'Logging in...' : 'Login'}
           </button>
         </form>
         <span>New here? <Link to="/signup">Create an account</Link></span>

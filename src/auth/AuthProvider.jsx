@@ -1,60 +1,116 @@
-import { useMemo, useState } from 'react'
-import { AuthContext, mockUsers } from './authContext.js'
-
-const authStorageKey = 'handiwave-auth-user'
-
-function getSavedUser() {
-  const savedUser = localStorage.getItem(authStorageKey)
-
-  if (!savedUser) {
-    return null
-  }
-
-  try {
-    return JSON.parse(savedUser)
-  } catch {
-    localStorage.removeItem(authStorageKey)
-    return null
-  }
-}
+import { useEffect, useMemo, useState } from 'react'
+import { AuthContext } from './authContext.js'
+import { isSupabaseConfigured, supabase } from '../lib/supabaseClient.js'
+import {
+  normalizeSupabaseUser,
+  signInWithRole,
+  signOut,
+  signUpWithRole,
+} from '../services/authService.js'
 
 function AuthProvider({ children }) {
-  const [user, setUser] = useState(getSavedUser)
+  const supabaseConfigured = isSupabaseConfigured()
+  const [authError, setAuthError] = useState(
+    supabaseConfigured ? '' : 'Supabase is not configured.',
+  )
+  const [isLoading, setIsLoading] = useState(supabaseConfigured)
+  const [session, setSession] = useState(null)
+  const [user, setUser] = useState(null)
 
-  const auth = useMemo(() => {
-    function login(role) {
-      const nextUser = mockUsers[role] || mockUsers.customer
-      setUser(nextUser)
-      localStorage.setItem(authStorageKey, JSON.stringify(nextUser))
-      return nextUser
+  useEffect(() => {
+    if (!supabaseConfigured) {
+      return undefined
     }
 
-    function signup(role, name, email) {
-      const fallbackUser = mockUsers[role] || mockUsers.customer
-      const nextUser = {
-        ...fallbackUser,
-        name: name || fallbackUser.name,
-        email: email || fallbackUser.email,
+    let isMounted = true
+
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!isMounted) {
+        return
       }
 
-      setUser(nextUser)
-      localStorage.setItem(authStorageKey, JSON.stringify(nextUser))
-      return nextUser
+      if (error) {
+        setAuthError(error.message)
+      }
+
+      setSession(data.session)
+      setUser(normalizeSupabaseUser(data.session?.user))
+      setIsLoading(false)
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
+      setUser(normalizeSupabaseUser(nextSession?.user))
+      setIsLoading(false)
+    })
+
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
+  }, [supabaseConfigured])
+
+  const auth = useMemo(() => {
+    async function login({ email, password, role }) {
+      setAuthError('')
+      const { data, error } = await signInWithRole({ email, password, role })
+
+      if (error) {
+        setAuthError(error.message)
+        throw error
+      }
+
+      setSession(data.session)
+      setUser(data.user)
+      return data.user
     }
 
-    function logout() {
+    async function signup({ email, name, password, primarySkill, role }) {
+      setAuthError('')
+      const { data, error } = await signUpWithRole({
+        email,
+        name,
+        password,
+        primarySkill,
+        role,
+      })
+
+      if (error) {
+        setAuthError(error.message)
+        throw error
+      }
+
+      setSession(data.session)
+      setUser(data.session ? data.user : null)
+      return data
+    }
+
+    async function logout() {
+      setAuthError('')
+      const { error } = await signOut()
+
+      if (error) {
+        setAuthError(error.message)
+        throw error
+      }
+
+      setSession(null)
       setUser(null)
-      localStorage.removeItem(authStorageKey)
     }
 
     return {
-      isAuthenticated: Boolean(user),
+      authError,
+      isAuthenticated: Boolean(session && user),
+      isLoading,
       login,
       logout,
+      session,
       signup,
       user,
     }
-  }, [user])
+  }, [authError, isLoading, session, user])
 
   return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>
 }
