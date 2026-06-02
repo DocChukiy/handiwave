@@ -1,7 +1,15 @@
 import { getSupabaseClient } from '../lib/supabaseClient.js'
-import { getProfileById } from './profileService.js'
+import { getProfileById, mapProfile } from './profileService.js'
 
 const validRoles = ['customer', 'artisan', 'admin']
+const selfSignupRoles = ['customer', 'artisan']
+const profileRetryDelayMs = 300
+
+function wait(ms) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms)
+  })
+}
 
 export function normalizeSupabaseUser(supabaseUser, fallbackRole = 'customer') {
   if (!supabaseUser) {
@@ -20,7 +28,7 @@ export function normalizeSupabaseUser(supabaseUser, fallbackRole = 'customer') {
   }
 }
 
-export async function getProfileForSupabaseUser(supabaseUser, fallbackRole = 'customer') {
+export async function getProfileForSupabaseUser(supabaseUser, options = {}) {
   if (!supabaseUser) {
     return {
       data: null,
@@ -28,11 +36,136 @@ export async function getProfileForSupabaseUser(supabaseUser, fallbackRole = 'cu
     }
   }
 
-  const { data: profile, error } = await getProfileById(supabaseUser.id)
+  const retryCount = options.retries || 0
+  let lastResult = {
+    data: null,
+    error: null,
+  }
+
+  for (let attempt = 0; attempt <= retryCount; attempt += 1) {
+    const { data: profile, error } = await getProfileById(supabaseUser.id)
+
+    lastResult = {
+      data: profile,
+      error,
+    }
+
+    if (profile || error || attempt === retryCount) {
+      break
+    }
+
+    console.log('[Handiwave auth debug] profile not found yet, retrying:', {
+      attempt: attempt + 1,
+      authUserId: supabaseUser.id,
+    })
+
+    await wait(profileRetryDelayMs)
+  }
 
   return {
-    data: profile || normalizeSupabaseUser(supabaseUser, fallbackRole),
-    error,
+    data: lastResult.data,
+    error: lastResult.error,
+  }
+}
+
+export async function ensureProfileForSupabaseUser(
+  supabaseUser,
+  fallbackRole = 'customer',
+  options = {},
+) {
+  if (!supabaseUser) {
+    return {
+      data: null,
+      error: null,
+    }
+  }
+
+  const { data: existingProfile, error: profileError } = await getProfileForSupabaseUser(
+    supabaseUser,
+    options,
+  )
+
+  if (existingProfile || profileError || !options.createIfMissing) {
+    return {
+      data: existingProfile,
+      error: profileError,
+    }
+  }
+
+  const supabase = getSupabaseClient()
+  const metadata = supabaseUser.user_metadata || {}
+  const requestedRole = metadata.role || fallbackRole
+  const role = selfSignupRoles.includes(requestedRole) ? requestedRole : 'customer'
+  const profilePayload = {
+    email: supabaseUser.email,
+    full_name: metadata.name || metadata.full_name || supabaseUser.email || 'Handiwave user',
+    id: supabaseUser.id,
+    role,
+  }
+
+  console.log('[Handiwave auth debug] profile missing; attempting profile repair insert:', {
+    authUserId: supabaseUser.id,
+    profilePayload,
+  })
+
+  const { data: createdProfile, error: createProfileError } = await supabase
+    .from('profiles')
+    .insert(profilePayload)
+    .select('*')
+    .single()
+
+  console.log('[Handiwave auth debug] profile repair result:', {
+    error: createProfileError,
+    profile: createdProfile,
+  })
+
+  return {
+    data: mapProfile(createdProfile),
+    error: createProfileError,
+  }
+}
+
+export async function getCurrentSessionProfile(options = {}) {
+  const supabase = getSupabaseClient()
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+  const authUser = sessionData.session?.user || null
+
+  console.log('[Handiwave auth debug] auth user id:', authUser?.id || null)
+  console.log('[Handiwave auth debug] session:', sessionData.session)
+  console.log('[Handiwave auth debug] auth error:', sessionError)
+
+  if (sessionError || !authUser) {
+    return {
+      data: {
+        authUser,
+        profile: null,
+        session: sessionData.session,
+      },
+      error: sessionError,
+    }
+  }
+
+  const { data: profile, error: profileError } = await ensureProfileForSupabaseUser(
+    authUser,
+    options.fallbackRole || 'customer',
+    {
+      createIfMissing: options.createProfileIfMissing || false,
+      retries: options.profileRetries || 0,
+    },
+  )
+
+  console.log('[Handiwave auth debug] profile result:', {
+    error: profileError,
+    profile,
+  })
+
+  return {
+    data: {
+      authUser,
+      profile,
+      session: sessionData.session,
+    },
+    error: profileError,
   }
 }
 
@@ -43,14 +176,30 @@ export async function signInWithRole({ email, password, role = 'customer' }) {
     password,
   })
 
-  const { data: profile, error: profileError } = await getProfileForSupabaseUser(data.user, role)
+  if (error) {
+    console.log('[Handiwave auth debug] auth error:', error)
+    return {
+      data: {
+        session: null,
+        user: null,
+      },
+      error,
+    }
+  }
+
+  const { data: sessionProfile, error: sessionProfileError } =
+    await getCurrentSessionProfile({
+      createProfileIfMissing: true,
+      fallbackRole: role,
+      profileRetries: 6,
+    })
 
   return {
     data: {
-      session: data.session,
-      user: profile,
+      session: sessionProfile.session || data.session,
+      user: sessionProfile.profile,
     },
-    error: error || profileError,
+    error: sessionProfileError,
   }
 }
 
@@ -74,16 +223,30 @@ export async function signUpWithRole({
     },
   })
 
-  const { data: profile, error: profileError } = data.session
-    ? await getProfileForSupabaseUser(data.user, role)
-    : { data: normalizeSupabaseUser(data.user, role), error: null }
+  if (error) {
+    console.log('[Handiwave auth debug] auth error:', error)
+    return {
+      data: {
+        session: null,
+        user: null,
+      },
+      error,
+    }
+  }
+
+  const { data: sessionProfile, error: sessionProfileError } =
+    await getCurrentSessionProfile({
+      createProfileIfMissing: Boolean(data.session),
+      fallbackRole: role,
+      profileRetries: data.session ? 6 : 0,
+    })
 
   return {
     data: {
-      session: data.session,
-      user: profile,
+      session: sessionProfile.session || data.session,
+      user: sessionProfile.session ? sessionProfile.profile : normalizeSupabaseUser(data.user, role),
     },
-    error: error || profileError,
+    error: sessionProfileError,
   }
 }
 

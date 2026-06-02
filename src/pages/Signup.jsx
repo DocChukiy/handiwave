@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
 import { getArtisanByProfileId } from '../services/artisanService.js'
@@ -28,9 +28,58 @@ function Signup() {
   const [password, setPassword] = useState('')
   const [primarySkill, setPrimarySkill] = useState('')
 
+  const disabledReason = useMemo(() => {
+    if (isSubmitting) {
+      return 'signup request is already submitting'
+    }
+
+    if (!name.trim()) {
+      return 'full name is missing'
+    }
+
+    if (!email.trim()) {
+      return 'email is missing'
+    }
+
+    if (!password) {
+      return 'password is missing'
+    }
+
+    if (accountType === 'artisan' && !primarySkill.trim()) {
+      return 'primary skill is missing'
+    }
+
+    return ''
+  }, [accountType, email, isSubmitting, name, password, primarySkill])
+  const isSignupDisabled = Boolean(disabledReason)
+
+  useEffect(() => {
+    console.log('[Handiwave signup debug]', {
+      accountType,
+      disabledReason: disabledReason || 'button enabled',
+      email,
+      isSubmitting,
+      passwordLength: password.length,
+    })
+  }, [accountType, disabledReason, email, isSubmitting, password.length])
+
   async function handleSignup(event) {
     event.preventDefault()
     setFormError('')
+
+    console.log('[Handiwave signup debug] submit clicked', {
+      accountType,
+      disabledReason: disabledReason || 'button enabled',
+      email,
+      isSubmitting,
+      passwordLength: password.length,
+    })
+
+    if (disabledReason) {
+      setFormError(`Cannot sign up yet: ${disabledReason}.`)
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -57,12 +106,13 @@ function Signup() {
           return
         }
 
-        navigate('/bookings')
+        navigate('/services')
       } else {
-        showToast('Account created. Please check your email to confirm your signup.')
-        navigate('/login')
+        setFormError('Signup created an auth user, but no active session was returned. Check Supabase email confirmation settings or confirm the email, then log in.')
+        showToast('Account created. Please confirm your email if required, then log in.')
       }
     } catch (error) {
+      console.error('[Handiwave signup debug] Supabase signup error:', error)
       setFormError(error.message)
     } finally {
       setIsSubmitting(false)
@@ -90,15 +140,18 @@ function Signup() {
             ))}
           </div>
           <label>Full name<input placeholder="Enter your name" value={name} onChange={(event) => setName(event.target.value)} /></label>
-          <label>Email address<input type="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
-          <label>Password<input type="password" placeholder="Create a password" value={password} onChange={(event) => setPassword(event.target.value)} required /></label>
+          <label>Email address<input type="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
+          <label>Password<input type="password" placeholder="Create a password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
           {accountType === 'artisan' && (
             <label>Primary skill<input placeholder="Electrician, cleaner, barber..." value={primarySkill} onChange={(event) => setPrimarySkill(event.target.value)} /></label>
           )}
           {(formError || authError) && (
             <p className="auth-error">{formError || authError}</p>
           )}
-          <button disabled={isSubmitting} type="submit">
+          {disabledReason && !isSubmitting && (
+            <p className="auth-hint">Sign up button disabled because {disabledReason}.</p>
+          )}
+          <button disabled={isSignupDisabled} type="submit">
             {isSubmitting ? 'Creating account...' : 'Sign Up'}
           </button>
         </form>

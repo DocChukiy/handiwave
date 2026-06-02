@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
 import { getArtisanByProfileId } from '../services/artisanService.js'
@@ -32,9 +32,50 @@ function Login() {
   const [password, setPassword] = useState('')
   const [selectedRole, setSelectedRole] = useState('customer')
 
+  const disabledReason = useMemo(() => {
+    if (isSubmitting) {
+      return 'login request is already submitting'
+    }
+
+    if (!email.trim()) {
+      return 'email is missing'
+    }
+
+    if (!password) {
+      return 'password is missing'
+    }
+
+    return ''
+  }, [email, isSubmitting, password])
+  const isLoginDisabled = Boolean(disabledReason)
+
+  useEffect(() => {
+    console.log('[Handiwave login debug]', {
+      disabledReason: disabledReason || 'button enabled',
+      email,
+      isAuthLoading: isLoading,
+      isSubmitting,
+      passwordLength: password.length,
+    })
+  }, [disabledReason, email, isLoading, isSubmitting, password.length])
+
   async function handleLogin(event) {
     event.preventDefault()
     setFormError('')
+
+    console.log('[Handiwave login debug] submit clicked', {
+      disabledReason: disabledReason || 'button enabled',
+      email,
+      isAuthLoading: isLoading,
+      isSubmitting,
+      passwordLength: password.length,
+    })
+
+    if (disabledReason) {
+      setFormError(`Cannot log in yet: ${disabledReason}.`)
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -53,8 +94,9 @@ function Login() {
         return
       }
 
-      navigate(location.state?.from?.pathname || (user.role === 'admin' ? '/admin' : '/bookings'))
+      navigate(location.state?.from?.pathname || (user.role === 'admin' ? '/admin' : '/services'))
     } catch (error) {
+      console.error('[Handiwave login debug] Supabase login error:', error)
       setFormError(error.message)
     } finally {
       setIsSubmitting(false)
@@ -81,13 +123,16 @@ function Login() {
               </button>
             ))}
           </div>
-          <label>Email address<input type="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
-          <label>Password<input type="password" placeholder="Enter your password" value={password} onChange={(event) => setPassword(event.target.value)} required /></label>
+          <label>Email address<input type="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
+          <label>Password<input type="password" placeholder="Enter your password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
+          {disabledReason && !isSubmitting && (
+            <p className="auth-hint">Login button disabled because {disabledReason}.</p>
+          )}
           {(formError || authError) && (
             <p className="auth-error">{formError || authError}</p>
           )}
           <button
-            disabled={isSubmitting || isLoading}
+            disabled={isLoginDisabled}
             type="submit"
           >
             {isSubmitting ? 'Logging in...' : 'Login'}

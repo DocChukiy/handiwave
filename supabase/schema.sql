@@ -432,6 +432,14 @@ create policy "Users can read own profile"
 on public.profiles for select
 using (auth.uid() = id);
 
+drop policy if exists "Users can insert own non-admin profile" on public.profiles;
+create policy "Users can insert own non-admin profile"
+on public.profiles for insert
+with check (
+  auth.uid() = id
+  and role in ('customer', 'artisan')
+);
+
 drop policy if exists "Users can update own profile" on public.profiles;
 create policy "Users can update own profile"
 on public.profiles for update
