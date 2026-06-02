@@ -458,6 +458,25 @@ using (
   )
 );
 
+drop policy if exists "Booking participants can read related profiles" on public.profiles;
+create policy "Booking participants can read related profiles"
+on public.profiles for select
+using (
+  exists (
+    select 1
+    from public.bookings
+    join public.artisans on public.artisans.id = public.bookings.artisan_id
+    where (
+      public.bookings.customer_id = profiles.id
+      and public.artisans.profile_id = auth.uid()
+    )
+    or (
+      public.bookings.customer_id = auth.uid()
+      and public.artisans.profile_id = profiles.id
+    )
+  )
+);
+
 drop policy if exists "Artisans can insert own artisan profile" on public.artisans;
 create policy "Artisans can insert own artisan profile"
 on public.artisans for insert

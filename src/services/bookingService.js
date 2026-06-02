@@ -1,26 +1,214 @@
-import { bookings } from '../data/bookings.js'
+import { getSupabaseClient } from '../lib/supabaseClient.js'
+import { getArtisanByProfileId } from './artisanService.js'
 
-export async function getBookings() {
+const bookingServiceRelation = 'bookings_service_id_fkey'
+const bookingArtisanRelation = 'bookings_artisan_id_fkey'
+const bookingCustomerRelation = 'bookings_customer_id_fkey'
+const artisanProfileRelation = 'artisans_profile_id_fkey'
+
+const bookingSelect = `
+  *,
+  service:services!${bookingServiceRelation}(id, name, category, icon),
+  artisan:artisans!${bookingArtisanRelation}(
+    id,
+    business_name,
+    profile_id,
+    city,
+    state,
+    verification_status,
+    profile:profiles!${artisanProfileRelation}(id, full_name, email, avatar_url)
+  ),
+  customer:profiles!${bookingCustomerRelation}(id, full_name, email)
+`
+
+function formatDateTime(date, time) {
+  const dateLabel = date || 'Date pending'
+  const timeLabel = time ? time.slice(0, 5) : 'Time pending'
+
+  return `${dateLabel} • ${timeLabel}`
+}
+
+export function mapBookingRow(booking) {
+  const artisanName =
+    booking.artisan?.profile?.full_name ||
+    booking.artisan?.business_name ||
+    'Handiwave artisan'
+  const customerName = booking.customer?.full_name || booking.customer?.email || 'Customer'
+  const status = booking.status || 'pending'
+
   return {
-    data: bookings,
-    error: null,
+    address: booking.location_address,
+    artisan: artisanName,
+    artisanId: booking.artisan_id,
+    city: booking.city,
+    customer: customerName,
+    customerId: booking.customer_id,
+    date: formatDateTime(booking.scheduled_date, booking.scheduled_time),
+    estimatedPrice: booking.estimated_price,
+    id: booking.id,
+    notes: booking.notes || '',
+    rawStatus: status,
+    service: booking.service?.name || 'Handiwave service',
+    serviceId: booking.service_id,
+    state: booking.state,
+    status: status.replaceAll('_', ' '),
   }
 }
 
-export async function createBooking(booking) {
+export async function getBookingOptions() {
+  const supabase = getSupabaseClient()
+  const [servicesResult, artisansResult] = await Promise.all([
+    supabase
+      .from('services')
+      .select('id, name, category, base_price')
+      .eq('is_active', true)
+      .order('name', { ascending: true }),
+    supabase
+      .from('artisans')
+      .select(`
+        id,
+        business_name,
+        profile_id,
+        city,
+        state,
+        primary_service_id,
+        starting_price,
+        verification_status,
+        profile:profiles!${artisanProfileRelation}(id, full_name),
+        primary_service:services!artisans_primary_service_id_fkey(id, name, category)
+      `)
+      .eq('verification_status', 'verified')
+      .eq('is_available', true)
+      .order('average_rating', { ascending: false }),
+  ])
+
   return {
     data: {
-      id: crypto.randomUUID(),
-      status: 'Pending',
-      ...booking,
+      artisans: artisansResult.data || [],
+      services: servicesResult.data || [],
     },
-    error: null,
+    error: servicesResult.error || artisansResult.error,
   }
 }
 
-export async function updateBookingStatus(id, status) {
+export async function getBookingsForUser(user) {
+  if (!user) {
+    return {
+      data: [],
+      error: new Error('You must be logged in to view bookings.'),
+    }
+  }
+
+  const supabase = getSupabaseClient()
+
+  if (user.role === 'artisan') {
+    const { data: artisanProfile, error: artisanError } = await getArtisanByProfileId(user.id)
+
+    if (artisanError) {
+      return {
+        data: [],
+        error: artisanError,
+      }
+    }
+
+    if (!artisanProfile) {
+      return {
+        data: [],
+        error: null,
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('bookings')
+      .select(bookingSelect)
+      .eq('artisan_id', artisanProfile.id)
+      .order('created_at', { ascending: false })
+
+    return {
+      data: (data || []).map(mapBookingRow),
+      error,
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('bookings')
+    .select(bookingSelect)
+    .eq('customer_id', user.id)
+    .order('created_at', { ascending: false })
+
   return {
-    data: { id, status },
-    error: null,
+    data: (data || []).map(mapBookingRow),
+    error,
+  }
+}
+
+export async function createBooking({
+  address,
+  artisanId,
+  city,
+  customerId,
+  notes,
+  scheduledDate,
+  scheduledTime,
+  serviceId,
+  state,
+  userRole,
+}) {
+  if (userRole !== 'customer') {
+    return {
+      data: null,
+      error: new Error('Only customer accounts can create bookings.'),
+    }
+  }
+
+  const supabase = getSupabaseClient()
+  const { data: artisan, error: artisanError } = await supabase
+    .from('artisans')
+    .select('id, profile_id, primary_service_id, verification_status')
+    .eq('id', artisanId)
+    .maybeSingle()
+
+  if (artisanError) {
+    return {
+      data: null,
+      error: artisanError,
+    }
+  }
+
+  if (!artisan) {
+    return {
+      data: null,
+      error: new Error('Selected artisan was not found.'),
+    }
+  }
+
+  if (artisan.profile_id === customerId) {
+    return {
+      data: null,
+      error: new Error('You cannot book your own artisan profile.'),
+    }
+  }
+
+  const bookingPayload = {
+    artisan_id: artisanId,
+    city,
+    customer_id: customerId,
+    location_address: address,
+    notes,
+    scheduled_date: scheduledDate,
+    scheduled_time: scheduledTime,
+    service_id: serviceId || artisan.primary_service_id,
+    state,
+  }
+
+  const { data, error } = await supabase
+    .from('bookings')
+    .insert(bookingPayload)
+    .select(bookingSelect)
+    .single()
+
+  return {
+    data: data ? mapBookingRow(data) : null,
+    error,
   }
 }
