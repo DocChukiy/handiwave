@@ -21,8 +21,10 @@ function ArtisanOnboarding() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [primaryServiceId, setPrimaryServiceId] = useState('')
+  const [serviceArea, setServiceArea] = useState('')
   const [services, setServices] = useState([])
   const [state, setState] = useState(user?.state || '')
+  const [startingPrice, setStartingPrice] = useState('')
   const [yearsExperience, setYearsExperience] = useState('')
 
   useEffect(() => {
@@ -73,7 +75,9 @@ function ArtisanOnboarding() {
       city,
       primaryServiceId,
       profileId: user.id,
+      serviceArea,
       state,
+      startingPrice,
       yearsExperience,
     })
 
@@ -86,7 +90,7 @@ function ArtisanOnboarding() {
     setArtisanProfile(data)
     setIsSaving(false)
     showToast('Artisan profile created successfully.')
-    navigate('/messages')
+    navigate('/artisan-profile')
   }
 
   if (isLoading) {
@@ -108,8 +112,8 @@ function ArtisanOnboarding() {
             Customers can now discover your profile once verification is complete.
           </p>
           <div className="hero-actions">
-            <Button className="primary-cta" to="/messages">
-              Open Messages
+            <Button className="primary-cta" to="/artisan-profile">
+              View Profile
             </Button>
             <Button className="secondary-cta" to="/artisans">
               View Marketplace
@@ -198,6 +202,28 @@ function ArtisanOnboarding() {
                 placeholder="Lagos"
                 value={state}
                 onChange={(event) => setState(event.target.value)}
+                required
+              />
+            </label>
+          </div>
+          <div className="form-split">
+            <label>
+              Starting price
+              <input
+                min="0"
+                placeholder="7500"
+                type="number"
+                value={startingPrice}
+                onChange={(event) => setStartingPrice(event.target.value)}
+                required
+              />
+            </label>
+            <label>
+              Service area
+              <input
+                placeholder="Lekki, Victoria Island, Ikoyi"
+                value={serviceArea}
+                onChange={(event) => setServiceArea(event.target.value)}
                 required
               />
             </label>

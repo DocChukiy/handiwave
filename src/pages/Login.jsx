@@ -49,7 +49,7 @@ function Login() {
           return
         }
 
-        navigate(artisanProfile ? '/messages' : '/artisan-onboarding')
+        navigate(artisanProfile ? '/artisan-profile' : '/artisan-onboarding')
         return
       }
 

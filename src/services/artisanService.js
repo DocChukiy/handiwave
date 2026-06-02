@@ -2,6 +2,10 @@ import { artisans } from '../data/artisans.js'
 import { getSupabaseClient } from '../lib/supabaseClient.js'
 import { updateProfile } from './profileService.js'
 
+const artisanPrimaryServiceRelation = 'artisans_primary_service_id_fkey'
+const artisanServicesArtisanRelation = 'artisan_services_artisan_id_fkey'
+const artisanServicesServiceRelation = 'artisan_services_service_id_fkey'
+
 function getInitials(name) {
   return name
     .split(' ')
@@ -58,7 +62,11 @@ export async function getVerifiedArtisans() {
     .select(`
       *,
       profile:profiles(id, full_name, email, avatar_url, city, state),
-      primary_service:services(id, name, category, icon)
+      primary_service:services!${artisanPrimaryServiceRelation}(id, name, category, icon),
+      service_links:artisan_services!${artisanServicesArtisanRelation}(
+        service_id,
+        service:services!${artisanServicesServiceRelation}(id, name, category, icon)
+      )
     `)
     .eq('verification_status', 'verified')
     .eq('is_available', true)
@@ -88,7 +96,14 @@ export async function getArtisanByProfileId(profileId) {
   const supabase = getSupabaseClient()
   const { data, error } = await supabase
     .from('artisans')
-    .select('*, primary_service:services(id, name, category), artisan_services(service_id)')
+    .select(`
+      *,
+      primary_service:services!${artisanPrimaryServiceRelation}(id, name, category, icon),
+      service_links:artisan_services!${artisanServicesArtisanRelation}(
+        service_id,
+        service:services!${artisanServicesServiceRelation}(id, name, category, icon)
+      )
+    `)
     .eq('profile_id', profileId)
     .maybeSingle()
 
@@ -104,7 +119,9 @@ export async function createArtisanOnboardingProfile({
   city,
   primaryServiceId,
   profileId,
+  serviceArea,
   state,
+  startingPrice,
   yearsExperience,
 }) {
   const supabase = getSupabaseClient()
@@ -129,10 +146,15 @@ export async function createArtisanOnboardingProfile({
       city,
       primary_service_id: primaryServiceId,
       profile_id: profileId,
+      service_area: serviceArea,
       state,
+      starting_price: Number(startingPrice) || null,
       years_experience: Number(yearsExperience) || 0,
     })
-    .select('*')
+    .select(`
+      *,
+      primary_service:services!${artisanPrimaryServiceRelation}(id, name, category, icon)
+    `)
     .single()
 
   if (artisanError) {
@@ -144,9 +166,10 @@ export async function createArtisanOnboardingProfile({
 
   const { error: artisanServiceError } = await supabase
     .from('artisan_services')
-    .insert({
+    .upsert({
       artisan_id: artisan.id,
       service_id: primaryServiceId,
+      price_from: Number(startingPrice) || null,
     })
 
   if (artisanServiceError) {

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
+import { getArtisanByProfileId } from '../services/artisanService.js'
 import { showToast } from '../utils/toast.js'
 
 const signupTypes = [
@@ -43,7 +44,20 @@ function Signup() {
 
       if (session) {
         showToast(`${user.role} account created for ${user.name}.`)
-        navigate(user.role === 'artisan' ? '/artisan-onboarding' : '/bookings')
+
+        if (user.role === 'artisan') {
+          const { data: artisanProfile, error } = await getArtisanByProfileId(user.id)
+
+          if (error) {
+            setFormError(error.message)
+            return
+          }
+
+          navigate(artisanProfile ? '/artisan-profile' : '/artisan-onboarding')
+          return
+        }
+
+        navigate('/bookings')
       } else {
         showToast('Account created. Please check your email to confirm your signup.')
         navigate('/login')
