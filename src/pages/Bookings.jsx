@@ -29,6 +29,45 @@ const statusLabels = {
   pending: 'Pending',
 }
 
+function BookingHistorySection({
+  bookings,
+  emptyText,
+  isLoading,
+  participantLabel,
+  title,
+}) {
+  return (
+    <div className="list-panel booking-history-panel">
+      <div className="booking-history-header">
+        <div>
+          <p className="section-kicker">History</p>
+          <h2>{title}</h2>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <SkeletonPreview count={3} label={`Loading ${title}`} type="service" />
+      ) : bookings.length > 0 ? (
+        bookings.map((booking) => (
+          <article className="list-row booking-row" key={booking.id}>
+            <div>
+              <h3>{booking.service}</h3>
+              <p>{participantLabel(booking)} • {booking.date}</p>
+              <p>{booking.address}, {booking.city}, {booking.state}</p>
+              {booking.notes && <p>{booking.notes}</p>}
+            </div>
+            <BookingStatusBadge status={booking.rawStatus} />
+          </article>
+        ))
+      ) : (
+        <EmptyState compact title="No bookings yet">
+          {emptyText}
+        </EmptyState>
+      )}
+    </div>
+  )
+}
+
 function getArtisanName(artisan) {
   return artisan.profile?.full_name || artisan.business_name || 'Handiwave artisan'
 }
@@ -186,13 +225,18 @@ function Bookings() {
         return
       }
 
+      if (!data?.id) {
+        setError('Supabase did not confirm that the booking row was created.')
+        return
+      }
+
       setBookings((currentBookings) => [data, ...currentBookings])
       setForm((currentForm) => ({
         ...initialForm,
         artisanId: currentForm.artisanId,
         serviceId: currentForm.serviceId,
       }))
-      showToast('Booking request sent successfully.')
+      showToast('Booking request saved to Supabase successfully.')
     } catch (saveError) {
       setError(saveError.message)
     } finally {
@@ -331,38 +375,23 @@ function Bookings() {
           </button>
         </form>
 
-        <div className="list-panel">
-          <div className="booking-history-header">
-            <div>
-              <p className="section-kicker">History</p>
-              <h2>{isCustomer ? 'Your bookings' : 'Customer bookings'}</h2>
-            </div>
-          </div>
-
-          {isLoading ? (
-            <SkeletonPreview count={3} label="Loading bookings" type="service" />
-          ) : bookings.length > 0 ? (
-            bookings.map((booking) => (
-              <article className="list-row booking-row" key={booking.id}>
-                <div>
-                  <h3>{booking.service}</h3>
-                  <p>
-                    {isCustomer ? booking.artisan : booking.customer} • {booking.date}
-                  </p>
-                  <p>{booking.address}, {booking.city}, {booking.state}</p>
-                  {booking.notes && <p>{booking.notes}</p>}
-                </div>
-                <BookingStatusBadge status={booking.rawStatus} />
-              </article>
-            ))
-          ) : (
-            <EmptyState compact title="No bookings yet">
-              {isCustomer
-                ? 'Your confirmed service requests will appear here after you book an artisan.'
-                : 'Customer bookings assigned to your artisan profile will appear here.'}
-            </EmptyState>
-          )}
-        </div>
+        {isCustomer ? (
+          <BookingHistorySection
+            bookings={bookings}
+            emptyText="Your confirmed service requests will appear here after Supabase creates the booking row."
+            isLoading={isLoading}
+            participantLabel={(booking) => booking.artisan}
+            title="Customer booking history"
+          />
+        ) : (
+          <BookingHistorySection
+            bookings={bookings}
+            emptyText="Customer bookings assigned to your artisan profile will appear here."
+            isLoading={isLoading}
+            participantLabel={(booking) => booking.customer}
+            title="Artisan booking history"
+          />
+        )}
       </section>
     </div>
   )

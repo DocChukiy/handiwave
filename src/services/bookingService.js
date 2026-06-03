@@ -104,6 +104,12 @@ export async function getBookingsForUser(user) {
   if (user.role === 'artisan') {
     const { data: artisanProfile, error: artisanError } = await getArtisanByProfileId(user.id)
 
+    console.log('[Handiwave booking debug] artisan profile lookup:', {
+      artisanProfile,
+      error: artisanError,
+      profileId: user.id,
+    })
+
     if (artisanError) {
       return {
         data: [],
@@ -142,6 +148,20 @@ export async function getBookingsForUser(user) {
   }
 }
 
+async function getBookingById(bookingId) {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('bookings')
+    .select(bookingSelect)
+    .eq('id', bookingId)
+    .single()
+
+  return {
+    data: data ? mapBookingRow(data) : null,
+    error,
+  }
+}
+
 export async function createBooking({
   address,
   artisanId,
@@ -162,6 +182,13 @@ export async function createBooking({
   }
 
   const supabase = getSupabaseClient()
+  console.log('[Handiwave booking debug] create booking request:', {
+    artisanId,
+    customerId,
+    serviceId,
+    userRole,
+  })
+
   const { data: artisan, error: artisanError } = await supabase
     .from('artisans')
     .select('id, profile_id, primary_service_id, verification_status')
@@ -189,26 +216,81 @@ export async function createBooking({
     }
   }
 
-  const bookingPayload = {
-    artisan_id: artisanId,
-    city,
-    customer_id: customerId,
-    location_address: address,
-    notes,
-    scheduled_date: scheduledDate,
-    scheduled_time: scheduledTime,
-    service_id: serviceId || artisan.primary_service_id,
-    state,
+  const resolvedServiceId = serviceId || artisan.primary_service_id
+  const { data: service, error: serviceError } = await supabase
+    .from('services')
+    .select('id, name')
+    .eq('id', resolvedServiceId)
+    .maybeSingle()
+
+  if (serviceError) {
+    console.error('[Handiwave booking debug] service lookup error:', serviceError)
+    return {
+      data: null,
+      error: serviceError,
+    }
   }
 
-  const { data, error } = await supabase
+  if (!service) {
+    return {
+      data: null,
+      error: new Error('Selected service was not found.'),
+    }
+  }
+
+  const bookingPayload = {
+    artisan_id: artisanId,
+    city: city.trim(),
+    customer_id: customerId,
+    location_address: address.trim(),
+    notes: notes.trim() || null,
+    scheduled_date: scheduledDate,
+    scheduled_time: scheduledTime,
+    service_id: resolvedServiceId,
+    state: state.trim(),
+  }
+
+  console.log('[Handiwave booking debug] booking payload before insert:', bookingPayload)
+
+  const { data: insertedBooking, error: insertError } = await supabase
     .from('bookings')
     .insert(bookingPayload)
-    .select(bookingSelect)
+    .select('*')
     .single()
 
+  console.log('[Handiwave booking debug] inserted booking returned from Supabase:', {
+    booking: insertedBooking,
+    error: insertError,
+  })
+
+  if (insertError) {
+    console.error('[Handiwave booking debug] booking insert failed:', insertError)
+    return {
+      data: null,
+      error: insertError,
+    }
+  }
+
+  if (!insertedBooking) {
+    return {
+      data: null,
+      error: new Error('Supabase did not return an inserted booking row.'),
+    }
+  }
+
+  const { data: displayBooking, error: displayError } = await getBookingById(insertedBooking.id)
+
+  if (displayError) {
+    console.error('[Handiwave booking debug] booking display fetch failed:', displayError)
+  }
+
   return {
-    data: data ? mapBookingRow(data) : null,
-    error,
+    data: displayBooking || mapBookingRow({
+      ...insertedBooking,
+      artisan: null,
+      customer: null,
+      service,
+    }),
+    error: null,
   }
 }
