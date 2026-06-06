@@ -2,11 +2,13 @@ import {
   Camera,
   Mail,
   MapPin,
+  Menu,
   MessageCircle,
   Moon,
   Phone,
   Share2,
   Sun,
+  X,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
@@ -16,6 +18,7 @@ import { useAuth } from './auth/useAuth.js'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import AdminDashboard from './pages/AdminDashboard.jsx'
 import ArtisanDashboard from './pages/ArtisanDashboard.jsx'
+import ArtisanJobs from './pages/ArtisanJobs.jsx'
 import ArtisanOnboarding from './pages/ArtisanOnboarding.jsx'
 import ArtisanProfile from './pages/ArtisanProfile.jsx'
 import Artisans from './pages/Artisans.jsx'
@@ -133,7 +136,7 @@ function AnimatedRoutes() {
             path="/artisan-jobs"
             element={(
               <ProtectedRoute allowedRoles={['artisan']}>
-                <ArtisanDashboard />
+                <ArtisanJobs />
               </ProtectedRoute>
             )}
           />
@@ -209,6 +212,7 @@ function AppShell() {
       ? 'dark'
       : 'light'
   })
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [toast, setToast] = useState(null)
 
   const isDarkMode = theme === 'dark'
@@ -249,6 +253,7 @@ function AppShell() {
 
   async function handleLogout() {
     try {
+      setIsMenuOpen(false)
       await logout()
       showToast('You have been logged out.')
     } catch (error) {
@@ -259,67 +264,83 @@ function AppShell() {
   return (
       <div className="app">
         <header className="navbar">
-          <NavLink className="logo" to="/">
-            Handiwave
-          </NavLink>
+          <div className="navbar-inner">
+            <NavLink className="logo" to="/" onClick={() => setIsMenuOpen(false)}>
+              Handiwave
+            </NavLink>
 
-          <nav className="nav-links" aria-label="Main navigation">
-            {navLinks.map((link) => (
-              <NavLink
-                className={({ isActive }) =>
-                  isActive ? 'nav-link active' : 'nav-link'
-                }
-                end={link.path === '/'}
-                key={link.path}
-                to={link.path}
-              >
-                {link.label}
-              </NavLink>
-            ))}
-          </nav>
-
-          <div className="nav-actions">
-            {isAuthenticated && (
-              <div className="role-pill">
-                <span>{user.role}</span>
-                <strong>{user.name}</strong>
-              </div>
-            )}
-            {user?.role === 'admin' && (
-              <NavLink className="login-button" to="/admin">
-                Admin
-              </NavLink>
-            )}
-            {user?.role === 'artisan' && (
-              <NavLink className="login-button" to="/artisan-onboarding">
-                Onboarding
-              </NavLink>
-            )}
             <button
-              className="theme-toggle"
+              aria-expanded={isMenuOpen}
+              aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              className="menu-toggle"
               type="button"
-              onClick={toggleTheme}
-              aria-label={
-                isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'
-              }
+              onClick={() => setIsMenuOpen((current) => !current)}
             >
-              {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-              <span>{isDarkMode ? 'Light' : 'Dark'}</span>
+              {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
-            {isAuthenticated ? (
-              <button className="signup-button" type="button" onClick={handleLogout}>
-                Logout
+
+            <nav
+              className={isMenuOpen ? 'nav-links open' : 'nav-links'}
+              aria-label="Main navigation"
+            >
+              {navLinks.map((link) => (
+                <NavLink
+                  className={({ isActive }) =>
+                    isActive ? 'nav-link active' : 'nav-link'
+                  }
+                  end={link.path === '/'}
+                  key={link.path}
+                  onClick={() => setIsMenuOpen(false)}
+                  to={link.path}
+                >
+                  {link.label}
+                </NavLink>
+              ))}
+            </nav>
+
+            <div className="nav-actions">
+              {isAuthenticated && (
+                <div className="role-pill">
+                  <span>{user.role}</span>
+                  <strong>{user.name}</strong>
+                </div>
+              )}
+              {user?.role === 'admin' && (
+                <NavLink className="login-button" to="/admin" onClick={() => setIsMenuOpen(false)}>
+                  Admin
+                </NavLink>
+              )}
+              {user?.role === 'artisan' && (
+                <NavLink className="login-button" to="/artisan-onboarding" onClick={() => setIsMenuOpen(false)}>
+                  Onboarding
+                </NavLink>
+              )}
+              <button
+                className="theme-toggle"
+                type="button"
+                onClick={toggleTheme}
+                aria-label={
+                  isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'
+                }
+              >
+                {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+                <span>{isDarkMode ? 'Light' : 'Dark'}</span>
               </button>
-            ) : (
-              <>
-                <NavLink className="login-button" to="/login">
-                  Login
-                </NavLink>
-                <NavLink className="signup-button" to="/signup">
-                  Sign Up
-                </NavLink>
-              </>
-            )}
+              {isAuthenticated ? (
+                <button className="signup-button" type="button" onClick={handleLogout}>
+                  Logout
+                </button>
+              ) : (
+                <>
+                  <NavLink className="login-button" to="/login" onClick={() => setIsMenuOpen(false)}>
+                    Login
+                  </NavLink>
+                  <NavLink className="signup-button" to="/signup" onClick={() => setIsMenuOpen(false)}>
+                    Sign Up
+                  </NavLink>
+                </>
+              )}
+            </div>
           </div>
         </header>
 

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../auth/useAuth.js'
+import ArtisanJobsBoard from '../components/ArtisanJobsBoard.jsx'
 import Button from '../components/Button.jsx'
 import EmptyState from '../components/EmptyState.jsx'
 import SkeletonPreview from '../components/Skeletons.jsx'
@@ -10,27 +11,13 @@ import {
 } from '../services/bookingService.js'
 import { showToast } from '../utils/toast.js'
 
-const statusGroups = [
-  { key: 'pending', title: 'Pending jobs' },
-  { key: 'confirmed', title: 'Confirmed jobs' },
-  { key: 'in_progress', title: 'In progress' },
-  { key: 'completed', title: 'Completed jobs' },
-  { key: 'cancelled', title: 'Cancelled jobs' },
-]
-
-const statusActions = {
-  pending: [
-    { label: 'Accept booking', nextStatus: 'confirmed' },
-    { label: 'Cancel booking', nextStatus: 'cancelled' },
-  ],
-  confirmed: [
-    { label: 'Mark in progress', nextStatus: 'in_progress' },
-    { label: 'Cancel booking', nextStatus: 'cancelled' },
-  ],
-  in_progress: [
-    { label: 'Mark completed', nextStatus: 'completed' },
-    { label: 'Cancel booking', nextStatus: 'cancelled' },
-  ],
+function getErrorMessage(error) {
+  return [
+    error.message,
+    error.details,
+    error.hint,
+    error.code,
+  ].filter(Boolean).join(' ')
 }
 
 function formatMoney(value) {
@@ -66,21 +53,19 @@ function ArtisanDashboard() {
 
   const metrics = useMemo(() => {
     const pending = bookings.filter((booking) => booking.rawStatus === 'pending').length
+    const active = bookings.filter((booking) => (
+      booking.rawStatus === 'confirmed' || booking.rawStatus === 'in_progress'
+    )).length
     const completed = bookings.filter((booking) => booking.rawStatus === 'completed').length
 
     return {
+      active,
       completed,
       pending,
       total: bookings.length,
     }
   }, [bookings])
 
-  const groupedBookings = useMemo(() => {
-    return statusGroups.reduce((groups, group) => ({
-      ...groups,
-      [group.key]: bookings.filter((booking) => booking.rawStatus === group.key),
-    }), {})
-  }, [bookings])
   const checklist = useMemo(() => artisan ? profileChecklist(artisan) : [], [artisan])
   const acceptedJobs = bookings.filter((booking) => booking.rawStatus === 'confirmed').length
   const inProgressJobs = bookings.filter((booking) => booking.rawStatus === 'in_progress').length
@@ -130,7 +115,7 @@ function ArtisanDashboard() {
     }
   }, [user])
 
-  async function handleStatusUpdate(bookingId, nextStatus) {
+  async function handleStatusUpdate(bookingId, nextStatus, currentStatus) {
     setError('')
     setUpdatingBookingId(bookingId)
 
@@ -138,20 +123,31 @@ function ArtisanDashboard() {
       const { data, error: updateError } = await updateBookingStatusForArtisan({
         artisanProfileId: user.id,
         bookingId,
+        currentStatus,
         nextStatus,
       })
 
       if (updateError) {
-        setError(updateError.message)
+        setError(getErrorMessage(updateError))
         return
       }
 
-      setBookings((currentBookings) => currentBookings.map((booking) => (
-        booking.id === bookingId ? data : booking
-      )))
+      if (!data?.id) {
+        setError('Supabase did not confirm the booking status update.')
+        return
+      }
+
+      const { data: refreshedBookings, error: refreshError } = await getBookingsForUser(user)
+
+      if (refreshError) {
+        setError(getErrorMessage(refreshError))
+        return
+      }
+
+      setBookings(refreshedBookings)
       showToast(`Booking marked ${nextStatus.replaceAll('_', ' ')}.`)
     } catch (updateError) {
-      setError(updateError.message)
+      setError(getErrorMessage(updateError))
     } finally {
       setUpdatingBookingId('')
     }
@@ -232,6 +228,7 @@ function ArtisanDashboard() {
         <section className="dashboard-metric-grid">
           <article><strong>{metrics.total}</strong><span>Total bookings</span></article>
           <article><strong>{metrics.pending}</strong><span>Pending jobs</span></article>
+          <article><strong>{metrics.active}</strong><span>Active jobs</span></article>
           <article><strong>{acceptedJobs}</strong><span>Accepted jobs</span></article>
           <article><strong>{inProgressJobs}</strong><span>Jobs in progress</span></article>
           <article><strong>{metrics.completed}</strong><span>Completed jobs</span></article>
@@ -290,43 +287,11 @@ function ArtisanDashboard() {
             Customer booking requests assigned to your profile will appear here.
           </EmptyState>
         ) : (
-          <div className="job-status-grid">
-            {statusGroups.map((group) => (
-              <article className="job-status-column" key={group.key}>
-                <h3>{group.title}</h3>
-                {groupedBookings[group.key].length === 0 ? (
-                  <p className="muted-copy">No {group.title.toLowerCase()}.</p>
-                ) : (
-                  groupedBookings[group.key].map((booking) => (
-                    <div className="job-card" key={booking.id}>
-                      <div>
-                        <strong>{booking.service}</strong>
-                        <span>{booking.customer}</span>
-                      </div>
-                      <p>{booking.address}, {booking.city}, {booking.state}</p>
-                      <p>{booking.date}</p>
-                      {booking.notes && <p>{booking.notes}</p>}
-                      <small>Payment: {booking.paymentStatus.replaceAll('_', ' ')}</small>
-                      {statusActions[group.key] && (
-                        <div className="job-actions">
-                          {statusActions[group.key].map((action) => (
-                            <button
-                              disabled={updatingBookingId === booking.id}
-                              key={action.nextStatus}
-                              type="button"
-                              onClick={() => handleStatusUpdate(booking.id, action.nextStatus)}
-                            >
-                              {action.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-              </article>
-            ))}
-          </div>
+          <ArtisanJobsBoard
+            bookings={bookings}
+            onStatusUpdate={handleStatusUpdate}
+            updatingBookingId={updatingBookingId}
+          />
         )}
       </section>
     </div>

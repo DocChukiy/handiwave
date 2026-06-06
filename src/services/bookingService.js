@@ -21,6 +21,12 @@ const bookingSelect = `
   customer:profiles!${bookingCustomerRelation}(id, full_name, email)
 `
 
+const allowedArtisanTransitions = {
+  confirmed: ['in_progress'],
+  in_progress: ['completed'],
+  pending: ['confirmed', 'cancelled'],
+}
+
 function formatDateTime(date, time) {
   const dateLabel = date || 'Date pending'
   const timeLabel = time ? time.slice(0, 5) : 'Time pending'
@@ -49,6 +55,8 @@ export function mapBookingRow(booking) {
     notes: booking.notes || '',
     paymentStatus: booking.payment_status || 'unpaid',
     rawStatus: status,
+    scheduledDate: booking.scheduled_date || 'Date pending',
+    scheduledTime: booking.scheduled_time ? booking.scheduled_time.slice(0, 5) : 'Time pending',
     service: booking.service?.name || 'Handiwave service',
     serviceId: booking.service_id,
     state: booking.state,
@@ -59,8 +67,16 @@ export function mapBookingRow(booking) {
 export async function updateBookingStatusForArtisan({
   artisanProfileId,
   bookingId,
+  currentStatus,
   nextStatus,
 }) {
+  if (!allowedArtisanTransitions[currentStatus]?.includes(nextStatus)) {
+    return {
+      data: null,
+      error: new Error(`Cannot change booking from ${currentStatus} to ${nextStatus}.`),
+    }
+  }
+
   const { data: artisanProfile, error: artisanError } =
     await getArtisanByProfileId(artisanProfileId)
 
@@ -84,11 +100,12 @@ export async function updateBookingStatusForArtisan({
     .update({ status: nextStatus })
     .eq('id', bookingId)
     .eq('artisan_id', artisanProfile.id)
-    .select(bookingSelect)
+    .eq('status', currentStatus)
+    .select('id, status')
     .single()
 
   return {
-    data: data ? mapBookingRow(data) : null,
+    data,
     error,
   }
 }

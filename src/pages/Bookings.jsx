@@ -8,6 +8,7 @@ import {
   getBookingOptions,
   getBookingsForUser,
 } from '../services/bookingService.js'
+import { getSupabaseClient } from '../lib/supabaseClient.js'
 import { showToast } from '../utils/toast.js'
 
 const initialForm = {
@@ -167,6 +168,40 @@ function Bookings() {
       isMounted = false
     }
   }, [user])
+
+  useEffect(() => {
+    if (!isCustomer || !user?.id) {
+      return undefined
+    }
+
+    const supabase = getSupabaseClient()
+    const channel = supabase
+      .channel(`customer-bookings-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          filter: `customer_id=eq.${user.id}`,
+          schema: 'public',
+          table: 'bookings',
+        },
+        async () => {
+          const { data, error: refreshError } = await getBookingsForUser(user)
+
+          if (refreshError) {
+            setError(refreshError.message)
+            return
+          }
+
+          setBookings(data)
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [isCustomer, user])
 
   function updateForm(field, value) {
     setForm((currentForm) => ({
