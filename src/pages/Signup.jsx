@@ -102,11 +102,11 @@ function Signup() {
             return
           }
 
-          navigate(artisanProfile ? '/artisan-profile' : '/artisan-onboarding')
+          navigate(artisanProfile ? '/artisan-dashboard' : '/artisan-onboarding')
           return
         }
 
-        navigate('/services')
+        navigate('/')
       } else {
         setFormError('Signup created an auth user, but no active session was returned. Check Supabase email confirmation settings or confirm the email, then log in.')
         showToast('Account created. Please confirm your email if required, then log in.')

@@ -10,11 +10,12 @@ import {
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
-import { BrowserRouter, NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import AuthProvider from './auth/AuthProvider.jsx'
 import { useAuth } from './auth/useAuth.js'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import AdminDashboard from './pages/AdminDashboard.jsx'
+import ArtisanDashboard from './pages/ArtisanDashboard.jsx'
 import ArtisanOnboarding from './pages/ArtisanOnboarding.jsx'
 import ArtisanProfile from './pages/ArtisanProfile.jsx'
 import Artisans from './pages/Artisans.jsx'
@@ -22,6 +23,7 @@ import Bookings from './pages/Bookings.jsx'
 import Home from './pages/Home.jsx'
 import Login from './pages/Login.jsx'
 import Messages from './pages/Messages.jsx'
+import Profile from './pages/Profile.jsx'
 import Reels from './pages/Reels.jsx'
 import Services from './pages/Services.jsx'
 import Signup from './pages/Signup.jsx'
@@ -29,13 +31,31 @@ import Wallet from './pages/Wallet.jsx'
 import { showToast } from './utils/toast.js'
 import './App.css'
 
-const navLinks = [
+const publicNavLinks = [
   { path: '/', label: 'Home' },
   { path: '/services', label: 'Services' },
   { path: '/artisans', label: 'Artisans' },
   { path: '/reels', label: 'Reels' },
+]
+
+const customerNavLinks = [
+  { path: '/', label: 'Home' },
+  { path: '/services', label: 'Services' },
+  { path: '/artisans', label: 'Artisans' },
+  { path: '/bookings', label: 'Bookings' },
+  { path: '/reels', label: 'Reels' },
   { path: '/messages', label: 'Messages' },
+  { path: '/profile', label: 'Profile' },
+]
+
+const artisanNavLinks = [
+  { path: '/artisan-dashboard', label: 'Dashboard' },
+  { path: '/artisan-jobs', label: 'Jobs' },
+  { path: '/messages', label: 'Messages' },
+  { path: '/reels', label: 'Reels' },
   { path: '/wallet', label: 'Wallet' },
+  { path: '/artisan-reviews', label: 'Reviews' },
+  { path: '/profile', label: 'My Profile' },
 ]
 
 const quickLinks = [
@@ -53,6 +73,29 @@ const serviceLinks = [
   'Generator Repair',
 ]
 
+function RoleHome() {
+  const { isLoading, user } = useAuth()
+
+  if (isLoading) {
+    return (
+      <section className="auth-loading-state">
+        <span></span>
+        <p>Loading Handiwave...</p>
+      </section>
+    )
+  }
+
+  if (user?.role === 'artisan') {
+    return <Navigate replace to="/artisan-dashboard" />
+  }
+
+  if (user?.role === 'admin') {
+    return <Navigate replace to="/admin" />
+  }
+
+  return <Home />
+}
+
 function AnimatedRoutes() {
   const location = useLocation()
 
@@ -67,7 +110,7 @@ function AnimatedRoutes() {
         transition={{ duration: 0.24, ease: 'easeOut' }}
       >
         <Routes location={location}>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<RoleHome />} />
           <Route path="/services" element={<Services />} />
           <Route path="/artisans" element={<Artisans />} />
           <Route
@@ -78,7 +121,32 @@ function AnimatedRoutes() {
               </ProtectedRoute>
             )}
           />
+          <Route
+            path="/artisan-dashboard"
+            element={(
+              <ProtectedRoute allowedRoles={['artisan']}>
+                <ArtisanDashboard />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/artisan-jobs"
+            element={(
+              <ProtectedRoute allowedRoles={['artisan']}>
+                <ArtisanDashboard />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/artisan-reviews"
+            element={(
+              <ProtectedRoute allowedRoles={['artisan']}>
+                <ArtisanDashboard />
+              </ProtectedRoute>
+            )}
+          />
           <Route path="/artisan-profile" element={<ArtisanProfile />} />
+          <Route path="/artisan-profile/:artisanId" element={<ArtisanProfile />} />
           <Route
             path="/bookings"
             element={(
@@ -88,6 +156,14 @@ function AnimatedRoutes() {
             )}
           />
           <Route path="/reels" element={<Reels />} />
+          <Route
+            path="/profile"
+            element={(
+              <ProtectedRoute allowedRoles={['customer', 'artisan', 'admin']}>
+                <Profile />
+              </ProtectedRoute>
+            )}
+          />
           <Route
             path="/wallet"
             element={(
@@ -136,6 +212,11 @@ function AppShell() {
   const [toast, setToast] = useState(null)
 
   const isDarkMode = theme === 'dark'
+  const navLinks = user?.role === 'artisan'
+    ? artisanNavLinks
+    : user?.role === 'customer'
+      ? customerNavLinks
+      : publicNavLinks
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -328,6 +409,23 @@ function AppShell() {
             </motion.div>
           )}
         </AnimatePresence>
+        {isAuthenticated && (
+          <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
+            <NavLink to={user?.role === 'artisan' ? '/artisan-dashboard' : '/'}>
+              {user?.role === 'artisan' ? 'Dashboard' : 'Home'}
+            </NavLink>
+            <NavLink to={user?.role === 'artisan' ? '/artisan-jobs' : '/services'}>
+              {user?.role === 'artisan' ? 'Jobs' : 'Services'}
+            </NavLink>
+            <NavLink to={user?.role === 'artisan' ? '/messages' : '/bookings'}>
+              {user?.role === 'artisan' ? 'Messages' : 'Bookings'}
+            </NavLink>
+            <NavLink to="/reels">Reels</NavLink>
+            <NavLink to="/profile">
+              Profile
+            </NavLink>
+          </nav>
+        )}
       </div>
   )
 }

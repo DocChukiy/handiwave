@@ -267,113 +267,110 @@ function Bookings() {
       {error && <p className="auth-error page-error">{error}</p>}
 
       <section className="booking-layout">
-        <form className="booking-form" onSubmit={handleSubmit}>
-          <h2>Service details</h2>
-          {!isCustomer && (
-            <p className="auth-hint">
-              Booking creation is only available to customer accounts.
-            </p>
-          )}
-          <label>
-            Preferred artisan
-            <select
-              disabled={!isCustomer || isLoading || isSaving}
-              value={form.artisanId}
-              onChange={(event) => handleArtisanChange(event.target.value)}
-            >
-              <option value="">Select an artisan</option>
-              {options.artisans.map((artisan) => (
-                <option key={artisan.id} value={artisan.id}>
-                  {getArtisanName(artisan)} • {artisan.city}, {artisan.state}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Service type
-            <select
-              disabled={!isCustomer || isLoading || isSaving}
-              value={form.serviceId}
-              onChange={(event) => updateForm('serviceId', event.target.value)}
-            >
-              <option value="">Select a service</option>
-              {options.services.map((service) => (
-                <option key={service.id} value={service.id}>
-                  {service.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          {selectedArtisan && selectedService && (
-            <p className="price-note">
-              {getArtisanName(selectedArtisan)} usually handles {selectedService.name}
-              {selectedArtisan.starting_price
-                ? ` from NGN ${Number(selectedArtisan.starting_price).toLocaleString()}.`
-                : '.'}
-            </p>
-          )}
-          <label>
-            Address
-            <input
-              disabled={!isCustomer || isSaving}
-              placeholder="House 12, Admiralty Way"
-              value={form.address}
-              onChange={(event) => updateForm('address', event.target.value)}
-            />
-          </label>
-          <div className="form-split">
+        {isCustomer && (
+          <form className="booking-form" onSubmit={handleSubmit}>
+            <h2>Service details</h2>
             <label>
-              City
-              <input
-                disabled={!isCustomer || isSaving}
-                placeholder="Lekki"
-                value={form.city}
-                onChange={(event) => updateForm('city', event.target.value)}
-              />
+              Preferred artisan
+              <select
+                disabled={isLoading || isSaving}
+                value={form.artisanId}
+                onChange={(event) => handleArtisanChange(event.target.value)}
+              >
+                <option value="">Select an artisan</option>
+                {options.artisans.map((artisan) => (
+                  <option key={artisan.id} value={artisan.id}>
+                    {getArtisanName(artisan)} • {artisan.city}, {artisan.state}
+                  </option>
+                ))}
+              </select>
             </label>
             <label>
-              State
-              <input
-                disabled={!isCustomer || isSaving}
-                placeholder="Lagos"
-                value={form.state}
-                onChange={(event) => updateForm('state', event.target.value)}
-              />
+              Service type
+              <select
+                disabled={isLoading || isSaving}
+                value={form.serviceId}
+                onChange={(event) => updateForm('serviceId', event.target.value)}
+              >
+                <option value="">Select a service</option>
+                {options.services.map((service) => (
+                  <option key={service.id} value={service.id}>
+                    {service.name}
+                  </option>
+                ))}
+              </select>
             </label>
-          </div>
-          <div className="form-split">
+            {selectedArtisan && selectedService && (
+              <p className="price-note">
+                {getArtisanName(selectedArtisan)} usually handles {selectedService.name}
+                {selectedArtisan.starting_price
+                  ? ` from NGN ${Number(selectedArtisan.starting_price).toLocaleString()}.`
+                  : '.'}
+              </p>
+            )}
             <label>
-              Date
+              Address
               <input
-                disabled={!isCustomer || isSaving}
-                type="date"
-                value={form.scheduledDate}
-                onChange={(event) => updateForm('scheduledDate', event.target.value)}
+                disabled={isSaving}
+                placeholder="House 12, Admiralty Way"
+                value={form.address}
+                onChange={(event) => updateForm('address', event.target.value)}
               />
             </label>
+            <div className="form-split">
+              <label>
+                City
+                <input
+                  disabled={isSaving}
+                  placeholder="Lekki"
+                  value={form.city}
+                  onChange={(event) => updateForm('city', event.target.value)}
+                />
+              </label>
+              <label>
+                State
+                <input
+                  disabled={isSaving}
+                  placeholder="Lagos"
+                  value={form.state}
+                  onChange={(event) => updateForm('state', event.target.value)}
+                />
+              </label>
+            </div>
+            <div className="form-split">
+              <label>
+                Date
+                <input
+                  disabled={isSaving}
+                  type="date"
+                  value={form.scheduledDate}
+                  onChange={(event) => updateForm('scheduledDate', event.target.value)}
+                />
+              </label>
+              <label>
+                Time
+                <input
+                  disabled={isSaving}
+                  type="time"
+                  value={form.scheduledTime}
+                  onChange={(event) => updateForm('scheduledTime', event.target.value)}
+                />
+              </label>
+            </div>
             <label>
-              Time
-              <input
-                disabled={!isCustomer || isSaving}
-                type="time"
-                value={form.scheduledTime}
-                onChange={(event) => updateForm('scheduledTime', event.target.value)}
+              Notes
+              <textarea
+                disabled={isSaving}
+                placeholder="Describe the issue or service needed"
+                value={form.notes}
+                onChange={(event) => updateForm('notes', event.target.value)}
               />
             </label>
-          </div>
-          <label>
-            Notes
-            <textarea
-              disabled={!isCustomer || isSaving}
-              placeholder="Describe the issue or service needed"
-              value={form.notes}
-              onChange={(event) => updateForm('notes', event.target.value)}
-            />
-          </label>
-          <button disabled={!isCustomer || isLoading || isSaving} type="submit">
-            {isSaving ? 'Sending request...' : 'Confirm Booking'}
-          </button>
-        </form>
+            <button disabled={isLoading || isSaving} type="submit">
+              {isSaving ? 'Sending request...' : 'Confirm Booking'}
+            </button>
+          </form>
+        )}
 
         {isCustomer ? (
           <BookingHistorySection

@@ -5,6 +5,7 @@ import {
   ReelCard,
   ServiceCategoryCard,
 } from '../components/cards.jsx'
+import { useAuth } from '../auth/useAuth.js'
 import { featuredArtisans } from '../data/artisans.js'
 import { howItWorksSteps, trustedMarkets } from '../data/home.js'
 import { reelsPreview } from '../data/reels.js'
@@ -12,6 +13,9 @@ import { serviceCategories } from '../data/services.js'
 import { cardVariants } from '../utils/animations.js'
 
 function Home() {
+  const { user } = useAuth()
+  const isCustomer = user?.role === 'customer'
+
   return (
     <>
       <section className="hero-section">
@@ -112,6 +116,29 @@ function Home() {
           ))}
         </div>
       </motion.section>
+
+      {isCustomer && (
+        <section className="customer-home-snapshot">
+          <article>
+            <p className="section-kicker">Active bookings</p>
+            <h2>Track your open service requests</h2>
+            <p>View pending, confirmed, and completed bookings from your customer dashboard.</p>
+            <Link className="primary-cta" to="/bookings">View Bookings</Link>
+          </article>
+          <article>
+            <p className="section-kicker">Saved artisans</p>
+            <h2>Your trusted shortlist</h2>
+            <p>Keep reliable professionals close for repeat bookings.</p>
+            <Link className="secondary-cta" to="/artisans">Find Artisans</Link>
+          </article>
+          <article>
+            <p className="section-kicker">Recent activity</p>
+            <h2>Wallet, chats, and updates</h2>
+            <p>Check messages and wallet activity before your next service visit.</p>
+            <Link className="secondary-cta" to="/profile">Open Profile</Link>
+          </article>
+        </section>
+      )}
 
       <section className="categories-section">
         <div className="section-heading">

@@ -109,7 +109,7 @@ export function ArtisanCard({ artisan, featured = false }) {
         <span>Escrow safe</span>
       </div>
       <div className="person-actions">
-        <Button className="service-book-link" to="/artisan-profile">
+        <Button className="service-book-link" to={`/artisan-profile/${artisan.id}`}>
           View Profile
         </Button>
         <Button className="secondary-mini-link" to="/bookings">

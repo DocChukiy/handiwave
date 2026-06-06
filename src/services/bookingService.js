@@ -47,11 +47,49 @@ export function mapBookingRow(booking) {
     estimatedPrice: booking.estimated_price,
     id: booking.id,
     notes: booking.notes || '',
+    paymentStatus: booking.payment_status || 'unpaid',
     rawStatus: status,
     service: booking.service?.name || 'Handiwave service',
     serviceId: booking.service_id,
     state: booking.state,
     status: status.replaceAll('_', ' '),
+  }
+}
+
+export async function updateBookingStatusForArtisan({
+  artisanProfileId,
+  bookingId,
+  nextStatus,
+}) {
+  const { data: artisanProfile, error: artisanError } =
+    await getArtisanByProfileId(artisanProfileId)
+
+  if (artisanError) {
+    return {
+      data: null,
+      error: artisanError,
+    }
+  }
+
+  if (!artisanProfile) {
+    return {
+      data: null,
+      error: new Error('Create your artisan profile before managing bookings.'),
+    }
+  }
+
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('bookings')
+    .update({ status: nextStatus })
+    .eq('id', bookingId)
+    .eq('artisan_id', artisanProfile.id)
+    .select(bookingSelect)
+    .single()
+
+  return {
+    data: data ? mapBookingRow(data) : null,
+    error,
   }
 }
 
@@ -103,12 +141,6 @@ export async function getBookingsForUser(user) {
 
   if (user.role === 'artisan') {
     const { data: artisanProfile, error: artisanError } = await getArtisanByProfileId(user.id)
-
-    console.log('[Handiwave booking debug] artisan profile lookup:', {
-      artisanProfile,
-      error: artisanError,
-      profileId: user.id,
-    })
 
     if (artisanError) {
       return {
@@ -182,13 +214,6 @@ export async function createBooking({
   }
 
   const supabase = getSupabaseClient()
-  console.log('[Handiwave booking debug] create booking request:', {
-    artisanId,
-    customerId,
-    serviceId,
-    userRole,
-  })
-
   const { data: artisan, error: artisanError } = await supabase
     .from('artisans')
     .select('id, profile_id, primary_service_id, verification_status')

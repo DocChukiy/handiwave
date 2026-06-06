@@ -90,11 +90,11 @@ function Login() {
           return
         }
 
-        navigate(artisanProfile ? '/artisan-profile' : '/artisan-onboarding')
+        navigate(artisanProfile ? '/artisan-dashboard' : '/artisan-onboarding')
         return
       }
 
-      navigate(location.state?.from?.pathname || (user.role === 'admin' ? '/admin' : '/services'))
+      navigate(location.state?.from?.pathname || (user.role === 'admin' ? '/admin' : '/'))
     } catch (error) {
       console.error('[Handiwave login debug] Supabase login error:', error)
       setFormError(error.message)
