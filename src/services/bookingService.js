@@ -24,7 +24,8 @@ const bookingSelect = `
 const allowedArtisanTransitions = {
   confirmed: ['in_progress'],
   in_progress: ['completed'],
-  pending: ['confirmed', 'cancelled'],
+  pending: ['confirmed', 'cancelled', 'reschedule_requested'],
+  reschedule_requested: ['cancelled'],
 }
 
 function formatDateTime(date, time) {
@@ -50,10 +51,17 @@ export function mapBookingRow(booking) {
     customer: customerName,
     customerId: booking.customer_id,
     date: formatDateTime(booking.scheduled_date, booking.scheduled_time),
+    completedAt: booking.completed_at || '',
+    createdAt: booking.created_at || '',
     estimatedPrice: booking.estimated_price,
     id: booking.id,
     notes: booking.notes || '',
     paymentStatus: booking.payment_status || 'unpaid',
+    proposedBy: booking.proposed_by || '',
+    proposedDate: booking.proposed_date || '',
+    proposedTime: booking.proposed_time ? booking.proposed_time.slice(0, 5) : '',
+    rescheduleRequestedAt: booking.reschedule_requested_at || '',
+    rescheduleNote: booking.reschedule_note || '',
     rawStatus: status,
     scheduledDate: booking.scheduled_date || 'Date pending',
     scheduledTime: booking.scheduled_time ? booking.scheduled_time.slice(0, 5) : 'Time pending',
@@ -61,6 +69,53 @@ export function mapBookingRow(booking) {
     serviceId: booking.service_id,
     state: booking.state,
     status: status.replaceAll('_', ' '),
+  }
+}
+
+export async function proposeBookingTimeForArtisan({
+  artisanProfileId,
+  bookingId,
+  note,
+  proposedDate,
+  proposedTime,
+}) {
+  const { data: artisanProfile, error: artisanError } =
+    await getArtisanByProfileId(artisanProfileId)
+
+  if (artisanError) {
+    return {
+      data: null,
+      error: artisanError,
+    }
+  }
+
+  if (!artisanProfile) {
+    return {
+      data: null,
+      error: new Error('Create your artisan profile before suggesting a new time.'),
+    }
+  }
+
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('bookings')
+    .update({
+      proposed_by: 'artisan',
+      proposed_date: proposedDate,
+      proposed_time: proposedTime,
+      reschedule_requested_at: new Date().toISOString(),
+      reschedule_note: note?.trim() || null,
+      status: 'reschedule_requested',
+    })
+    .eq('id', bookingId)
+    .eq('artisan_id', artisanProfile.id)
+    .eq('status', 'pending')
+    .select('id, status, proposed_date, proposed_time, reschedule_note, proposed_by, reschedule_requested_at')
+    .single()
+
+  return {
+    data,
+    error,
   }
 }
 
@@ -95,9 +150,17 @@ export async function updateBookingStatusForArtisan({
   }
 
   const supabase = getSupabaseClient()
+  const updatePayload = {
+    status: nextStatus,
+  }
+
+  if (nextStatus === 'completed') {
+    updatePayload.completed_at = new Date().toISOString()
+  }
+
   const { data, error } = await supabase
     .from('bookings')
-    .update({ status: nextStatus })
+    .update(updatePayload)
     .eq('id', bookingId)
     .eq('artisan_id', artisanProfile.id)
     .eq('status', currentStatus)

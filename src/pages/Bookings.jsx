@@ -28,6 +28,7 @@ const statusLabels = {
   confirmed: 'Confirmed',
   in_progress: 'In progress',
   pending: 'Pending',
+  reschedule_requested: 'Reschedule requested',
 }
 
 function BookingHistorySection({
@@ -56,6 +57,15 @@ function BookingHistorySection({
               <p>{participantLabel(booking)} • {booking.date}</p>
               <p>{booking.address}, {booking.city}, {booking.state}</p>
               {booking.notes && <p>{booking.notes}</p>}
+              {booking.rawStatus === 'reschedule_requested' && (
+                <div className="booking-reschedule-note">
+                  <strong>Artisan proposed a new time</strong>
+                  <p>
+                    {booking.proposedDate || 'Date pending'} at {booking.proposedTime || 'Time pending'}
+                  </p>
+                  {booking.rescheduleNote && <p>{booking.rescheduleNote}</p>}
+                </div>
+              )}
             </div>
             <BookingStatusBadge status={booking.rawStatus} />
           </article>
@@ -96,7 +106,7 @@ function Bookings() {
 
   const summary = useMemo(() => {
     const upcomingCount = bookings.filter((booking) => (
-      ['pending', 'confirmed', 'in_progress'].includes(booking.rawStatus)
+      ['pending', 'reschedule_requested', 'confirmed', 'in_progress'].includes(booking.rawStatus)
     )).length
     const completedCount = bookings.filter((booking) => booking.rawStatus === 'completed').length
     const cancelledCount = bookings.filter((booking) => booking.rawStatus === 'cancelled').length

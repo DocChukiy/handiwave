@@ -23,10 +23,10 @@
 .navbar-inner {
   align-items: center;
   display: flex;
-  gap: clamp(10px, 1.35vw, 20px);
+  gap: clamp(8px, 1vw, 16px);
   justify-content: space-between;
   min-width: 0;
-  padding: 14px 16px;
+  padding: 13px 14px;
   width: 100%;
 }
 
@@ -38,7 +38,7 @@
   font-size: 1.42rem;
   font-weight: 900;
   letter-spacing: 0;
-  min-width: 0;
+  min-width: max-content;
   text-decoration: none;
   white-space: nowrap;
 }
@@ -48,6 +48,7 @@
   border-radius: 12px;
   box-shadow: 0 10px 24px rgba(22, 163, 74, 0.28);
   content: '';
+  flex: 0 0 34px;
   height: 34px;
   margin-right: 10px;
   width: 34px;
@@ -60,7 +61,7 @@
   gap: 6px;
   justify-content: center;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .nav-link,
@@ -82,9 +83,102 @@
 }
 
 .nav-link {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex: 0 0 auto;
+}
+
+.mobile-only-nav-link {
+  display: none;
+}
+
+.more-nav,
+.profile-nav {
+  position: relative;
+}
+
+.more-nav > summary,
+.profile-nav > summary {
+  align-items: center;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 6px;
+  list-style: none;
+}
+
+.more-nav > summary::-webkit-details-marker,
+.profile-nav > summary::-webkit-details-marker {
+  display: none;
+}
+
+.more-nav[open] > summary,
+.more-nav.active > summary,
+.profile-nav[open] > summary {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.more-menu,
+.profile-menu {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(14, 165, 89, 0.12);
+  border-radius: 18px;
+  box-shadow: 0 20px 46px rgba(15, 23, 42, 0.14);
+  display: grid;
+  gap: 6px;
+  min-width: 180px;
+  padding: 8px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  z-index: 30;
+}
+
+.profile-menu {
+  min-width: 220px;
+}
+
+.profile-menu-header {
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+  display: grid;
+  gap: 2px;
+  margin-bottom: 4px;
+  padding: 8px 10px 12px;
+}
+
+.profile-menu-header span {
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.profile-menu-header strong {
+  color: #0f172a;
+  font-size: 0.95rem;
+  line-height: 1.25;
+}
+
+.more-menu-link,
+.profile-menu-link {
+  border-radius: 13px;
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 850;
+  padding: 11px 12px;
+  text-decoration: none;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+  white-space: nowrap;
+}
+
+.more-menu-link:hover,
+.more-menu-link.active,
+.profile-menu-link:hover,
+.profile-menu-link.active {
+  background: #ecfdf5;
+  color: #047857;
+  transform: translateX(2px);
 }
 
 .nav-link:hover,
@@ -103,7 +197,7 @@
   align-items: center;
   display: flex;
   flex: 0 0 auto;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -146,10 +240,12 @@
   font: inherit;
   font-size: 0.92rem;
   font-weight: 900;
-  gap: 8px;
+  gap: 0;
+  height: 42px;
   line-height: 1;
   min-height: 42px;
-  padding: 11px 14px;
+  justify-content: center;
+  padding: 0;
   transition:
     background-color 180ms ease,
     border-color 180ms ease,
@@ -157,6 +253,7 @@
     color 180ms ease,
     transform 180ms ease;
   white-space: nowrap;
+  width: 42px;
 }
 
 .theme-toggle:hover {
@@ -2048,12 +2145,21 @@
 :root[data-theme='dark'] .nav-link,
 :root[data-theme='dark'] .login-button,
 :root[data-theme='dark'] .theme-toggle,
-:root[data-theme='dark'] .menu-toggle {
+:root[data-theme='dark'] .menu-toggle,
+:root[data-theme='dark'] .more-menu-link,
+:root[data-theme='dark'] .profile-menu-link {
   color: #cbd5e1;
 }
 
 :root[data-theme='dark'] .nav-link:hover,
-:root[data-theme='dark'] .nav-link.active {
+:root[data-theme='dark'] .nav-link.active,
+:root[data-theme='dark'] .more-nav[open] > summary,
+:root[data-theme='dark'] .more-nav.active > summary,
+:root[data-theme='dark'] .profile-nav[open] > summary,
+:root[data-theme='dark'] .more-menu-link:hover,
+:root[data-theme='dark'] .more-menu-link.active,
+:root[data-theme='dark'] .profile-menu-link:hover,
+:root[data-theme='dark'] .profile-menu-link.active {
   background: rgba(16, 185, 129, 0.14);
   color: #86efac;
 }
@@ -2061,9 +2167,23 @@
 :root[data-theme='dark'] .login-button,
 :root[data-theme='dark'] .theme-toggle,
 :root[data-theme='dark'] .menu-toggle,
+:root[data-theme='dark'] .more-menu,
+:root[data-theme='dark'] .profile-menu,
 :root[data-theme='dark'] .secondary-cta {
   background: rgba(15, 23, 42, 0.88);
   border-color: rgba(148, 163, 184, 0.18);
+}
+
+:root[data-theme='dark'] .profile-menu-header {
+  border-color: rgba(148, 163, 184, 0.16);
+}
+
+:root[data-theme='dark'] .profile-menu-header strong {
+  color: #f8fafc;
+}
+
+:root[data-theme='dark'] .profile-menu-header span {
+  color: #94a3b8;
 }
 
 :root[data-theme='dark'] .login-button:hover,
@@ -2321,7 +2441,7 @@
   color: #94a3b8;
 }
 
-@media (max-width: 1120px) {
+@media (max-width: 1180px) {
   .navbar-inner {
     flex-wrap: wrap;
   }
@@ -2350,6 +2470,15 @@
     grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
   }
 
+  .more-nav {
+    display: none;
+  }
+
+  .mobile-only-nav-link {
+    display: inline-flex;
+    justify-content: center;
+  }
+
   .nav-link {
     background: #f8fafc;
     max-width: none;
@@ -2363,6 +2492,11 @@
   .theme-toggle {
     font-size: 0.88rem;
     padding-inline: 12px;
+  }
+
+  .theme-toggle {
+    padding: 0;
+    width: 42px;
   }
 
   .hero-section {
@@ -3022,7 +3156,7 @@
 .summary-grid {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .mini-metrics {
@@ -3181,27 +3315,58 @@
   white-space: nowrap;
 }
 
-.booking-row .status-pending {
+.booking-row .status-pending,
+.job-card .status-pending {
   background: #fffbeb;
   color: #b45309;
 }
 
-.booking-row .status-confirmed {
+.booking-row .status-reschedule_requested,
+.job-card .status-reschedule_requested {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.booking-reschedule-note {
+  background: #fff7ed;
+  border: 1px solid rgba(249, 115, 22, 0.18);
+  border-radius: 16px;
+  color: #9a3412;
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+  padding: 12px;
+}
+
+.booking-reschedule-note strong {
+  color: #c2410c;
+}
+
+.booking-reschedule-note p {
+  color: inherit;
+  margin: 0;
+}
+
+.booking-row .status-confirmed,
+.job-card .status-confirmed {
   background: #ecfdf5;
   color: #047857;
 }
 
-.booking-row .status-in_progress {
+.booking-row .status-in_progress,
+.job-card .status-in_progress {
   background: #eff6ff;
   color: #1d4ed8;
 }
 
-.booking-row .status-completed {
+.booking-row .status-completed,
+.job-card .status-completed {
   background: #f0fdf4;
   color: #15803d;
 }
 
-.booking-row .status-cancelled {
+.booking-row .status-cancelled,
+.job-card .status-cancelled {
   background: #fef2f2;
   color: #b91c1c;
 }
@@ -3407,6 +3572,26 @@
   gap: 9px;
 }
 
+.dashboard-activity-list {
+  display: grid;
+  gap: 10px;
+}
+
+.dashboard-activity-list span {
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 16px;
+  color: #64748b;
+  display: grid;
+  font-weight: 800;
+  gap: 2px;
+  padding: 12px;
+}
+
+.dashboard-activity-list strong {
+  color: #0f172a;
+}
+
 .profile-checklist span {
   background: #f8fafc;
   border: 1px solid rgba(226, 232, 240, 0.9);
@@ -3428,12 +3613,96 @@
   justify-content: space-between;
 }
 
-.job-status-grid {
+.job-board-layout,
+.job-group-section {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(5, minmax(220px, 1fr));
-  overflow-x: auto;
-  padding-bottom: 8px;
+}
+
+.job-group-section {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.95)),
+    linear-gradient(135deg, rgba(22, 163, 74, 0.06), transparent);
+  border: 1px solid rgba(220, 239, 228, 0.9);
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.06);
+  padding: 18px;
+}
+
+.job-group-header {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+}
+
+.job-group-header h2 {
+  color: #0f172a;
+  margin: 4px 0 0;
+}
+
+.job-group-header button {
+  background: #ecfdf5;
+  border: 1px solid rgba(22, 163, 74, 0.18);
+  border-radius: 999px;
+  color: #047857;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 900;
+  min-height: 38px;
+  padding: 0 13px;
+  white-space: nowrap;
+}
+
+.job-card-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.job-filter-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.job-filter-tabs button {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 999px;
+  color: #334155;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 900;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 14px;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.job-filter-tabs button:hover,
+.job-filter-tabs button.active {
+  background: #ecfdf5;
+  border-color: rgba(22, 163, 74, 0.2);
+  color: #047857;
+  transform: translateY(-1px);
+}
+
+.job-filter-tabs span {
+  background: rgba(22, 163, 74, 0.12);
+  border-radius: 999px;
+  color: inherit;
+  font-size: 0.76rem;
+  padding: 3px 7px;
 }
 
 .job-status-column {
@@ -3455,6 +3724,49 @@
   display: grid;
   gap: 10px;
   padding: 14px;
+}
+
+.job-card.has-conflict {
+  border-color: rgba(245, 158, 11, 0.42);
+  box-shadow: 0 16px 34px rgba(245, 158, 11, 0.12);
+}
+
+.job-card-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.job-card p strong {
+  color: #334155;
+}
+
+.job-card-details {
+  display: grid;
+  gap: 6px;
+}
+
+.job-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.job-card-meta small {
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 999px;
+  padding: 6px 9px;
+}
+
+.schedule-conflict-warning {
+  background: #fffbeb;
+  border: 1px solid rgba(245, 158, 11, 0.26);
+  border-radius: 14px;
+  color: #92400e;
+  font-weight: 900;
+  padding: 10px;
 }
 
 .job-card strong,
@@ -3480,6 +3792,89 @@
   font-weight: 900;
   min-height: 38px;
   padding: 0 12px;
+}
+
+.job-message-link {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 999px;
+  color: #334155;
+  display: inline-flex;
+  font-size: 0.86rem;
+  font-weight: 900;
+  min-height: 38px;
+  padding: 0 12px;
+  text-decoration: none;
+}
+
+.modal-backdrop {
+  align-items: center;
+  background: rgba(15, 23, 42, 0.52);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 20px;
+  position: fixed;
+  z-index: 60;
+}
+
+.reschedule-modal {
+  background: #ffffff;
+  border: 1px solid rgba(220, 239, 228, 0.9);
+  border-radius: 28px;
+  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.28);
+  display: grid;
+  gap: 16px;
+  max-width: 520px;
+  padding: 24px;
+  width: min(100%, 520px);
+}
+
+.reschedule-modal h2 {
+  color: #0f172a;
+  margin: 0;
+}
+
+.reschedule-modal p:not(.section-kicker) {
+  color: #64748b;
+  margin: 6px 0 0;
+}
+
+.reschedule-modal label {
+  color: #334155;
+  display: grid;
+  font-weight: 900;
+  gap: 8px;
+}
+
+.reschedule-modal input,
+.reschedule-modal textarea {
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 16px;
+  color: #0f172a;
+  font: inherit;
+  min-height: 48px;
+  padding: 0 14px;
+}
+
+.reschedule-modal textarea {
+  min-height: 110px;
+  padding: 14px;
+  resize: vertical;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.modal-actions button {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
 }
 
 .job-actions button:disabled {
@@ -3644,7 +4039,9 @@
 :root[data-theme='dark'] .customer-home-snapshot article,
 :root[data-theme='dark'] .artisan-profile-panel,
 :root[data-theme='dark'] .dashboard-metric-grid article,
-:root[data-theme='dark'] .job-status-column {
+:root[data-theme='dark'] .job-status-column,
+:root[data-theme='dark'] .job-group-section,
+:root[data-theme='dark'] .reschedule-modal {
   background:
     linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.9)),
     linear-gradient(135deg, rgba(16, 185, 129, 0.08), transparent);
@@ -3657,10 +4054,14 @@
 :root[data-theme='dark'] .section-heading-row h2,
 :root[data-theme='dark'] .artisan-profile-panel h2,
 :root[data-theme='dark'] .profile-detail-list strong,
+:root[data-theme='dark'] .job-group-header h2,
 :root[data-theme='dark'] .job-status-column h3,
 :root[data-theme='dark'] .job-card strong,
 :root[data-theme='dark'] .job-card small,
-:root[data-theme='dark'] .dashboard-metric-grid strong {
+:root[data-theme='dark'] .dashboard-metric-grid strong,
+:root[data-theme='dark'] .reschedule-modal h2,
+:root[data-theme='dark'] .reschedule-modal input,
+:root[data-theme='dark'] .reschedule-modal textarea {
   color: #f8fafc;
 }
 
@@ -3670,15 +4071,59 @@
 :root[data-theme='dark'] .job-card p,
 :root[data-theme='dark'] .job-card span,
 :root[data-theme='dark'] .muted-copy,
-:root[data-theme='dark'] .dashboard-metric-grid span {
+:root[data-theme='dark'] .dashboard-metric-grid span,
+:root[data-theme='dark'] .reschedule-modal p:not(.section-kicker),
+:root[data-theme='dark'] .reschedule-modal label {
   color: #94a3b8;
 }
 
 :root[data-theme='dark'] .profile-detail-list span,
 :root[data-theme='dark'] .job-card,
-:root[data-theme='dark'] .profile-checklist span {
+:root[data-theme='dark'] .profile-checklist span,
+:root[data-theme='dark'] .dashboard-activity-list span,
+:root[data-theme='dark'] .job-filter-tabs button,
+:root[data-theme='dark'] .job-card-meta small,
+:root[data-theme='dark'] .job-message-link,
+:root[data-theme='dark'] .reschedule-modal input,
+:root[data-theme='dark'] .reschedule-modal textarea {
   background: rgba(15, 23, 42, 0.86);
   border-color: rgba(148, 163, 184, 0.14);
+}
+
+:root[data-theme='dark'] .dashboard-activity-list strong,
+:root[data-theme='dark'] .job-card p strong {
+  color: #f8fafc;
+}
+
+:root[data-theme='dark'] .job-filter-tabs button {
+  color: #cbd5e1;
+}
+
+:root[data-theme='dark'] .booking-reschedule-note {
+  background: rgba(249, 115, 22, 0.1);
+  border-color: rgba(251, 146, 60, 0.2);
+  color: #fed7aa;
+}
+
+:root[data-theme='dark'] .booking-reschedule-note strong {
+  color: #fdba74;
+}
+
+:root[data-theme='dark'] .job-message-link {
+  color: #cbd5e1;
+}
+
+:root[data-theme='dark'] .job-filter-tabs button:hover,
+:root[data-theme='dark'] .job-filter-tabs button.active {
+  background: rgba(16, 185, 129, 0.14);
+  border-color: rgba(52, 211, 153, 0.2);
+  color: #86efac;
+}
+
+:root[data-theme='dark'] .schedule-conflict-warning {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.22);
+  color: #fbbf24;
 }
 
 :root[data-theme='dark'] .verification-warning {
@@ -3728,6 +4173,11 @@
   .job-status-grid {
     grid-template-columns: 1fr;
     overflow-x: visible;
+  }
+
+  .job-card-grid,
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -3796,6 +4246,23 @@
 
   .dashboard-metric-grid {
     grid-template-columns: 1fr;
+  }
+
+  .job-card-grid,
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .job-group-header,
+  .modal-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .job-group-header button,
+  .modal-actions button {
+    justify-content: center;
+    width: 100%;
   }
 
   .mobile-bottom-nav {

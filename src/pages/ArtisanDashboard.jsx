@@ -1,24 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../auth/useAuth.js'
-import ArtisanJobsBoard from '../components/ArtisanJobsBoard.jsx'
 import Button from '../components/Button.jsx'
-import EmptyState from '../components/EmptyState.jsx'
 import SkeletonPreview from '../components/Skeletons.jsx'
 import { getArtisanByProfileId } from '../services/artisanService.js'
-import {
-  getBookingsForUser,
-  updateBookingStatusForArtisan,
-} from '../services/bookingService.js'
-import { showToast } from '../utils/toast.js'
-
-function getErrorMessage(error) {
-  return [
-    error.message,
-    error.details,
-    error.hint,
-    error.code,
-  ].filter(Boolean).join(' ')
-}
+import { getBookingsForUser } from '../services/bookingService.js'
 
 function formatMoney(value) {
   return value ? `NGN ${Number(value).toLocaleString()}` : 'By quote'
@@ -49,7 +34,6 @@ function ArtisanDashboard() {
   const [bookings, setBookings] = useState([])
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
-  const [updatingBookingId, setUpdatingBookingId] = useState('')
 
   const metrics = useMemo(() => {
     const pending = bookings.filter((booking) => booking.rawStatus === 'pending').length
@@ -67,8 +51,11 @@ function ArtisanDashboard() {
   }, [bookings])
 
   const checklist = useMemo(() => artisan ? profileChecklist(artisan) : [], [artisan])
+  const isSetupComplete = checklist.every((item) => item.done || item.label === 'Verification approved')
   const acceptedJobs = bookings.filter((booking) => booking.rawStatus === 'confirmed').length
   const inProgressJobs = bookings.filter((booking) => booking.rawStatus === 'in_progress').length
+  const pendingJobs = bookings.filter((booking) => booking.rawStatus === 'pending')
+  const recentActivity = bookings.slice(0, 3)
 
   useEffect(() => {
     let isMounted = true
@@ -114,44 +101,6 @@ function ArtisanDashboard() {
       isMounted = false
     }
   }, [user])
-
-  async function handleStatusUpdate(bookingId, nextStatus, currentStatus) {
-    setError('')
-    setUpdatingBookingId(bookingId)
-
-    try {
-      const { data, error: updateError } = await updateBookingStatusForArtisan({
-        artisanProfileId: user.id,
-        bookingId,
-        currentStatus,
-        nextStatus,
-      })
-
-      if (updateError) {
-        setError(getErrorMessage(updateError))
-        return
-      }
-
-      if (!data?.id) {
-        setError('Supabase did not confirm the booking status update.')
-        return
-      }
-
-      const { data: refreshedBookings, error: refreshError } = await getBookingsForUser(user)
-
-      if (refreshError) {
-        setError(getErrorMessage(refreshError))
-        return
-      }
-
-      setBookings(refreshedBookings)
-      showToast(`Booking marked ${nextStatus.replaceAll('_', ' ')}.`)
-    } catch (updateError) {
-      setError(getErrorMessage(updateError))
-    } finally {
-      setUpdatingBookingId('')
-    }
-  }
 
   if (isLoading) {
     return (
@@ -264,6 +213,9 @@ function ArtisanDashboard() {
         </article>
         <article className="artisan-profile-panel">
           <p className="section-kicker">Profile checklist</p>
+          {!isSetupComplete && (
+            <p>Complete these setup items so your profile is stronger for customers.</p>
+          )}
           <div className="profile-checklist">
             {checklist.map((item) => (
               <span className={item.done ? 'done' : ''} key={item.label}>
@@ -271,28 +223,50 @@ function ArtisanDashboard() {
               </span>
             ))}
           </div>
+          {!isSetupComplete && (
+            <Button className="secondary-cta" to="/artisan-onboarding">
+              Continue Setup
+            </Button>
+          )}
         </article>
       </section>
 
-      <section className="artisan-jobs-section">
-        <div className="section-heading-row">
-          <div>
-            <p className="section-kicker">Jobs</p>
-            <h2>Incoming bookings and job history</h2>
-          </div>
-        </div>
-
-        {bookings.length === 0 ? (
-          <EmptyState title="No artisan jobs yet">
-            Customer booking requests assigned to your profile will appear here.
-          </EmptyState>
-        ) : (
-          <ArtisanJobsBoard
-            bookings={bookings}
-            onStatusUpdate={handleStatusUpdate}
-            updatingBookingId={updatingBookingId}
-          />
-        )}
+      <section className="artisan-insight-grid">
+        <article className="artisan-profile-panel">
+          <p className="section-kicker">Pending jobs summary</p>
+          <h2>{pendingJobs.length} pending request{pendingJobs.length === 1 ? '' : 's'}</h2>
+          {pendingJobs.length === 0 ? (
+            <p>No pending requests right now. New customer bookings will appear in Jobs.</p>
+          ) : (
+            <div className="dashboard-activity-list">
+              {pendingJobs.slice(0, 3).map((booking) => (
+                <span key={booking.id}>
+                  <strong>{booking.service}</strong>
+                  {booking.customer} - {booking.scheduledDate}
+                </span>
+              ))}
+            </div>
+          )}
+          <Button className="secondary-cta" to="/artisan-jobs">
+            Open Jobs
+          </Button>
+        </article>
+        <article className="artisan-profile-panel">
+          <p className="section-kicker">Recent activity</p>
+          <h2>{recentActivity.length ? 'Latest bookings' : 'No activity yet'}</h2>
+          {recentActivity.length === 0 ? (
+            <p>Booking updates, customer requests, and completed jobs will appear here.</p>
+          ) : (
+            <div className="dashboard-activity-list">
+              {recentActivity.map((booking) => (
+                <span key={booking.id}>
+                  <strong>{booking.status}</strong>
+                  {booking.service} with {booking.customer}
+                </span>
+              ))}
+            </div>
+          )}
+        </article>
       </section>
     </div>
   )

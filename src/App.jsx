@@ -1,5 +1,6 @@
 import {
   Camera,
+  ChevronDown,
   Mail,
   MapPin,
   Menu,
@@ -31,6 +32,7 @@ import Reels from './pages/Reels.jsx'
 import Services from './pages/Services.jsx'
 import Signup from './pages/Signup.jsx'
 import Wallet from './pages/Wallet.jsx'
+import { getArtisanByProfileId } from './services/artisanService.js'
 import { showToast } from './utils/toast.js'
 import './App.css'
 
@@ -75,6 +77,20 @@ const serviceLinks = [
   'AC Repair',
   'Generator Repair',
 ]
+
+function needsArtisanSetup(artisan) {
+  if (!artisan) {
+    return true
+  }
+
+  return [
+    artisan.businessName,
+    artisan.bio,
+    artisan.primaryService,
+    artisan.serviceArea,
+    artisan.startingPrice,
+  ].some((field) => !field)
+}
 
 function RoleHome() {
   const { isLoading, user } = useAuth()
@@ -201,6 +217,7 @@ function AnimatedRoutes() {
 
 function AppShell() {
   const { isAuthenticated, logout, user } = useAuth()
+  const location = useLocation()
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem('handiwave-theme')
 
@@ -212,6 +229,7 @@ function AppShell() {
       ? 'dark'
       : 'light'
   })
+  const [artisanNeedsSetup, setArtisanNeedsSetup] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [toast, setToast] = useState(null)
 
@@ -221,11 +239,48 @@ function AppShell() {
     : user?.role === 'customer'
       ? customerNavLinks
       : publicNavLinks
+  const visibleNavLinks = isAuthenticated
+    ? navLinks.filter((link) => link.path !== '/profile')
+    : navLinks
+  const desktopPrimaryCount = isAuthenticated ? 5 : navLinks.length
+  const primaryNavLinks = visibleNavLinks.slice(0, desktopPrimaryCount)
+  const moreNavLinks = visibleNavLinks.slice(desktopPrimaryCount)
+  const isMoreActive = moreNavLinks.some((link) => location.pathname === link.path)
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('handiwave-theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function checkArtisanSetup() {
+      if (user?.role !== 'artisan') {
+        return
+      }
+
+      const { data, error } = await getArtisanByProfileId(user.id)
+
+      if (!isMounted) {
+        return
+      }
+
+      if (error) {
+        console.error('[Handiwave nav] artisan setup check failed:', error)
+        setArtisanNeedsSetup(true)
+        return
+      }
+
+      setArtisanNeedsSetup(needsArtisanSetup(data))
+    }
+
+    checkArtisanSetup()
+
+    return () => {
+      isMounted = false
+    }
+  }, [user?.id, user?.role])
 
   useEffect(() => {
     function handleToast(event) {
@@ -283,7 +338,7 @@ function AppShell() {
               className={isMenuOpen ? 'nav-links open' : 'nav-links'}
               aria-label="Main navigation"
             >
-              {navLinks.map((link) => (
+              {primaryNavLinks.map((link) => (
                 <NavLink
                   className={({ isActive }) =>
                     isActive ? 'nav-link active' : 'nav-link'
@@ -296,24 +351,97 @@ function AppShell() {
                   {link.label}
                 </NavLink>
               ))}
+              {moreNavLinks.length > 0 && (
+                <details className={isMoreActive ? 'more-nav active' : 'more-nav'}>
+                  <summary className="nav-link">
+                    More
+                    <ChevronDown size={15} />
+                  </summary>
+                  <div className="more-menu">
+                    {moreNavLinks.map((link) => (
+                      <NavLink
+                        className={({ isActive }) =>
+                          isActive ? 'more-menu-link active' : 'more-menu-link'
+                        }
+                        key={link.path}
+                        onClick={() => setIsMenuOpen(false)}
+                        to={link.path}
+                      >
+                        {link.label}
+                      </NavLink>
+                    ))}
+                  </div>
+                </details>
+              )}
+              {moreNavLinks.map((link) => (
+                <NavLink
+                  className={({ isActive }) =>
+                    isActive ? 'nav-link mobile-only-nav-link active' : 'nav-link mobile-only-nav-link'
+                  }
+                  key={`mobile-${link.path}`}
+                  onClick={() => setIsMenuOpen(false)}
+                  to={link.path}
+                >
+                  {link.label}
+                </NavLink>
+              ))}
             </nav>
 
             <div className="nav-actions">
               {isAuthenticated && (
                 <div className="role-pill">
                   <span>{user.role}</span>
-                  <strong>{user.name}</strong>
                 </div>
               )}
-              {user?.role === 'admin' && (
-                <NavLink className="login-button" to="/admin" onClick={() => setIsMenuOpen(false)}>
-                  Admin
-                </NavLink>
-              )}
-              {user?.role === 'artisan' && (
-                <NavLink className="login-button" to="/artisan-onboarding" onClick={() => setIsMenuOpen(false)}>
-                  Onboarding
-                </NavLink>
+              {isAuthenticated && (
+                <details className="profile-nav">
+                  <summary className="login-button">
+                    Profile
+                    <ChevronDown size={15} />
+                  </summary>
+                  <div className="profile-menu">
+                    <div className="profile-menu-header">
+                      <span>Signed in as</span>
+                      <strong>{user.name}</strong>
+                    </div>
+                    <NavLink
+                      className="profile-menu-link"
+                      to="/profile"
+                      onClick={(event) => {
+                        event.currentTarget.closest('details')?.removeAttribute('open')
+                        setIsMenuOpen(false)
+                      }}
+                    >
+                      My Profile
+                    </NavLink>
+                    {user?.role === 'admin' && (
+                      <NavLink
+                        className="profile-menu-link"
+                        to="/admin"
+                        onClick={(event) => {
+                          event.currentTarget.closest('details')?.removeAttribute('open')
+                          setIsMenuOpen(false)
+                        }}
+                      >
+                        Admin
+                      </NavLink>
+                    )}
+                    {user?.role === 'artisan' && (
+                      artisanNeedsSetup && (
+                        <NavLink
+                          className="profile-menu-link"
+                          to="/artisan-onboarding"
+                          onClick={(event) => {
+                            event.currentTarget.closest('details')?.removeAttribute('open')
+                            setIsMenuOpen(false)
+                          }}
+                        >
+                          Complete Setup
+                        </NavLink>
+                      )
+                    )}
+                  </div>
+                </details>
               )}
               <button
                 className="theme-toggle"
@@ -324,7 +452,6 @@ function AppShell() {
                 }
               >
                 {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-                <span>{isDarkMode ? 'Light' : 'Dark'}</span>
               </button>
               {isAuthenticated ? (
                 <button className="signup-button" type="button" onClick={handleLogout}>
