@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
 import EmptyState from '../components/EmptyState.jsx'
 import RoleNotice from '../components/RoleNotice.jsx'
@@ -28,7 +29,7 @@ const initialForm = {
 
 const statusLabels = {
   cancelled: 'Cancelled',
-  artisan_completed: 'Artisan completed',
+  artisan_completed: 'Awaiting customer confirmation',
   completed: 'Completed',
   confirmed: 'Confirmed',
   customer_confirmed: 'Customer confirmed',
@@ -172,6 +173,13 @@ function BookingHistorySection({
                   <span>{booking.scheduledDate} at {booking.scheduledTime}</span>
                 </div>
                 {booking.notes && <p>{booking.notes}</p>}
+                {showRescheduleActions && (
+                  <div className="booking-message-actions">
+                    <Link to={`/messages?booking=${booking.id}`}>
+                      Message Artisan
+                    </Link>
+                  </div>
+                )}
                 {showRescheduleActions && bookingStatus === 'completed' && (
                   <div className="booking-compatibility-panel">
                     <strong>Old completed status detected</strong>
@@ -184,7 +192,8 @@ function BookingHistorySection({
                 {showRescheduleActions && bookingStatus === 'artisan_completed' && (
                   <div className="booking-completion-panel">
                     <div>
-                      <strong>Artisan marked this job as completed</strong>
+                      <span className="action-required-badge">Action Required</span>
+                      <strong>Artisan marked this job as completed.</strong>
                       <p>Please confirm the work was completed safely before leaving a review.</p>
                     </div>
                     <div className="booking-completion-actions">
@@ -193,14 +202,14 @@ function BookingHistorySection({
                         type="button"
                         onClick={() => onCompletionAction?.(booking, 'confirm')}
                       >
-                        {updatingCompletionId === booking.id ? 'Confirming...' : 'Confirm Job Complete'}
+                        {updatingCompletionId === booking.id ? 'Confirming...' : 'Confirm Job Completed'}
                       </button>
                       <button
                         disabled={updatingCompletionId === booking.id}
                         type="button"
                         onClick={() => onCompletionAction?.(booking, 'report')}
                       >
-                        {updatingCompletionId === booking.id ? 'Reporting...' : 'Report Issue'}
+                        {updatingCompletionId === booking.id ? 'Reporting...' : 'Report Not Completed'}
                       </button>
                     </div>
                   </div>
@@ -296,6 +305,7 @@ function Bookings() {
   const [form, setForm] = useState(initialForm)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [lastCreatedBooking, setLastCreatedBooking] = useState(null)
   const [options, setOptions] = useState({ artisans: [], services: [] })
   const [reviewForms, setReviewForms] = useState({})
   const [submittingReviewId, setSubmittingReviewId] = useState('')
@@ -629,6 +639,7 @@ function Bookings() {
       }
 
       setBookings((currentBookings) => [data, ...currentBookings])
+      setLastCreatedBooking(data)
       setForm((currentForm) => ({
         ...initialForm,
         artisanId: currentForm.artisanId,
@@ -663,6 +674,21 @@ function Bookings() {
       <RoleNotice />
 
       {error && <p className="auth-error page-error">{error}</p>}
+
+      {lastCreatedBooking && (
+        <section className="booking-success-panel">
+          <div>
+            <span>Booking request created</span>
+            <h2>{lastCreatedBooking.service}</h2>
+            <p>
+              Your booking chat is ready so you can agree on service details before the artisan accepts or reschedules.
+            </p>
+          </div>
+          <Link className="primary-cta" to={`/messages?booking=${lastCreatedBooking.id}`}>
+            Message Artisan
+          </Link>
+        </section>
+      )}
 
       <section className="booking-layout">
         {isCustomer && (

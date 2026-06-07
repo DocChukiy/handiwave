@@ -1,5 +1,6 @@
 import { getSupabaseClient } from '../lib/supabaseClient.js'
 import { getArtisanByProfileId } from './artisanService.js'
+import { ensureConversationForBooking } from './messageService.js'
 
 const bookingServiceRelation = 'bookings_service_id_fkey'
 const bookingArtisanRelation = 'bookings_artisan_id_fkey'
@@ -577,13 +578,32 @@ export async function createBooking({
     console.error('[Handiwave booking debug] booking display fetch failed:', displayError)
   }
 
+  const { data: conversation, error: conversationError } = await ensureConversationForBooking({
+    bookingId: insertedBooking.id,
+    user: {
+      id: customerId,
+      role: 'customer',
+    },
+  })
+
+  if (conversationError) {
+    console.error('[Handiwave booking debug] conversation creation failed:', conversationError)
+    return {
+      data: null,
+      error: conversationError,
+    }
+  }
+
   return {
-    data: displayBooking || mapBookingRow({
+    data: {
+      ...(displayBooking || mapBookingRow({
       ...insertedBooking,
       artisan: null,
       customer: null,
       service,
-    }),
+      })),
+      conversationId: conversation?.id || '',
+    },
     error: null,
   }
 }

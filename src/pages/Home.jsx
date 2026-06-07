@@ -52,6 +52,9 @@ function CustomerActiveBookings({ bookings, onRescheduleResponse, updatingBookin
           <div className="home-active-booking-card" key={booking.id}>
             <strong>{booking.service}</strong>
             <p>{booking.artisan} - {booking.date}</p>
+            <Link className="job-message-link" to={`/messages?booking=${booking.id}`}>
+              Message Artisan
+            </Link>
             {bookingStatus === 'reschedule_requested' && (
               <div className="booking-reschedule-note">
                 <div className="booking-reschedule-heading">

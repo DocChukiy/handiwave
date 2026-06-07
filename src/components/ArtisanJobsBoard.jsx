@@ -6,11 +6,21 @@ const artisanJobGroups = [
   { key: 'pending', title: 'Pending Requests', statuses: ['pending'] },
   { key: 'reschedule_requested', title: 'Reschedule Requested', statuses: ['reschedule_requested'] },
   { key: 'confirmed', title: 'Confirmed Jobs', statuses: ['confirmed'] },
-  { key: 'in_progress', title: 'In Progress Jobs', statuses: ['in_progress'] },
-  { key: 'artisan_completed', title: 'Awaiting Customer Confirmation', statuses: ['artisan_completed'] },
-  { key: 'customer_confirmed', title: 'Customer Confirmed', statuses: ['customer_confirmed'] },
+  { key: 'in_progress', title: 'In Progress Jobs', statuses: ['in_progress', 'artisan_completed'] },
+  { key: 'completed', title: 'Completed Jobs', statuses: ['customer_confirmed', 'completed'] },
   { key: 'cancelled', title: 'Cancelled', statuses: ['cancelled'] },
 ]
+
+const jobStatusLabels = {
+  artisan_completed: 'Awaiting Customer Confirmation',
+  cancelled: 'Cancelled',
+  completed: 'Completed',
+  confirmed: 'Confirmed',
+  customer_confirmed: 'Customer Confirmed',
+  in_progress: 'In Progress',
+  pending: 'Pending',
+  reschedule_requested: 'Reschedule Requested',
+}
 
 function formatCreatedDate(value) {
   if (!value) {
@@ -57,6 +67,9 @@ function JobActions({
         >
           Reject Request
         </button>
+        <Link className="job-message-link" to={`/messages?booking=${booking.id}`}>
+          Message Customer
+        </Link>
       </div>
     )
   }
@@ -71,6 +84,9 @@ function JobActions({
         >
           Cancel Request
         </button>
+        <Link className="job-message-link" to={`/messages?booking=${booking.id}`}>
+          Message Customer
+        </Link>
       </div>
     )
   }
@@ -85,7 +101,7 @@ function JobActions({
         >
           {isUpdating ? 'Updating...' : 'Start Job'}
         </button>
-        <Link className="job-message-link" to="/messages">Message Customer</Link>
+        <Link className="job-message-link" to={`/messages?booking=${booking.id}`}>Message Customer</Link>
       </div>
     )
   }
@@ -100,7 +116,7 @@ function JobActions({
         >
           {isUpdating ? 'Updating...' : 'Mark Artisan Completed'}
         </button>
-        <Link className="job-message-link" to="/messages">Message Customer</Link>
+        <Link className="job-message-link" to={`/messages?booking=${booking.id}`}>Message Customer</Link>
       </div>
     )
   }
@@ -126,7 +142,7 @@ function JobCard({
           <span>{booking.service}</span>
         </div>
         <span className={`booking-status status-${booking.rawStatus}`}>
-          {booking.status}
+          {jobStatusLabels[booking.rawStatus] || booking.status}
         </span>
       </div>
 
@@ -151,12 +167,15 @@ function JobCard({
           <small>Requested: {formatCreatedDate(booking.rescheduleRequestedAt)}</small>
         )}
         {booking.rawStatus === 'artisan_completed' && (
-          <small>Marked completed: {formatCreatedDate(booking.completedAt)}</small>
+          <small className="awaiting-confirmation-chip">Awaiting customer confirmation</small>
+        )}
+        {booking.rawStatus === 'artisan_completed' && (
+          <small>Marked done: {formatCreatedDate(booking.completedAt)}</small>
         )}
         {booking.rawStatus === 'artisan_completed' && (
           <small>Review: Waiting for customer confirmation</small>
         )}
-        {booking.rawStatus === 'customer_confirmed' && (
+        {(booking.rawStatus === 'customer_confirmed' || booking.rawStatus === 'completed') && (
           <small>Review: {booking.review ? `${booking.review.rating} stars` : 'Awaiting customer review'}</small>
         )}
       </div>
