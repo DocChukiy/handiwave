@@ -275,7 +275,7 @@ function ArtisanDashboard() {
           <p className="section-kicker">Reels / showcase</p>
           <h2>Work showcase</h2>
           <p>Post short work reels to help customers understand your quality before booking.</p>
-          <Button className="secondary-cta" to="/reels">View Reels</Button>
+          <Button className="secondary-cta" to="/artisan-reels">Manage Reels</Button>
         </article>
         <article className="artisan-profile-panel">
           <p className="section-kicker">Availability</p>

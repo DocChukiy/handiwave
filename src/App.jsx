@@ -24,6 +24,7 @@ import ArtisanDashboard from './pages/ArtisanDashboard.jsx'
 import ArtisanJobs from './pages/ArtisanJobs.jsx'
 import ArtisanOnboarding from './pages/ArtisanOnboarding.jsx'
 import ArtisanProfile from './pages/ArtisanProfile.jsx'
+import ArtisanReels from './pages/ArtisanReels.jsx'
 import Artisans from './pages/Artisans.jsx'
 import Bookings from './pages/Bookings.jsx'
 import Home from './pages/Home.jsx'
@@ -35,7 +36,7 @@ import Services from './pages/Services.jsx'
 import Signup from './pages/Signup.jsx'
 import Wallet from './pages/Wallet.jsx'
 import { getArtisanByProfileId } from './services/artisanService.js'
-import { getTotalUnreadMessagesForUser } from './services/messageService.js'
+import { getTotalUnreadMessagesForUser, touchProfileLastSeen } from './services/messageService.js'
 import {
   getNotificationsForUser,
   markNotificationRead,
@@ -65,7 +66,7 @@ const artisanNavLinks = [
   { path: '/artisan-jobs', label: 'Jobs' },
   { path: '/artisan-availability', label: 'Availability' },
   { path: '/messages', label: 'Messages' },
-  { path: '/reels', label: 'Reels' },
+  { path: '/artisan-reels', label: 'My Reels' },
   { path: '/wallet', label: 'Wallet' },
   { path: '/artisan-reviews', label: 'Reviews' },
   { path: '/profile', label: 'My Profile' },
@@ -177,6 +178,14 @@ function AnimatedRoutes() {
             element={(
               <ProtectedRoute allowedRoles={['artisan']}>
                 <ArtisanDashboard />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/artisan-reels"
+            element={(
+              <ProtectedRoute allowedRoles={['artisan']}>
+                <ArtisanReels />
               </ProtectedRoute>
             )}
           />
@@ -313,6 +322,30 @@ function AppShell() {
       isMounted = false
     }
   }, [user?.id, user?.role])
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) {
+      return undefined
+    }
+
+    let isMounted = true
+
+    async function touchLastSeen() {
+      const { error } = await touchProfileLastSeen()
+
+      if (error && isMounted) {
+        console.error('[Handiwave presence] last_seen update failed:', error)
+      }
+    }
+
+    touchLastSeen()
+    const presenceTimer = window.setInterval(touchLastSeen, 60000)
+
+    return () => {
+      isMounted = false
+      window.clearInterval(presenceTimer)
+    }
+  }, [isAuthenticated, user?.id])
 
   useEffect(() => {
     let isMounted = true
@@ -586,6 +619,16 @@ function AppShell() {
                           }}
                         >
                           Manage Availability
+                        </NavLink>
+                        <NavLink
+                          className="profile-menu-link"
+                          to="/artisan-reels"
+                          onClick={(event) => {
+                            event.currentTarget.closest('details')?.removeAttribute('open')
+                            setIsMenuOpen(false)
+                          }}
+                        >
+                          Manage Reels
                         </NavLink>
                         {artisanNeedsSetup && (
                           <NavLink

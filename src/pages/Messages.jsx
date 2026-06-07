@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
 import EmptyState from '../components/EmptyState.jsx'
@@ -36,6 +36,7 @@ function Messages() {
   const [isMessagesLoading, setIsMessagesLoading] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [messages, setMessages] = useState([])
+  const chatEndRef = useRef(null)
 
   const activeConversation = useMemo(() => (
     conversations.find((conversation) => conversation.id === activeConversationId) || null
@@ -238,6 +239,10 @@ function Messages() {
     }
   }, [activeConversationId, user])
 
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [activeConversationId, messages])
+
   async function handleSendMessage(event) {
     event.preventDefault()
 
@@ -323,6 +328,9 @@ function Messages() {
               >
                 <div>
                   <strong>{conversation.otherPerson}</strong>
+                  <span className={conversation.otherPersonOnline ? 'presence-label online' : 'presence-label'}>
+                    {conversation.otherPersonPresence}
+                  </span>
                   <p>{conversation.lastMessagePreview}</p>
                   <small>{conversation.service} • {conversation.bookingStatus.replaceAll('_', ' ')}</small>
                 </div>
@@ -346,10 +354,16 @@ function Messages() {
                 <div>
                   <p className="section-kicker">{activeConversation.service}</p>
                   <h3>{activeConversation.otherPerson}</h3>
+                  <span className={activeConversation.otherPersonOnline ? 'presence-label online' : 'presence-label'}>
+                    {activeConversation.otherPersonPresence}
+                  </span>
                 </div>
-                <span className={`booking-status status-${activeConversation.bookingStatus}`}>
-                  {activeConversation.bookingStatus.replaceAll('_', ' ')}
-                </span>
+                <div className="chat-header-meta">
+                  <span className={`booking-status status-${activeConversation.bookingStatus}`}>
+                    {activeConversation.bookingStatus.replaceAll('_', ' ')}
+                  </span>
+                  <small>{activeConversation.service}</small>
+                </div>
               </div>
 
               <div className="chat-thread">
@@ -362,7 +376,12 @@ function Messages() {
                       key={message.id}
                     >
                       <p>{message.body}</p>
-                      <small>{new Date(message.createdAt).toLocaleString()}</small>
+                      <small>
+                        <span>{message.createdTime}</span>
+                        {message.senderId === user.id && (
+                          <span>{message.readAt ? 'Read' : 'Sent'}</span>
+                        )}
+                      </small>
                     </article>
                   ))
                 ) : (
@@ -370,6 +389,7 @@ function Messages() {
                     Send the first message to agree on timing, cost, or service details.
                   </EmptyState>
                 )}
+                <div ref={chatEndRef} />
               </div>
 
               <form className="message-compose" onSubmit={handleSendMessage}>

@@ -15,14 +15,16 @@ const conversationSelect = `
     status,
     service:services!${bookingServiceRelation}(id, name, category, icon)
   ),
-  customer:profiles!${conversationCustomerRelation}(id, full_name, email, avatar_url),
+  customer:profiles!${conversationCustomerRelation}(id, full_name, email, avatar_url, last_seen),
   artisan:artisans!${conversationArtisanRelation}(
     id,
     business_name,
     profile_id,
-    profile:profiles!${artisanProfileRelation}(id, full_name, email, avatar_url)
+    profile:profiles!${artisanProfileRelation}(id, full_name, email, avatar_url, last_seen)
   )
 `
+
+const onlineWindowMs = 2 * 60 * 1000
 
 function formatTime(value) {
   if (!value) {
@@ -37,6 +39,51 @@ function formatTime(value) {
   }).format(new Date(value))
 }
 
+function formatMessageTime(value) {
+  if (!value) {
+    return ''
+  }
+
+  return new Intl.DateTimeFormat('en-NG', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value))
+}
+
+function formatPresence(lastSeen) {
+  if (!lastSeen) {
+    return {
+      isOnline: false,
+      label: 'Offline',
+    }
+  }
+
+  const elapsedMs = Date.now() - new Date(lastSeen).getTime()
+
+  if (elapsedMs <= onlineWindowMs) {
+    return {
+      isOnline: true,
+      label: 'Online',
+    }
+  }
+
+  const elapsedMinutes = Math.max(1, Math.round(elapsedMs / 60000))
+
+  if (elapsedMinutes < 60) {
+    return {
+      isOnline: false,
+      label: `Last seen ${elapsedMinutes} minute${elapsedMinutes === 1 ? '' : 's'} ago`,
+    }
+  }
+
+  const elapsedHours = Math.round(elapsedMinutes / 60)
+
+  return {
+    isOnline: false,
+    label: `Last seen ${elapsedHours} hour${elapsedHours === 1 ? '' : 's'} ago`,
+  }
+}
+
 function getOtherPerson(conversation, user) {
   if (user?.role === 'artisan') {
     return conversation.customer?.full_name || conversation.customer?.email || 'Customer'
@@ -49,11 +96,20 @@ function getOtherPerson(conversation, user) {
   )
 }
 
+function getOtherPersonProfile(conversation, user) {
+  if (user?.role === 'artisan') {
+    return conversation.customer || {}
+  }
+
+  return conversation.artisan?.profile || {}
+}
+
 function mapMessageRow(message) {
   return {
     body: message.body,
     conversationId: message.conversation_id,
     createdAt: message.created_at,
+    createdTime: formatMessageTime(message.created_at),
     id: message.id,
     readAt: message.read_at || '',
     senderId: message.sender_id,
@@ -64,6 +120,8 @@ function mapConversationRow(conversation, user, lastMessage, unreadCount = 0) {
   const lastMessageTime = lastMessage?.created_at ||
     conversation.last_message_at ||
     conversation.created_at
+  const otherProfile = getOtherPersonProfile(conversation, user)
+  const presence = formatPresence(otherProfile.last_seen)
 
   return {
     artisanId: conversation.artisan_id,
@@ -75,8 +133,21 @@ function mapConversationRow(conversation, user, lastMessage, unreadCount = 0) {
     lastMessagePreview: lastMessage?.body || 'No messages yet. Start the conversation.',
     lastMessageTime: formatTime(lastMessageTime),
     otherPerson: getOtherPerson(conversation, user),
+    otherPersonLastSeen: otherProfile.last_seen || '',
+    otherPersonPresence: presence.label,
+    otherPersonOnline: presence.isOnline,
     service: conversation.booking?.service?.name || 'Handiwave service',
     unreadCount,
+  }
+}
+
+export async function touchProfileLastSeen() {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase.rpc('touch_profile_last_seen')
+
+  return {
+    data,
+    error,
   }
 }
 
