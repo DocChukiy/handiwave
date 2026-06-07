@@ -3470,6 +3470,28 @@
   padding: 7px 10px;
 }
 
+.booking-empty-slot-panel {
+  background: #fff7ed;
+  border: 1px solid rgba(249, 115, 22, 0.18);
+  border-radius: 18px;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.booking-empty-slot-panel p {
+  color: #9a3412;
+  font-weight: 800;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.booking-empty-slot-panel .compact-cta {
+  justify-self: start;
+  min-height: 40px;
+  padding: 11px 16px;
+}
+
 .availability-profile-card,
 .public-availability-card {
   background:
@@ -5061,6 +5083,7 @@
 :root[data-theme='dark'] .booking-completion-panel,
 :root[data-theme='dark'] .booking-compatibility-panel,
 :root[data-theme='dark'] .booking-availability-panel,
+:root[data-theme='dark'] .booking-empty-slot-panel,
 :root[data-theme='dark'] .profile-availability-preview,
 :root[data-theme='dark'] .availability-profile-card,
 :root[data-theme='dark'] .public-availability-card,
@@ -5079,6 +5102,7 @@
 :root[data-theme='dark'] .booking-completion-panel strong,
 :root[data-theme='dark'] .booking-compatibility-panel strong,
 :root[data-theme='dark'] .booking-availability-panel strong,
+:root[data-theme='dark'] .booking-empty-slot-panel strong,
 :root[data-theme='dark'] .profile-availability-preview strong,
 :root[data-theme='dark'] .availability-profile-card h2,
 :root[data-theme='dark'] .public-availability-card h2,
@@ -5096,6 +5120,7 @@
 :root[data-theme='dark'] .booking-completion-panel p,
 :root[data-theme='dark'] .booking-compatibility-panel p,
 :root[data-theme='dark'] .booking-availability-panel p,
+:root[data-theme='dark'] .booking-empty-slot-panel p,
 :root[data-theme='dark'] .profile-availability-preview p,
 :root[data-theme='dark'] .availability-profile-card p,
 :root[data-theme='dark'] .public-availability-card p,

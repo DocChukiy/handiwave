@@ -61,8 +61,104 @@ function getDateDayOfWeek(dateValue) {
   return new Date(year, month - 1, day).getDay()
 }
 
+function formatDateLabel(dateValue) {
+  const [year, month, day] = dateValue.split('-').map(Number)
+  return new Intl.DateTimeFormat('en-NG', {
+    day: 'numeric',
+    month: 'short',
+    weekday: 'short',
+  }).format(new Date(year, month - 1, day))
+}
+
+function getDateValueFromDate(date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+function timeToMinutes(time) {
+  const [hours, minutes] = time.split(':').map(Number)
+  return (hours * 60) + minutes
+}
+
+function minutesToTime(totalMinutes) {
+  const hours = String(Math.floor(totalMinutes / 60)).padStart(2, '0')
+  const minutes = String(totalMinutes % 60).padStart(2, '0')
+
+  return `${hours}:${minutes}`
+}
+
 function timeIsInsideSlot(time, slot) {
   return Boolean(time && slot.startTime <= time && slot.endTime > time)
+}
+
+function getGeneratedTimesForSlot(slot) {
+  const startMinutes = timeToMinutes(slot.startTime)
+  const endMinutes = timeToMinutes(slot.endTime)
+  const times = []
+
+  for (let currentMinutes = startMinutes; currentMinutes < endMinutes; currentMinutes += 60) {
+    times.push({
+      label: minutesToTime(currentMinutes),
+      slotId: slot.id,
+      value: minutesToTime(currentMinutes),
+    })
+  }
+
+  return times
+}
+
+function getUpcomingAvailableDates(availability, daysToShow = 45) {
+  const activeDayNumbers = new Set(availability.slots.map((slot) => Number(slot.dayOfWeek)))
+  const unavailableDateValues = new Set(
+    availability.unavailableDates.map((date) => date.unavailableDate),
+  )
+  const availableDates = []
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  for (let offset = 0; offset < daysToShow; offset += 1) {
+    const candidate = new Date(today)
+    candidate.setDate(today.getDate() + offset)
+
+    const dateValue = getDateValueFromDate(candidate)
+    const dayOfWeek = candidate.getDay()
+
+    if (activeDayNumbers.has(dayOfWeek) && !unavailableDateValues.has(dateValue)) {
+      availableDates.push({
+        dayOfWeek,
+        label: formatDateLabel(dateValue),
+        value: dateValue,
+      })
+    }
+  }
+
+  return availableDates
+}
+
+function getAvailableTimesForDate({
+  availability,
+  date,
+}) {
+  if (!date) {
+    return []
+  }
+
+  const dayOfWeek = getDateDayOfWeek(date)
+  const matchingDaySlots = availability.slots.filter((slot) => (
+    Number(slot.dayOfWeek) === dayOfWeek
+  ))
+  const bookedTimes = new Set(
+    availability.bookedSlots
+      .filter((slot) => slot.date === date)
+      .map((slot) => slot.time),
+  )
+
+  return matchingDaySlots
+    .flatMap(getGeneratedTimesForSlot)
+    .filter((time) => !bookedTimes.has(time.value))
 }
 
 function getAvailabilityValidationMessage({
@@ -387,16 +483,19 @@ function Bookings() {
   const availableDayLabels = useMemo(() => (
     [...new Set(availability.slots.map((slot) => getDayLabel(slot.dayOfWeek)))]
   ), [availability.slots])
+  const availableBookingDates = useMemo(() => (
+    getUpcomingAvailableDates(availability)
+  ), [availability])
   const dateDayOfWeek = getDateDayOfWeek(form.scheduledDate)
   const slotsForSelectedDate = availability.slots.filter((slot) => (
     Number(slot.dayOfWeek) === dateDayOfWeek
   ))
-  const availableTimesForSelectedDate = slotsForSelectedDate
-    .filter((slot) => (
-      !availability.bookedSlots.some((bookedSlot) => (
-        bookedSlot.date === form.scheduledDate && bookedSlot.time === slot.startTime
-      ))
-    ))
+  const availableTimesForSelectedDate = useMemo(() => (
+    getAvailableTimesForDate({
+      availability,
+      date: form.scheduledDate,
+    })
+  ), [availability, form.scheduledDate])
   const isSelectedDateUnavailable = availability.unavailableDates.some((date) => (
     date.unavailableDate === form.scheduledDate
   ))
@@ -534,7 +633,7 @@ function Bookings() {
       setAvailabilityError('')
       setIsLoadingAvailability(true)
 
-      try {
+              try {
         const { data, error: loadAvailabilityError } =
           await getCustomerBookingAvailability(form.artisanId)
 
@@ -548,6 +647,11 @@ function Bookings() {
         }
 
         setAvailability(data)
+        setForm((currentForm) => ({
+          ...currentForm,
+          scheduledDate: '',
+          scheduledTime: '',
+        }))
       } catch (loadAvailabilityError) {
         if (isMounted) {
           setAvailabilityError(getErrorMessage(loadAvailabilityError))
@@ -783,7 +887,7 @@ function Bookings() {
       })
 
       if (saveError) {
-        setError(saveError.message)
+        setError(getErrorMessage(saveError))
         return
       }
 
@@ -801,7 +905,7 @@ function Bookings() {
       }))
       showToast('Booking request saved to Supabase successfully.')
     } catch (saveError) {
-      setError(saveError.message)
+      setError(getErrorMessage(saveError))
     } finally {
       setIsSaving(false)
     }
@@ -955,12 +1059,22 @@ function Bookings() {
             <div className="form-split">
               <label>
                 Date
-                <input
-                  disabled={isSaving || isLoadingAvailability || availability.slots.length === 0}
-                  type="date"
+                <select
+                  disabled={
+                    isSaving ||
+                    isLoadingAvailability ||
+                    availableBookingDates.length === 0
+                  }
                   value={form.scheduledDate}
                   onChange={(event) => handleDateChange(event.target.value)}
-                />
+                >
+                  <option value="">Select available date</option>
+                  {availableBookingDates.map((date) => (
+                    <option key={date.value} value={date.value}>
+                      {date.label}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label>
                 Time
@@ -976,17 +1090,25 @@ function Bookings() {
                   onChange={(event) => updateForm('scheduledTime', event.target.value)}
                 >
                   <option value="">Select available time</option>
-                  {availableTimesForSelectedDate.map((slot) => (
-                    <option key={slot.id} value={slot.startTime}>
-                      {slot.startTime} - {slot.endTime}
+                  {availableTimesForSelectedDate.map((time) => (
+                    <option key={`${time.slotId}-${time.value}`} value={time.value}>
+                      {time.label}
                     </option>
                   ))}
                 </select>
               </label>
             </div>
+            {selectedArtisan && !isLoadingAvailability && availableBookingDates.length === 0 && (
+              <div className="booking-empty-slot-panel">
+                <p>No available slots for this date. Try another date or message artisan.</p>
+                <Link className="secondary-cta compact-cta" to="/messages">
+                  Message Artisan
+                </Link>
+              </div>
+            )}
             {form.scheduledDate && slotsForSelectedDate.length === 0 && (
               <p className="auth-hint">
-                No active availability on {getDayLabel(dateDayOfWeek)}. Choose one of the listed available days.
+                No available slots for this date. Try another date or message artisan.
               </p>
             )}
             {isSelectedDateUnavailable && (
@@ -995,9 +1117,12 @@ function Bookings() {
               </p>
             )}
             {form.scheduledDate && slotsForSelectedDate.length > 0 && availableTimesForSelectedDate.length === 0 && !isSelectedDateUnavailable && (
-              <p className="auth-error">
-                All available times on this date are already booked.
-              </p>
+              <div className="booking-empty-slot-panel">
+                <p>No available slots for this date. Try another date or message artisan.</p>
+                <Link className="secondary-cta compact-cta" to="/messages">
+                  Message Artisan
+                </Link>
+              </div>
             )}
             {availabilityValidationMessage && (
               <p className="auth-error">{availabilityValidationMessage}</p>
