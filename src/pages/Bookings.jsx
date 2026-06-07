@@ -143,7 +143,13 @@ function BookingHistorySection({
           const bookingStatus = booking.rawStatus || booking.status
 
           if (showRescheduleActions) {
-            console.log('Rendering customer booking card', booking.id, booking.status)
+            console.log('[Handiwave customer booking history render]', {
+              bookingId: booking.id,
+              displayStatus: booking.status,
+              rawStatus: booking.rawStatus,
+              review: booking.review,
+              reviewId: booking.reviewId,
+            })
           }
 
           return (
@@ -166,6 +172,15 @@ function BookingHistorySection({
                   <span>{booking.scheduledDate} at {booking.scheduledTime}</span>
                 </div>
                 {booking.notes && <p>{booking.notes}</p>}
+                {showRescheduleActions && bookingStatus === 'completed' && (
+                  <div className="booking-compatibility-panel">
+                    <strong>Old completed status detected</strong>
+                    <p>
+                      This booking was completed before the new customer confirmation flow.
+                      New jobs should move from artisan completed to customer confirmed before reviews unlock.
+                    </p>
+                  </div>
+                )}
                 {showRescheduleActions && bookingStatus === 'artisan_completed' && (
                   <div className="booking-completion-panel">
                     <div>

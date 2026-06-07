@@ -219,6 +219,12 @@ export async function updateBookingStatusForArtisan({
   currentStatus,
   nextStatus,
 }) {
+  console.log('[Handiwave artisan booking status update]', {
+    bookingId,
+    currentStatus,
+    nextStatus,
+  })
+
   if (!allowedArtisanTransitions[currentStatus]?.includes(nextStatus)) {
     return {
       data: null,
@@ -258,8 +264,20 @@ export async function updateBookingStatusForArtisan({
     .eq('id', bookingId)
     .eq('artisan_id', artisanProfile.id)
     .eq('status', currentStatus)
-    .select('id, status')
-    .single()
+    .select('id, status, completed_at')
+    .maybeSingle()
+
+  console.log('[Handiwave artisan booking status update result]', {
+    data,
+    error,
+  })
+
+  if (!error && !data) {
+    return {
+      data: null,
+      error: new Error('Supabase did not update the booking. Check that the booking id, artisan id, and current status still match.'),
+    }
+  }
 
   return {
     data,
@@ -269,6 +287,13 @@ export async function updateBookingStatusForArtisan({
 
 export async function confirmBookingCompleteForCustomer({ bookingId, customerId }) {
   const supabase = getSupabaseClient()
+
+  console.log('[Handiwave customer completion confirm]', {
+    bookingId,
+    customerId,
+    nextStatus: 'customer_confirmed',
+  })
+
   const { data, error } = await supabase
     .from('bookings')
     .update({
@@ -279,6 +304,11 @@ export async function confirmBookingCompleteForCustomer({ bookingId, customerId 
     .eq('status', 'artisan_completed')
     .select(bookingSelect)
     .maybeSingle()
+
+  console.log('[Handiwave customer completion confirm result]', {
+    data,
+    error,
+  })
 
   if (!error && !data) {
     return {
@@ -295,6 +325,13 @@ export async function confirmBookingCompleteForCustomer({ bookingId, customerId 
 
 export async function reportBookingIssueForCustomer({ bookingId, customerId }) {
   const supabase = getSupabaseClient()
+
+  console.log('[Handiwave customer completion report]', {
+    bookingId,
+    customerId,
+    nextStatus: 'disputed',
+  })
+
   const { data, error } = await supabase
     .from('bookings')
     .update({
@@ -305,6 +342,11 @@ export async function reportBookingIssueForCustomer({ bookingId, customerId }) {
     .eq('status', 'artisan_completed')
     .select(bookingSelect)
     .maybeSingle()
+
+  console.log('[Handiwave customer completion report result]', {
+    data,
+    error,
+  })
 
   if (!error && !data) {
     return {
