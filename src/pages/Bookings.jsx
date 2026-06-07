@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
 import EmptyState from '../components/EmptyState.jsx'
 import RoleNotice from '../components/RoleNotice.jsx'
@@ -360,6 +360,7 @@ function BookingStatusBadge({ status }) {
 
 function Bookings() {
   const { user } = useAuth()
+  const [searchParams] = useSearchParams()
   const [availability, setAvailability] = useState({
     bookedSlots: [],
     slots: [],
@@ -380,6 +381,7 @@ function Bookings() {
   const [updatingCompletionId, setUpdatingCompletionId] = useState('')
 
   const isCustomer = user?.role === 'customer'
+  const requestedArtisanId = searchParams.get('artisan')
   const selectedArtisan = options.artisans.find((artisan) => artisan.id === form.artisanId)
   const selectedService = options.services.find((service) => service.id === form.serviceId)
   const availableDayLabels = useMemo(() => (
@@ -450,13 +452,17 @@ function Bookings() {
         setBookings(bookingsResult.data)
 
         setForm((currentForm) => {
-          const firstArtisan = nextOptions.artisans[0]
+          const requestedArtisan = nextOptions.artisans.find((artisan) => (
+            artisan.id === requestedArtisanId
+          ))
+          const firstArtisan = requestedArtisan || nextOptions.artisans[0]
           const firstService = nextOptions.services[0]
 
           return {
             ...currentForm,
-            artisanId: currentForm.artisanId || firstArtisan?.id || '',
+            artisanId: requestedArtisan?.id || currentForm.artisanId || firstArtisan?.id || '',
             serviceId:
+              requestedArtisan?.primary_service_id ||
               currentForm.serviceId ||
               firstArtisan?.primary_service_id ||
               firstService?.id ||
@@ -479,7 +485,7 @@ function Bookings() {
     return () => {
       isMounted = false
     }
-  }, [user])
+  }, [requestedArtisanId, user])
 
   useEffect(() => {
     if (!isCustomer || !user?.id) {
@@ -882,7 +888,10 @@ function Bookings() {
             )}
             {selectedArtisan && (
               <div className="booking-availability-panel">
-                <strong>Available days</strong>
+                <strong>Available slots</strong>
+                <p>
+                  Pick a date that matches this artisan&apos;s weekly schedule. Handiwave also checks blocked dates and existing bookings before submission.
+                </p>
                 {isLoadingAvailability ? (
                   <p>Loading artisan availability...</p>
                 ) : availabilityError ? (
@@ -905,7 +914,12 @@ function Bookings() {
                     )}
                   </>
                 ) : (
-                  <p>This artisan has not added bookable availability yet.</p>
+                  <>
+                    <p>This artisan has not added bookable availability yet.</p>
+                    <Link className="secondary-cta compact-cta" to="/messages">
+                      Message Artisan
+                    </Link>
+                  </>
                 )}
               </div>
             )}

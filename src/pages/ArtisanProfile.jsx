@@ -128,6 +128,7 @@ function ArtisanProfile() {
   const skills = useMemo(() => artisan?.skills?.length ? artisan.skills : [artisan?.skill], [artisan])
   const activeAvailabilitySlots = availability.slots.filter((slot) => slot.isActive)
   const availabilityDays = [...new Set(activeAvailabilitySlots.map((slot) => slot.dayLabel))]
+  const hasAvailability = activeAvailabilitySlots.length > 0
 
   if (isLoading) {
     return (
@@ -207,12 +208,20 @@ function ArtisanProfile() {
           </div>
 
           <div className="profile-actions">
-            <Button className="primary-cta" to="/bookings">
-              Book Now
-            </Button>
-            <Button className="secondary-cta" to="/messages">
-              Chat
-            </Button>
+            {hasAvailability ? (
+              <Button className="primary-cta" to={`/bookings?artisan=${artisan.id}`}>
+                Book Available Slot
+              </Button>
+            ) : (
+              <Button className="secondary-cta" to="/messages">
+                Message Artisan
+              </Button>
+            )}
+            {hasAvailability && (
+              <Button className="secondary-cta" to="/messages">
+                Chat
+              </Button>
+            )}
           </div>
         </div>
 
@@ -224,6 +233,7 @@ function ArtisanProfile() {
             <span>Availability</span>
             {availabilityDays.length > 0 ? (
               <>
+                <span className="availability-status-note">Available this week</span>
                 <strong>{availabilityDays.slice(0, 3).join(', ')}</strong>
                 <p>
                   {activeAvailabilitySlots.length} active slot{activeAvailabilitySlots.length === 1 ? '' : 's'}
@@ -233,11 +243,61 @@ function ArtisanProfile() {
                 </p>
               </>
             ) : (
-              <p>This artisan has not published booking hours yet.</p>
+              <>
+                <span className="availability-status-note muted">No availability set yet</span>
+                <p>Message this artisan or check again after they publish bookable hours.</p>
+              </>
             )}
           </div>
         </aside>
       </motion.section>
+
+      <section className="public-availability-card">
+        <div>
+          <p className="section-kicker">Booking availability</p>
+          <h2>{hasAvailability ? 'Available this week' : 'No availability set yet'}</h2>
+          <p>
+            {hasAvailability
+              ? 'Choose one of these active weekly windows when creating your booking. Blocked dates are checked before submission.'
+              : 'This artisan has not added bookable slots yet. You can message them to ask for availability.'}
+          </p>
+        </div>
+        {hasAvailability ? (
+          <div className="availability-mini-list">
+            {activeAvailabilitySlots.slice(0, 6).map((slot) => (
+              <span key={slot.id}>
+                <strong>{slot.dayLabel}</strong>
+                {slot.startTime} - {slot.endTime}
+              </span>
+            ))}
+            {availability.unavailableDates.length > 0 && (
+              <p>
+                Unavailable dates: {availability.unavailableDates
+                  .slice(0, 3)
+                  .map((date) => date.unavailableDate)
+                  .join(', ')}
+                {availability.unavailableDates.length > 3 ? '...' : ''}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="availability-setup-callout">
+            <strong>No published slots</strong>
+            <p>Booking will be easier once this artisan sets weekly availability.</p>
+          </div>
+        )}
+        <div className="profile-actions">
+          {hasAvailability ? (
+            <Button className="primary-cta" to={`/bookings?artisan=${artisan.id}`}>
+              Book Available Slot
+            </Button>
+          ) : (
+            <Button className="secondary-cta" to="/messages">
+              Ask Artisan to Set Availability
+            </Button>
+          )}
+        </div>
+      </section>
 
       <section className="profile-content-grid">
         <motion.article className="profile-panel about-panel" initial={{ opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }}>

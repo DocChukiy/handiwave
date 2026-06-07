@@ -29,6 +29,10 @@ function profileChecklist(artisan) {
   ]
 }
 
+function getNextAvailabilitySlot(slots) {
+  return slots.find((slot) => slot.isActive) || null
+}
+
 function ArtisanDashboard() {
   const { user } = useAuth()
   const [artisan, setArtisan] = useState(null)
@@ -62,6 +66,7 @@ function ArtisanDashboard() {
   const pendingJobs = bookings.filter((booking) => booking.rawStatus === 'pending')
   const recentActivity = bookings.slice(0, 3)
   const activeAvailabilitySlots = availability.slots.filter((slot) => slot.isActive)
+  const nextAvailabilitySlot = getNextAvailabilitySlot(activeAvailabilitySlots)
 
   useEffect(() => {
     let isMounted = true
@@ -226,13 +231,17 @@ function ArtisanDashboard() {
         </article>
         <article className="artisan-profile-panel">
           <p className="section-kicker">Availability</p>
-          <h2>{activeAvailabilitySlots.length} active slot{activeAvailabilitySlots.length === 1 ? '' : 's'}</h2>
+          <h2>
+            {activeAvailabilitySlots.length > 0
+              ? `${activeAvailabilitySlots.length} active slot${activeAvailabilitySlots.length === 1 ? '' : 's'}`
+              : 'Availability needs setup'}
+          </h2>
           <p>
             {activeAvailabilitySlots.length > 0
-              ? `${availability.unavailableDates.length} blocked date${availability.unavailableDates.length === 1 ? '' : 's'} on your calendar.`
+              ? `Next available pattern: ${nextAvailabilitySlot.dayLabel}, ${nextAvailabilitySlot.startTime} - ${nextAvailabilitySlot.endTime}. ${availability.unavailableDates.length} blocked date${availability.unavailableDates.length === 1 ? '' : 's'} on your calendar.`
               : 'Add weekly availability so customers know when they can book you.'}
           </p>
-          <Button className="secondary-cta" to="/artisan-availability">
+          <Button className={activeAvailabilitySlots.length > 0 ? 'secondary-cta' : 'primary-cta'} to="/artisan-availability">
             Manage Availability
           </Button>
         </article>

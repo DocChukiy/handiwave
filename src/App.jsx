@@ -576,18 +576,30 @@ function AppShell() {
                       </NavLink>
                     )}
                     {user?.role === 'artisan' && (
-                      artisanNeedsSetup && (
+                      <>
                         <NavLink
                           className="profile-menu-link"
-                          to="/artisan-onboarding"
+                          to="/artisan-availability"
                           onClick={(event) => {
                             event.currentTarget.closest('details')?.removeAttribute('open')
                             setIsMenuOpen(false)
                           }}
                         >
-                          Complete Setup
+                          Manage Availability
                         </NavLink>
-                      )
+                        {artisanNeedsSetup && (
+                          <NavLink
+                            className="profile-menu-link"
+                            to="/artisan-onboarding"
+                            onClick={(event) => {
+                              event.currentTarget.closest('details')?.removeAttribute('open')
+                              setIsMenuOpen(false)
+                            }}
+                          >
+                            Complete Setup
+                          </NavLink>
+                        )}
+                      </>
                     )}
                   </div>
                 </details>

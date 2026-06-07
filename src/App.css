@@ -3420,6 +3420,12 @@
   padding: 14px;
 }
 
+.booking-availability-panel .compact-cta {
+  justify-self: start;
+  min-height: 40px;
+  padding: 11px 16px;
+}
+
 .booking-availability-panel strong,
 .profile-availability-preview strong {
   color: #064e3b;
@@ -3430,6 +3436,22 @@
   color: #047857;
   line-height: 1.55;
   margin: 0;
+}
+
+.availability-status-note {
+  background: #dcfce7;
+  border-radius: 999px;
+  color: #047857;
+  display: inline-flex;
+  font-size: 0.76rem;
+  font-weight: 900;
+  justify-self: start;
+  padding: 6px 9px;
+}
+
+.availability-status-note.muted {
+  background: #f1f5f9;
+  color: #64748b;
 }
 
 .availability-chip-row {
@@ -3446,6 +3468,89 @@
   font-size: 0.82rem;
   font-weight: 900;
   padding: 7px 10px;
+}
+
+.availability-profile-card,
+.public-availability-card {
+  background:
+    linear-gradient(135deg, rgba(236, 253, 245, 0.92), rgba(255, 255, 255, 0.96)),
+    #ffffff;
+  border: 1px solid rgba(22, 163, 74, 0.14);
+  border-radius: 28px;
+  box-shadow: 0 22px 55px rgba(15, 23, 42, 0.08);
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+}
+
+.public-availability-card {
+  grid-template-columns: minmax(260px, 0.9fr) minmax(260px, 1.1fr) auto;
+}
+
+.availability-profile-card h2,
+.public-availability-card h2 {
+  color: #0f172a;
+  margin: 4px 0 8px;
+}
+
+.availability-profile-card p,
+.public-availability-card p {
+  color: #64748b;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.availability-summary-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.availability-summary-grid article {
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 18px;
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+}
+
+.availability-summary-grid strong {
+  color: #064e3b;
+  font-size: 1.2rem;
+}
+
+.availability-summary-grid span {
+  color: #64748b;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.availability-mini-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.availability-mini-list span,
+.availability-setup-callout {
+  background: #ffffff;
+  border: 1px solid rgba(22, 163, 74, 0.14);
+  border-radius: 18px;
+  color: #047857;
+  display: grid;
+  font-weight: 800;
+  gap: 3px;
+  padding: 12px 14px;
+}
+
+.availability-mini-list strong,
+.availability-setup-callout strong {
+  color: #064e3b;
+}
+
+.availability-mini-list p {
+  flex-basis: 100%;
 }
 
 .booking-history-header {
@@ -4956,6 +5061,11 @@
 :root[data-theme='dark'] .booking-compatibility-panel,
 :root[data-theme='dark'] .booking-availability-panel,
 :root[data-theme='dark'] .profile-availability-preview,
+:root[data-theme='dark'] .availability-profile-card,
+:root[data-theme='dark'] .public-availability-card,
+:root[data-theme='dark'] .availability-summary-grid article,
+:root[data-theme='dark'] .availability-mini-list span,
+:root[data-theme='dark'] .availability-setup-callout,
 :root[data-theme='dark'] .booking-success-panel,
 :root[data-theme='dark'] .booking-review-form,
 :root[data-theme='dark'] .booking-review-summary {
@@ -4969,6 +5079,11 @@
 :root[data-theme='dark'] .booking-compatibility-panel strong,
 :root[data-theme='dark'] .booking-availability-panel strong,
 :root[data-theme='dark'] .profile-availability-preview strong,
+:root[data-theme='dark'] .availability-profile-card h2,
+:root[data-theme='dark'] .public-availability-card h2,
+:root[data-theme='dark'] .availability-summary-grid strong,
+:root[data-theme='dark'] .availability-mini-list strong,
+:root[data-theme='dark'] .availability-setup-callout strong,
 :root[data-theme='dark'] .booking-success-panel h2,
 :root[data-theme='dark'] .booking-review-form strong,
 :root[data-theme='dark'] .booking-review-summary strong,
@@ -4981,11 +5096,25 @@
 :root[data-theme='dark'] .booking-compatibility-panel p,
 :root[data-theme='dark'] .booking-availability-panel p,
 :root[data-theme='dark'] .profile-availability-preview p,
+:root[data-theme='dark'] .availability-profile-card p,
+:root[data-theme='dark'] .public-availability-card p,
+:root[data-theme='dark'] .availability-summary-grid span,
+:root[data-theme='dark'] .availability-mini-list span,
 :root[data-theme='dark'] .booking-success-panel p,
 :root[data-theme='dark'] .booking-review-form p,
 :root[data-theme='dark'] .booking-review-summary p,
 :root[data-theme='dark'] .booking-review-form label {
   color: #94a3b8;
+}
+
+:root[data-theme='dark'] .availability-status-note {
+  background: rgba(22, 163, 74, 0.18);
+  color: #86efac;
+}
+
+:root[data-theme='dark'] .availability-status-note.muted {
+  background: rgba(148, 163, 184, 0.12);
+  color: #cbd5e1;
 }
 
 :root[data-theme='dark'] .action-required-badge,
@@ -5048,6 +5177,7 @@
   .admin-layout,
   .availability-layout,
   .booking-layout,
+  .public-availability-card,
   .artisan-dashboard-grid,
   .profile-dashboard-grid,
   .artisan-insight-grid,
@@ -5068,6 +5198,10 @@
 
   .dashboard-metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .availability-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .job-status-grid {
@@ -5150,8 +5284,30 @@
 
   .job-card-grid,
   .availability-layout,
+  .availability-summary-grid,
   .summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .availability-profile-card,
+  .public-availability-card {
+    border-radius: 22px;
+    padding: 18px;
+  }
+
+  .availability-profile-card .profile-actions,
+  .public-availability-card .profile-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .availability-profile-card .primary-cta,
+  .availability-profile-card .secondary-cta,
+  .public-availability-card .primary-cta,
+  .public-availability-card .secondary-cta,
+  .booking-availability-panel .compact-cta {
+    justify-content: center;
+    width: 100%;
   }
 
   .availability-row {

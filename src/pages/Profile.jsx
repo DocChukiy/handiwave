@@ -4,6 +4,7 @@ import Button from '../components/Button.jsx'
 import EmptyState from '../components/EmptyState.jsx'
 import SkeletonPreview from '../components/Skeletons.jsx'
 import { getArtisanByProfileId } from '../services/artisanService.js'
+import { getAvailabilityForArtisanId } from '../services/availabilityService.js'
 import { getBookingsForUser } from '../services/bookingService.js'
 
 function formatMoney(value) {
@@ -28,9 +29,14 @@ function completionForArtisan(artisan) {
   return Math.round((fields.filter(Boolean).length / fields.length) * 100)
 }
 
+function getNextAvailabilitySlot(slots) {
+  return slots.find((slot) => slot.isActive) || null
+}
+
 function Profile() {
   const { user } = useAuth()
   const [artisan, setArtisan] = useState(null)
+  const [availability, setAvailability] = useState({ slots: [], unavailableDates: [] })
   const [bookings, setBookings] = useState([])
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
@@ -56,20 +62,25 @@ function Profile() {
           isArtisan ? getArtisanByProfileId(user.id) : Promise.resolve({ data: null, error: null }),
           getBookingsForUser(user),
         ])
+        const availabilityResult = artisanResult.data
+          ? await getAvailabilityForArtisanId(artisanResult.data.id)
+          : { data: { slots: [], unavailableDates: [] }, error: null }
 
         if (!isMounted) {
           return
         }
 
-        if (artisanResult.error || bookingsResult.error) {
+        if (artisanResult.error || bookingsResult.error || availabilityResult.error) {
           setError(
             artisanResult.error?.message ||
               bookingsResult.error?.message ||
+              availabilityResult.error?.message ||
               'Unable to load profile.',
           )
         }
 
         setArtisan(artisanResult.data)
+        setAvailability(availabilityResult.data)
         setBookings(bookingsResult.data)
       } catch (loadError) {
         if (isMounted) {
@@ -113,6 +124,9 @@ function Profile() {
 
   if (isArtisan) {
     const completion = completionForArtisan(artisan)
+    const activeSlots = availability.slots.filter((slot) => slot.isActive)
+    const nextSlot = getNextAvailabilitySlot(activeSlots)
+    const hasAvailability = activeSlots.length > 0
 
     return (
       <div className="starter-page profile-page">
@@ -148,6 +162,63 @@ function Profile() {
             <article><strong>{artisan.rating.toFixed(1)}</strong><span>Average rating</span></article>
             <article><strong>{summary.pending}</strong><span>Pending jobs</span></article>
           </section>
+        </section>
+
+        <section className="availability-profile-card">
+          <div>
+            <p className="section-kicker">Availability</p>
+            <h2>{hasAvailability ? 'Customers can see your booking times' : 'Set your availability'}</h2>
+            <p>
+              {hasAvailability
+                ? 'Your weekly slots help customers pick a valid date and avoid schedule clashes before they submit a booking.'
+                : 'Set your availability so customers know when they can book you.'}
+            </p>
+          </div>
+
+          <div className="availability-summary-grid">
+            <article>
+              <strong>{hasAvailability ? 'Complete' : 'Needs setup'}</strong>
+              <span>Setup status</span>
+            </article>
+            <article>
+              <strong>{activeSlots.length}</strong>
+              <span>Active weekly slots</span>
+            </article>
+            <article>
+              <strong>{availability.unavailableDates.length}</strong>
+              <span>Unavailable dates</span>
+            </article>
+          </div>
+
+          {hasAvailability ? (
+            <div className="availability-mini-list">
+              {activeSlots.slice(0, 4).map((slot) => (
+                <span key={slot.id}>
+                  <strong>{slot.dayLabel}</strong>
+                  {slot.startTime} - {slot.endTime}
+                </span>
+              ))}
+              {nextSlot && (
+                <p>
+                  Next available pattern: {nextSlot.dayLabel}, {nextSlot.startTime} - {nextSlot.endTime}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="availability-setup-callout">
+              <strong>Set your availability so customers know when they can book you.</strong>
+              <p>Add your weekly working hours and block dates when you are unavailable.</p>
+            </div>
+          )}
+
+          <div className="profile-actions">
+            <Button className="primary-cta" to="/artisan-availability">
+              {hasAvailability ? 'Edit Availability' : 'Set Availability'}
+            </Button>
+            <Button className="secondary-cta" to="/artisan-availability">
+              Add Unavailable Date
+            </Button>
+          </div>
         </section>
       </div>
     )
