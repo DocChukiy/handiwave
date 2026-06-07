@@ -19,6 +19,7 @@ import AuthProvider from './auth/AuthProvider.jsx'
 import { useAuth } from './auth/useAuth.js'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import AdminDashboard from './pages/AdminDashboard.jsx'
+import ArtisanAvailability from './pages/ArtisanAvailability.jsx'
 import ArtisanDashboard from './pages/ArtisanDashboard.jsx'
 import ArtisanJobs from './pages/ArtisanJobs.jsx'
 import ArtisanOnboarding from './pages/ArtisanOnboarding.jsx'
@@ -62,6 +63,7 @@ const customerNavLinks = [
 const artisanNavLinks = [
   { path: '/artisan-dashboard', label: 'Dashboard' },
   { path: '/artisan-jobs', label: 'Jobs' },
+  { path: '/artisan-availability', label: 'Availability' },
   { path: '/messages', label: 'Messages' },
   { path: '/reels', label: 'Reels' },
   { path: '/wallet', label: 'Wallet' },
@@ -159,6 +161,14 @@ function AnimatedRoutes() {
             element={(
               <ProtectedRoute allowedRoles={['artisan']}>
                 <ArtisanJobs />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/artisan-availability"
+            element={(
+              <ProtectedRoute allowedRoles={['artisan']}>
+                <ArtisanAvailability />
               </ProtectedRoute>
             )}
           />

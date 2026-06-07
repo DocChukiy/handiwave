@@ -3860,6 +3860,94 @@
   gap: 24px;
 }
 
+.availability-layout {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.availability-layout.wide {
+  align-items: start;
+}
+
+.availability-form {
+  align-content: start;
+}
+
+.availability-list {
+  display: grid;
+  gap: 12px;
+}
+
+.availability-row {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 18px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  padding: 14px;
+}
+
+.availability-row.inactive {
+  opacity: 0.66;
+}
+
+.availability-row strong {
+  color: #0f172a;
+  display: block;
+}
+
+.availability-row span {
+  color: #64748b;
+  font-weight: 800;
+}
+
+.availability-status {
+  background: #f1f5f9;
+  border-radius: 999px;
+  color: #475569;
+  font-size: 0.82rem;
+  padding: 8px 10px;
+}
+
+.availability-status.active {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.availability-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: end;
+}
+
+.availability-actions button {
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 999px;
+  color: #334155;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 900;
+  min-height: 38px;
+  padding: 0 12px;
+}
+
+.availability-actions button:first-child {
+  background: #ecfdf5;
+  border-color: rgba(22, 163, 74, 0.18);
+  color: #047857;
+}
+
+.availability-actions button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
 .customer-home-snapshot {
   display: grid;
   gap: 18px;
@@ -4731,6 +4819,8 @@
 }
 
 :root[data-theme='dark'] .profile-detail-list span,
+:root[data-theme='dark'] .availability-row,
+:root[data-theme='dark'] .availability-actions button,
 :root[data-theme='dark'] .job-card,
 :root[data-theme='dark'] .profile-checklist span,
 :root[data-theme='dark'] .dashboard-activity-list span,
@@ -4744,8 +4834,23 @@
 }
 
 :root[data-theme='dark'] .dashboard-activity-list strong,
+:root[data-theme='dark'] .availability-row strong,
 :root[data-theme='dark'] .job-card p strong {
   color: #f8fafc;
+}
+
+:root[data-theme='dark'] .availability-row span {
+  color: #94a3b8;
+}
+
+:root[data-theme='dark'] .availability-status {
+  background: rgba(148, 163, 184, 0.12);
+  color: #cbd5e1;
+}
+
+:root[data-theme='dark'] .availability-status.active {
+  background: rgba(16, 185, 129, 0.14);
+  color: #86efac;
 }
 
 :root[data-theme='dark'] .job-filter-tabs button {
@@ -4891,6 +4996,7 @@
 @media (max-width: 900px) {
   .messages-layout,
   .admin-layout,
+  .availability-layout,
   .booking-layout,
   .artisan-dashboard-grid,
   .profile-dashboard-grid,
@@ -4993,8 +5099,22 @@
   }
 
   .job-card-grid,
+  .availability-layout,
   .summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .availability-row {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .availability-actions {
+    justify-content: stretch;
+  }
+
+  .availability-actions button {
+    flex: 1;
   }
 
   .booking-card-top-row,

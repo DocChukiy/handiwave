@@ -3,6 +3,7 @@ import { useAuth } from '../auth/useAuth.js'
 import Button from '../components/Button.jsx'
 import SkeletonPreview from '../components/Skeletons.jsx'
 import { getArtisanByProfileId } from '../services/artisanService.js'
+import { getAvailabilityForArtisanId } from '../services/availabilityService.js'
 import { getBookingsForUser } from '../services/bookingService.js'
 
 function formatMoney(value) {
@@ -31,6 +32,7 @@ function profileChecklist(artisan) {
 function ArtisanDashboard() {
   const { user } = useAuth()
   const [artisan, setArtisan] = useState(null)
+  const [availability, setAvailability] = useState({ slots: [], unavailableDates: [] })
   const [bookings, setBookings] = useState([])
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
@@ -59,6 +61,7 @@ function ArtisanDashboard() {
   )).length
   const pendingJobs = bookings.filter((booking) => booking.rawStatus === 'pending')
   const recentActivity = bookings.slice(0, 3)
+  const activeAvailabilitySlots = availability.slots.filter((slot) => slot.isActive)
 
   useEffect(() => {
     let isMounted = true
@@ -68,24 +71,29 @@ function ArtisanDashboard() {
       setIsLoading(true)
 
       try {
-        const [artisanResult, bookingResult] = await Promise.all([
-          getArtisanByProfileId(user.id),
+        const artisanResult = await getArtisanByProfileId(user.id)
+        const [bookingResult, availabilityResult] = await Promise.all([
           getBookingsForUser(user),
+          artisanResult.data
+            ? getAvailabilityForArtisanId(artisanResult.data.id)
+            : Promise.resolve({ data: { slots: [], unavailableDates: [] }, error: null }),
         ])
 
         if (!isMounted) {
           return
         }
 
-        if (artisanResult.error || bookingResult.error) {
+        if (artisanResult.error || bookingResult.error || availabilityResult.error) {
           setError(
             artisanResult.error?.message ||
               bookingResult.error?.message ||
+              availabilityResult.error?.message ||
               'Unable to load artisan dashboard.',
           )
         }
 
         setArtisan(artisanResult.data)
+        setAvailability(availabilityResult.data)
         setBookings(bookingResult.data)
       } catch (loadError) {
         if (isMounted) {
@@ -217,6 +225,18 @@ function ArtisanDashboard() {
           <Button className="secondary-cta" to="/reels">View Reels</Button>
         </article>
         <article className="artisan-profile-panel">
+          <p className="section-kicker">Availability</p>
+          <h2>{activeAvailabilitySlots.length} active slot{activeAvailabilitySlots.length === 1 ? '' : 's'}</h2>
+          <p>
+            {activeAvailabilitySlots.length > 0
+              ? `${availability.unavailableDates.length} blocked date${availability.unavailableDates.length === 1 ? '' : 's'} on your calendar.`
+              : 'Add weekly availability so customers know when they can book you.'}
+          </p>
+          <Button className="secondary-cta" to="/artisan-availability">
+            Manage Availability
+          </Button>
+        </article>
+        <article className="artisan-profile-panel">
           <p className="section-kicker">Profile checklist</p>
           {!isSetupComplete && (
             <p>Complete these setup items so your profile is stronger for customers.</p>
@@ -227,6 +247,9 @@ function ArtisanDashboard() {
                 {item.done ? 'Done' : 'Open'} - {item.label}
               </span>
             ))}
+            <span className={activeAvailabilitySlots.length > 0 ? 'done' : ''}>
+              {activeAvailabilitySlots.length > 0 ? 'Done' : 'Open'} - Availability added
+            </span>
           </div>
           {!isSetupComplete && (
             <Button className="secondary-cta" to="/artisan-onboarding">
