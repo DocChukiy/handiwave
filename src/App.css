@@ -3509,16 +3509,147 @@
   color: #1d4ed8;
 }
 
+.booking-row .status-artisan_completed,
+.job-card .status-artisan_completed {
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.booking-row .status-customer_confirmed,
+.job-card .status-customer_confirmed {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
 .booking-row .status-completed,
 .job-card .status-completed {
   background: #f0fdf4;
   color: #15803d;
 }
 
+.booking-row .status-disputed,
+.job-card .status-disputed {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 .booking-row .status-cancelled,
 .job-card .status-cancelled {
   background: #fef2f2;
   color: #b91c1c;
+}
+
+.booking-completion-panel,
+.booking-review-form,
+.booking-review-summary {
+  background:
+    linear-gradient(180deg, rgba(240, 253, 244, 0.94), rgba(236, 253, 245, 0.72)),
+    linear-gradient(135deg, rgba(22, 163, 74, 0.08), transparent);
+  border: 1px solid rgba(22, 163, 74, 0.18);
+  border-radius: 22px;
+  display: grid;
+  gap: 14px;
+  margin-top: 12px;
+  padding: 16px;
+}
+
+.booking-completion-panel strong,
+.booking-review-form strong,
+.booking-review-summary strong {
+  color: #064e3b;
+  font-size: 1.02rem;
+}
+
+.booking-completion-panel p,
+.booking-review-form p,
+.booking-review-summary p {
+  color: #475569;
+  line-height: 1.6;
+  margin: 4px 0 0;
+}
+
+.booking-completion-actions {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(160px, 1fr));
+}
+
+.booking-completion-actions button,
+.booking-review-form button {
+  border-radius: 16px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+  min-height: 50px;
+  padding: 0 16px;
+  transition:
+    box-shadow 180ms ease,
+    transform 180ms ease,
+    opacity 180ms ease;
+}
+
+.booking-completion-actions button:first-child,
+.booking-review-form button {
+  background: linear-gradient(135deg, #16a34a, #059669);
+  border: 0;
+  box-shadow: 0 14px 26px rgba(5, 150, 105, 0.22);
+  color: #ffffff;
+}
+
+.booking-completion-actions button:last-child {
+  background: #ffffff;
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  color: #b91c1c;
+}
+
+.booking-completion-actions button:hover,
+.booking-review-form button:hover {
+  transform: translateY(-1px);
+}
+
+.booking-completion-actions button:disabled,
+.booking-review-form button:disabled,
+.booking-review-form select:disabled,
+.booking-review-form textarea:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.booking-review-form label {
+  color: #334155;
+  display: grid;
+  font-size: 0.94rem;
+  font-weight: 900;
+  gap: 7px;
+}
+
+.booking-review-form select,
+.booking-review-form textarea {
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 16px;
+  color: #0f172a;
+  font: inherit;
+  outline: 0;
+  padding: 13px 14px;
+}
+
+.booking-review-form textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.booking-review-summary {
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.booking-review-summary span {
+  background: #fffbeb;
+  border-radius: 999px;
+  color: #b45309;
+  font-weight: 900;
+  padding: 8px 11px;
 }
 
 .artisan-dashboard-page {
@@ -4330,6 +4461,37 @@
   color: #ffffff;
 }
 
+:root[data-theme='dark'] .booking-completion-panel,
+:root[data-theme='dark'] .booking-review-form,
+:root[data-theme='dark'] .booking-review-summary {
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.9)),
+    linear-gradient(135deg, rgba(16, 185, 129, 0.08), transparent);
+  border-color: rgba(52, 211, 153, 0.18);
+}
+
+:root[data-theme='dark'] .booking-completion-panel strong,
+:root[data-theme='dark'] .booking-review-form strong,
+:root[data-theme='dark'] .booking-review-summary strong,
+:root[data-theme='dark'] .booking-review-form select,
+:root[data-theme='dark'] .booking-review-form textarea {
+  color: #f8fafc;
+}
+
+:root[data-theme='dark'] .booking-completion-panel p,
+:root[data-theme='dark'] .booking-review-form p,
+:root[data-theme='dark'] .booking-review-summary p,
+:root[data-theme='dark'] .booking-review-form label {
+  color: #94a3b8;
+}
+
+:root[data-theme='dark'] .booking-review-form select,
+:root[data-theme='dark'] .booking-review-form textarea,
+:root[data-theme='dark'] .booking-completion-actions button:last-child {
+  background: rgba(15, 23, 42, 0.86);
+  border-color: rgba(148, 163, 184, 0.14);
+}
+
 :root[data-theme='dark'] .job-message-link {
   color: #cbd5e1;
 }
@@ -4486,11 +4648,15 @@
   }
 
   .reschedule-time-grid,
-  .booking-reschedule-actions {
+  .booking-reschedule-actions,
+  .booking-completion-actions,
+  .booking-review-summary {
     grid-template-columns: 1fr;
   }
 
-  .booking-reschedule-actions button {
+  .booking-reschedule-actions button,
+  .booking-completion-actions button,
+  .booking-review-form button {
     width: 100%;
   }
 

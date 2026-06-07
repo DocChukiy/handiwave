@@ -34,7 +34,7 @@ function ArtisanJobs() {
   const [updatingBookingId, setUpdatingBookingId] = useState('')
 
   const stats = useMemo(() => ({
-    completed: bookings.filter((booking) => booking.rawStatus === 'completed').length,
+    completed: bookings.filter((booking) => booking.rawStatus === 'customer_confirmed').length,
     confirmed: bookings.filter((booking) => booking.rawStatus === 'confirmed').length,
     inProgress: bookings.filter((booking) => booking.rawStatus === 'in_progress').length,
     pending: bookings.filter((booking) => booking.rawStatus === 'pending').length,
@@ -240,7 +240,7 @@ function ArtisanJobs() {
         <div><strong>{stats.pending}</strong><span>Pending Requests</span></div>
         <div><strong>{stats.confirmed}</strong><span>Confirmed Jobs</span></div>
         <div><strong>{stats.inProgress}</strong><span>In Progress</span></div>
-        <div><strong>{stats.completed}</strong><span>Completed Jobs</span></div>
+        <div><strong>{stats.completed}</strong><span>Customer Confirmed</span></div>
       </section>
 
       {error && <p className="auth-error page-error">{error}</p>}

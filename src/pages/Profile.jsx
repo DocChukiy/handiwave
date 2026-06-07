@@ -37,7 +37,9 @@ function Profile() {
 
   const isArtisan = user?.role === 'artisan'
   const summary = useMemo(() => ({
-    completed: bookings.filter((booking) => booking.rawStatus === 'completed').length,
+    completed: bookings.filter((booking) => (
+      booking.rawStatus === 'customer_confirmed' || booking.rawStatus === 'completed'
+    )).length,
     pending: bookings.filter((booking) => booking.rawStatus === 'pending').length,
     total: bookings.length,
   }), [bookings])

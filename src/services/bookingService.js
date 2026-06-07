@@ -18,12 +18,13 @@ const bookingSelect = `
     verification_status,
     profile:profiles!${artisanProfileRelation}(id, full_name, email, avatar_url)
   ),
-  customer:profiles!${bookingCustomerRelation}(id, full_name, email)
+  customer:profiles!${bookingCustomerRelation}(id, full_name, email),
+  review:reviews!reviews_booking_id_fkey(id, rating, review_text, created_at)
 `
 
 const allowedArtisanTransitions = {
   confirmed: ['in_progress'],
-  in_progress: ['completed'],
+  in_progress: ['artisan_completed'],
   pending: ['confirmed', 'cancelled', 'reschedule_requested'],
   reschedule_requested: ['cancelled'],
 }
@@ -41,6 +42,7 @@ export function mapBookingRow(booking) {
     booking.artisan?.business_name ||
     'Handiwave artisan'
   const customerName = booking.customer?.full_name || booking.customer?.email || 'Customer'
+  const review = Array.isArray(booking.review) ? booking.review[0] : booking.review
   const status = booking.status || 'pending'
 
   return {
@@ -63,6 +65,8 @@ export function mapBookingRow(booking) {
     rescheduleRequestedAt: booking.reschedule_requested_at || '',
     rescheduleNote: booking.reschedule_note || '',
     rawStatus: status,
+    review: review || null,
+    reviewId: review?.id || '',
     scheduledDate: booking.scheduled_date || 'Date pending',
     scheduledTime: booking.scheduled_time ? booking.scheduled_time.slice(0, 5) : 'Time pending',
     service: booking.service?.name || 'Handiwave service',
@@ -244,7 +248,7 @@ export async function updateBookingStatusForArtisan({
     status: nextStatus,
   }
 
-  if (nextStatus === 'completed') {
+  if (nextStatus === 'artisan_completed') {
     updatePayload.completed_at = new Date().toISOString()
   }
 
@@ -259,6 +263,58 @@ export async function updateBookingStatusForArtisan({
 
   return {
     data,
+    error,
+  }
+}
+
+export async function confirmBookingCompleteForCustomer({ bookingId, customerId }) {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('bookings')
+    .update({
+      status: 'customer_confirmed',
+    })
+    .eq('id', bookingId)
+    .eq('customer_id', customerId)
+    .eq('status', 'artisan_completed')
+    .select(bookingSelect)
+    .maybeSingle()
+
+  if (!error && !data) {
+    return {
+      data: null,
+      error: new Error('This booking is not awaiting customer completion confirmation.'),
+    }
+  }
+
+  return {
+    data: data ? mapBookingRow(data) : null,
+    error,
+  }
+}
+
+export async function reportBookingIssueForCustomer({ bookingId, customerId }) {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('bookings')
+    .update({
+      status: 'disputed',
+    })
+    .eq('id', bookingId)
+    .eq('customer_id', customerId)
+    .eq('status', 'artisan_completed')
+    .select(bookingSelect)
+    .maybeSingle()
+
+  if (!error && !data) {
+    return {
+      data: null,
+      error: new Error('This booking is not awaiting customer completion confirmation.'),
+    }
+  }
+
+  return {
+    data: data ? mapBookingRow(data) : null,
     error,
   }
 }

@@ -38,9 +38,9 @@ function ArtisanDashboard() {
   const metrics = useMemo(() => {
     const pending = bookings.filter((booking) => booking.rawStatus === 'pending').length
     const active = bookings.filter((booking) => (
-      booking.rawStatus === 'confirmed' || booking.rawStatus === 'in_progress'
+      ['confirmed', 'in_progress', 'artisan_completed'].includes(booking.rawStatus)
     )).length
-    const completed = bookings.filter((booking) => booking.rawStatus === 'completed').length
+    const completed = bookings.filter((booking) => booking.rawStatus === 'customer_confirmed').length
 
     return {
       active,
@@ -54,6 +54,9 @@ function ArtisanDashboard() {
   const isSetupComplete = checklist.every((item) => item.done || item.label === 'Verification approved')
   const acceptedJobs = bookings.filter((booking) => booking.rawStatus === 'confirmed').length
   const inProgressJobs = bookings.filter((booking) => booking.rawStatus === 'in_progress').length
+  const awaitingCustomerConfirmation = bookings.filter((booking) => (
+    booking.rawStatus === 'artisan_completed'
+  )).length
   const pendingJobs = bookings.filter((booking) => booking.rawStatus === 'pending')
   const recentActivity = bookings.slice(0, 3)
 
@@ -180,8 +183,10 @@ function ArtisanDashboard() {
           <article><strong>{metrics.active}</strong><span>Active jobs</span></article>
           <article><strong>{acceptedJobs}</strong><span>Accepted jobs</span></article>
           <article><strong>{inProgressJobs}</strong><span>Jobs in progress</span></article>
-          <article><strong>{metrics.completed}</strong><span>Completed jobs</span></article>
+          <article><strong>{awaitingCustomerConfirmation}</strong><span>Awaiting confirmation</span></article>
+          <article><strong>{metrics.completed}</strong><span>Customer confirmed</span></article>
           <article><strong>{artisan.rating.toFixed(1)}</strong><span>Average rating</span></article>
+          <article><strong>{artisan.reviewCount || 0}</strong><span>Reviews</span></article>
           <article><strong>{formatMoney(artisan.startingPrice)}</strong><span>Starting price</span></article>
           <article><strong>{artisan.skill}</strong><span>Primary service</span></article>
         </section>
@@ -203,7 +208,7 @@ function ArtisanDashboard() {
         <article className="artisan-profile-panel">
           <p className="section-kicker">Ratings / reviews</p>
           <h2>{artisan.rating.toFixed(1)} average</h2>
-          <p>{artisan.completedJobs} completed jobs are contributing to your trust score.</p>
+          <p>{artisan.reviewCount || 0} verified reviews and {artisan.completedJobs} confirmed jobs are contributing to your trust score.</p>
         </article>
         <article className="artisan-profile-panel">
           <p className="section-kicker">Reels / showcase</p>

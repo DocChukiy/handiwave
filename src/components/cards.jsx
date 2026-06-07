@@ -76,6 +76,10 @@ export function ArtisanCard({ artisan, featured = false }) {
             Rating
           </span>
           <span>
+            <strong>{artisan.reviewCount || 0}</strong>
+            Reviews
+          </span>
+          <span>
             <strong>{artisan.completedJobs}</strong>
             Jobs
           </span>

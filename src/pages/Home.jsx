@@ -30,7 +30,7 @@ function getErrorMessage(error) {
 function CustomerActiveBookings({ bookings, onRescheduleResponse, updatingBookingId }) {
   const activeBookings = bookings
     .filter((booking) => (
-      ['pending', 'reschedule_requested', 'confirmed', 'in_progress'].includes(booking.rawStatus)
+      ['pending', 'reschedule_requested', 'confirmed', 'in_progress', 'artisan_completed'].includes(booking.rawStatus)
     ))
     .slice(0, 3)
 

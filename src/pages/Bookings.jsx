@@ -4,11 +4,14 @@ import EmptyState from '../components/EmptyState.jsx'
 import RoleNotice from '../components/RoleNotice.jsx'
 import SkeletonPreview from '../components/Skeletons.jsx'
 import {
+  confirmBookingCompleteForCustomer,
   createBooking,
   getBookingOptions,
   getBookingsForUser,
+  reportBookingIssueForCustomer,
   respondToBookingReschedule,
 } from '../services/bookingService.js'
+import { submitBookingReview } from '../services/reviewService.js'
 import { getSupabaseClient } from '../lib/supabaseClient.js'
 import { showToast } from '../utils/toast.js'
 
@@ -25,8 +28,11 @@ const initialForm = {
 
 const statusLabels = {
   cancelled: 'Cancelled',
+  artisan_completed: 'Artisan completed',
   completed: 'Completed',
   confirmed: 'Confirmed',
+  customer_confirmed: 'Customer confirmed',
+  disputed: 'Issue reported',
   in_progress: 'In progress',
   pending: 'Pending',
   reschedule_requested: 'Reschedule requested',
@@ -41,14 +47,63 @@ function getErrorMessage(error) {
   ].filter(Boolean).join(' ')
 }
 
+function CompletionReviewForm({
+  booking,
+  form,
+  isSubmitting,
+  onChange,
+  onSubmit,
+}) {
+  return (
+    <form className="booking-review-form" onSubmit={(event) => onSubmit(event, booking)}>
+      <div>
+        <strong>Leave a verified review</strong>
+        <p>Your feedback helps other customers choose trusted artisans.</p>
+      </div>
+      <label>
+        Rating
+        <select
+          disabled={isSubmitting}
+          value={form.rating}
+          onChange={(event) => onChange(booking.id, 'rating', event.target.value)}
+        >
+          <option value="5">5 stars - Excellent</option>
+          <option value="4">4 stars - Good</option>
+          <option value="3">3 stars - Okay</option>
+          <option value="2">2 stars - Poor</option>
+          <option value="1">1 star - Bad</option>
+        </select>
+      </label>
+      <label>
+        Review
+        <textarea
+          disabled={isSubmitting}
+          placeholder="Share what went well, timing, quality, and professionalism."
+          value={form.reviewText}
+          onChange={(event) => onChange(booking.id, 'reviewText', event.target.value)}
+        />
+      </label>
+      <button disabled={isSubmitting} type="submit">
+        {isSubmitting ? 'Submitting review...' : 'Submit Review'}
+      </button>
+    </form>
+  )
+}
+
 function BookingHistorySection({
   bookings,
   emptyText,
+  onCompletionAction,
   isLoading,
+  onReviewChange,
+  onReviewSubmit,
   onRescheduleResponse,
   participantLabel,
+  reviewForms = {},
   showRescheduleActions = false,
+  updatingCompletionId,
   title,
+  submittingReviewId,
   updatingBookingId,
 }) {
   const rescheduleRequestCount = bookings.filter((booking) => (
@@ -111,6 +166,47 @@ function BookingHistorySection({
                   <span>{booking.scheduledDate} at {booking.scheduledTime}</span>
                 </div>
                 {booking.notes && <p>{booking.notes}</p>}
+                {showRescheduleActions && bookingStatus === 'artisan_completed' && (
+                  <div className="booking-completion-panel">
+                    <div>
+                      <strong>Artisan marked this job as completed</strong>
+                      <p>Please confirm the work was completed safely before leaving a review.</p>
+                    </div>
+                    <div className="booking-completion-actions">
+                      <button
+                        disabled={updatingCompletionId === booking.id}
+                        type="button"
+                        onClick={() => onCompletionAction?.(booking, 'confirm')}
+                      >
+                        {updatingCompletionId === booking.id ? 'Confirming...' : 'Confirm Job Complete'}
+                      </button>
+                      <button
+                        disabled={updatingCompletionId === booking.id}
+                        type="button"
+                        onClick={() => onCompletionAction?.(booking, 'report')}
+                      >
+                        {updatingCompletionId === booking.id ? 'Reporting...' : 'Report Issue'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {showRescheduleActions && bookingStatus === 'customer_confirmed' && (
+                  booking.review ? (
+                    <div className="booking-review-summary">
+                      <strong>Review submitted</strong>
+                      <span>{booking.review.rating} stars</span>
+                      {booking.review.review_text && <p>{booking.review.review_text}</p>}
+                    </div>
+                  ) : (
+                    <CompletionReviewForm
+                      booking={booking}
+                      form={reviewForms[booking.id] || { rating: '5', reviewText: '' }}
+                      isSubmitting={submittingReviewId === booking.id}
+                      onChange={onReviewChange}
+                      onSubmit={onReviewSubmit}
+                    />
+                  )
+                )}
                 {bookingStatus === 'reschedule_requested' && (
                   <div className="booking-reschedule-note">
                     <div className="booking-reschedule-heading">
@@ -186,7 +282,10 @@ function Bookings() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [options, setOptions] = useState({ artisans: [], services: [] })
+  const [reviewForms, setReviewForms] = useState({})
+  const [submittingReviewId, setSubmittingReviewId] = useState('')
   const [updatingBookingId, setUpdatingBookingId] = useState('')
+  const [updatingCompletionId, setUpdatingCompletionId] = useState('')
 
   const isCustomer = user?.role === 'customer'
   const selectedArtisan = options.artisans.find((artisan) => artisan.id === form.artisanId)
@@ -194,9 +293,11 @@ function Bookings() {
 
   const summary = useMemo(() => {
     const upcomingCount = bookings.filter((booking) => (
-      ['pending', 'reschedule_requested', 'confirmed', 'in_progress'].includes(booking.rawStatus)
+      ['pending', 'reschedule_requested', 'confirmed', 'in_progress', 'artisan_completed'].includes(booking.rawStatus)
     )).length
-    const completedCount = bookings.filter((booking) => booking.rawStatus === 'completed').length
+    const completedCount = bookings.filter((booking) => (
+      booking.rawStatus === 'customer_confirmed' || booking.rawStatus === 'completed'
+    )).length
     const cancelledCount = bookings.filter((booking) => booking.rawStatus === 'cancelled').length
 
     return {
@@ -370,6 +471,100 @@ function Bookings() {
       setError(getErrorMessage(responseError))
     } finally {
       setUpdatingBookingId('')
+    }
+  }
+
+  async function handleCompletionAction(booking, action) {
+    setError('')
+    setUpdatingCompletionId(booking.id)
+
+    try {
+      const serviceCall = action === 'confirm'
+        ? confirmBookingCompleteForCustomer
+        : reportBookingIssueForCustomer
+      const { data, error: completionError } = await serviceCall({
+        bookingId: booking.id,
+        customerId: user.id,
+      })
+
+      if (completionError) {
+        setError(getErrorMessage(completionError))
+        return
+      }
+
+      if (!data?.id) {
+        setError('Supabase did not confirm the booking completion update.')
+        return
+      }
+
+      const didRefresh = await refreshBookings()
+      if (!didRefresh) {
+        return
+      }
+
+      showToast(action === 'confirm'
+        ? 'Job completion confirmed. You can now leave a review.'
+        : 'Issue reported. The booking has been marked for support review.')
+    } catch (completionError) {
+      setError(getErrorMessage(completionError))
+    } finally {
+      setUpdatingCompletionId('')
+    }
+  }
+
+  function handleReviewChange(bookingId, field, value) {
+    setReviewForms((currentForms) => ({
+      ...currentForms,
+      [bookingId]: {
+        rating: '5',
+        reviewText: '',
+        ...currentForms[bookingId],
+        [field]: value,
+      },
+    }))
+  }
+
+  async function handleReviewSubmit(event, booking) {
+    event.preventDefault()
+    setError('')
+    setSubmittingReviewId(booking.id)
+
+    const form = reviewForms[booking.id] || { rating: '5', reviewText: '' }
+
+    try {
+      const { data, error: reviewError } = await submitBookingReview({
+        artisanId: booking.artisanId,
+        bookingId: booking.id,
+        customerId: user.id,
+        rating: form.rating,
+        reviewText: form.reviewText,
+      })
+
+      if (reviewError) {
+        setError(getErrorMessage(reviewError))
+        return
+      }
+
+      if (!data?.id) {
+        setError('Supabase did not confirm that the review was saved.')
+        return
+      }
+
+      const didRefresh = await refreshBookings()
+      if (!didRefresh) {
+        return
+      }
+
+      setReviewForms((currentForms) => {
+        const nextForms = { ...currentForms }
+        delete nextForms[booking.id]
+        return nextForms
+      })
+      showToast('Review submitted. Thank you for helping other customers.')
+    } catch (reviewError) {
+      setError(getErrorMessage(reviewError))
+    } finally {
+      setSubmittingReviewId('')
     }
   }
 
@@ -565,11 +760,17 @@ function Bookings() {
             bookings={bookings}
             emptyText="Your confirmed service requests will appear here after Supabase creates the booking row."
             isLoading={isLoading}
+            onCompletionAction={handleCompletionAction}
+            onReviewChange={handleReviewChange}
+            onReviewSubmit={handleReviewSubmit}
             onRescheduleResponse={handleRescheduleResponse}
             participantLabel={(booking) => booking.artisan}
+            reviewForms={reviewForms}
             showRescheduleActions
+            submittingReviewId={submittingReviewId}
             title="Customer booking history"
             updatingBookingId={updatingBookingId}
+            updatingCompletionId={updatingCompletionId}
           />
         ) : (
           <BookingHistorySection

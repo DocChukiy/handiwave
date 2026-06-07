@@ -8,7 +8,8 @@ import SectionHeader from '../components/SectionHeader.jsx'
 import SkeletonPreview from '../components/Skeletons.jsx'
 import { ReviewCard } from '../components/cards.jsx'
 import { getArtisanById, getArtisanByProfileId } from '../services/artisanService.js'
-import { profilePortfolio, reviews } from '../data/reviews.js'
+import { getReviewsForArtisan } from '../services/reviewService.js'
+import { profilePortfolio, reviews as fallbackReviews } from '../data/reviews.js'
 
 const fallbackArtisan = {
   bio: 'Certified electrician based in Lekki, Lagos. Trusted for clean wiring, lighting upgrades, inverter setup, and fast fault diagnosis.',
@@ -41,6 +42,7 @@ function ArtisanProfile() {
   const [error, setError] = useState('')
   const [isFallback, setIsFallback] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [profileReviews, setProfileReviews] = useState([])
 
   const requestedArtisanId = artisanId || queryId
   const shouldLoadOwnProfile = !requestedArtisanId && user?.role === 'artisan'
@@ -68,6 +70,17 @@ function ArtisanProfile() {
 
         if (result.data) {
           setArtisan(result.data)
+          const reviewResult = await getReviewsForArtisan(result.data.id)
+
+          if (!isMounted) {
+            return
+          }
+
+          if (reviewResult.error) {
+            setError(reviewResult.error.message)
+          }
+
+          setProfileReviews(reviewResult.data)
           return
         }
 
@@ -77,11 +90,13 @@ function ArtisanProfile() {
         }
 
         setArtisan(fallbackArtisan)
+        setProfileReviews(fallbackReviews)
         setIsFallback(true)
       } catch (loadError) {
         if (isMounted) {
           setError(loadError.message)
           setArtisan(shouldLoadOwnProfile ? null : fallbackArtisan)
+          setProfileReviews(shouldLoadOwnProfile ? [] : fallbackReviews)
           setIsFallback(!shouldLoadOwnProfile)
         }
       } finally {
@@ -226,7 +241,7 @@ function ArtisanProfile() {
 
       <section className="reviews-section">
         <SectionHeader
-          count={`${artisan.rating.toFixed(1)} average • ${artisan.completedJobs} jobs`}
+          count={`${artisan.rating.toFixed(1)} average • ${artisan.reviewCount || profileReviews.length} reviews`}
           kicker="Customer reviews"
           title="What customers say"
         />
@@ -236,14 +251,20 @@ function ArtisanProfile() {
             <strong>{artisan.rating.toFixed(1)}</strong>
             <span>★★★★★</span>
           </div>
-          <p>Based on recent verified bookings and customer feedback.</p>
+          <p>Based on verified customer-confirmed bookings and reviews.</p>
         </div>
 
-        <div className="reviews-grid">
-          {reviews.map((review) => (
-            <ReviewCard key={review.name} review={review} />
-          ))}
-        </div>
+        {profileReviews.length > 0 ? (
+          <div className="reviews-grid">
+            {profileReviews.map((review) => (
+              <ReviewCard key={review.id || review.name} review={review} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState compact title="No reviews yet">
+            Verified customer reviews will appear after customers confirm completed jobs.
+          </EmptyState>
+        )}
       </section>
     </div>
   )

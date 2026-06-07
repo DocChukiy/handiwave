@@ -46,6 +46,7 @@ export function mapArtisanRow(artisan) {
     profileId: artisan.profile_id,
     raw: artisan,
     rating: Number(artisan.average_rating) || 0,
+    reviewCount: artisan.review_count || 0,
     serviceArea: artisan.service_area || '',
     skill: serviceName,
     startingPrice: artisan.starting_price,

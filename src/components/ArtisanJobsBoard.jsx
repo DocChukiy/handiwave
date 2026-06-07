@@ -7,7 +7,8 @@ const artisanJobGroups = [
   { key: 'reschedule_requested', title: 'Reschedule Requested', statuses: ['reschedule_requested'] },
   { key: 'confirmed', title: 'Confirmed Jobs', statuses: ['confirmed'] },
   { key: 'in_progress', title: 'In Progress Jobs', statuses: ['in_progress'] },
-  { key: 'completed', title: 'Completed Jobs', statuses: ['completed'] },
+  { key: 'artisan_completed', title: 'Awaiting Customer Confirmation', statuses: ['artisan_completed'] },
+  { key: 'customer_confirmed', title: 'Customer Confirmed', statuses: ['customer_confirmed'] },
   { key: 'cancelled', title: 'Cancelled', statuses: ['cancelled'] },
 ]
 
@@ -95,7 +96,7 @@ function JobActions({
         <button
           disabled={isUpdating}
           type="button"
-          onClick={() => onStatusUpdate(booking.id, 'completed', booking.rawStatus)}
+          onClick={() => onStatusUpdate(booking.id, 'artisan_completed', booking.rawStatus)}
         >
           {isUpdating ? 'Updating...' : 'Mark Artisan Completed'}
         </button>
@@ -149,11 +150,14 @@ function JobCard({
         {booking.rawStatus === 'reschedule_requested' && (
           <small>Requested: {formatCreatedDate(booking.rescheduleRequestedAt)}</small>
         )}
-        {booking.rawStatus === 'completed' && (
-          <small>Completed: {formatCreatedDate(booking.completedAt)}</small>
+        {booking.rawStatus === 'artisan_completed' && (
+          <small>Marked completed: {formatCreatedDate(booking.completedAt)}</small>
         )}
-        {booking.rawStatus === 'completed' && (
-          <small>Review: Awaiting customer review</small>
+        {booking.rawStatus === 'artisan_completed' && (
+          <small>Review: Waiting for customer confirmation</small>
+        )}
+        {booking.rawStatus === 'customer_confirmed' && (
+          <small>Review: {booking.review ? `${booking.review.rating} stars` : 'Awaiting customer review'}</small>
         )}
       </div>
 
