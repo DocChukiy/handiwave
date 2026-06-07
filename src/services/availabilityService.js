@@ -71,6 +71,55 @@ export async function getAvailabilityForArtisanId(artisanId) {
   }
 }
 
+export async function getCustomerBookingAvailability(artisanId) {
+  if (!artisanId) {
+    return {
+      data: {
+        bookedSlots: [],
+        slots: [],
+        unavailableDates: [],
+      },
+      error: null,
+    }
+  }
+
+  const supabase = getSupabaseClient()
+  const [availabilityResult, datesResult, bookingsResult] = await Promise.all([
+    supabase
+      .from('artisan_availability')
+      .select('id, artisan_id, day_of_week, start_time, end_time, is_active')
+      .eq('artisan_id', artisanId)
+      .eq('is_active', true)
+      .order('day_of_week', { ascending: true })
+      .order('start_time', { ascending: true }),
+    supabase
+      .from('artisan_unavailable_dates')
+      .select('id, artisan_id, unavailable_date, reason')
+      .eq('artisan_id', artisanId)
+      .order('unavailable_date', { ascending: true }),
+    supabase
+      .from('bookings')
+      .select('id, scheduled_date, scheduled_time, status')
+      .eq('artisan_id', artisanId)
+      .in('status', ['pending', 'reschedule_requested', 'confirmed', 'in_progress', 'artisan_completed'])
+      .not('scheduled_date', 'is', null)
+      .not('scheduled_time', 'is', null),
+  ])
+
+  return {
+    data: {
+      bookedSlots: (bookingsResult.data || []).map((booking) => ({
+        bookingId: booking.id,
+        date: booking.scheduled_date,
+        time: booking.scheduled_time ? booking.scheduled_time.slice(0, 5) : '',
+      })),
+      slots: (availabilityResult.data || []).map(mapAvailabilitySlot),
+      unavailableDates: (datesResult.data || []).map(mapUnavailableDate),
+    },
+    error: availabilityResult.error || datesResult.error || bookingsResult.error,
+  }
+}
+
 export async function getAvailabilityForArtisanProfile(profileId) {
   const { data: artisan, error: artisanError } = await getArtisanByProfileId(profileId)
 

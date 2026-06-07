@@ -3410,6 +3410,44 @@
   opacity: 0.62;
 }
 
+.booking-availability-panel,
+.profile-availability-preview {
+  background: #ecfdf5;
+  border: 1px solid rgba(22, 163, 74, 0.16);
+  border-radius: 18px;
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+}
+
+.booking-availability-panel strong,
+.profile-availability-preview strong {
+  color: #064e3b;
+}
+
+.booking-availability-panel p,
+.profile-availability-preview p {
+  color: #047857;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.availability-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.availability-chip-row span {
+  background: #ffffff;
+  border: 1px solid rgba(22, 163, 74, 0.14);
+  border-radius: 999px;
+  color: #047857;
+  font-size: 0.82rem;
+  font-weight: 900;
+  padding: 7px 10px;
+}
+
 .booking-history-header {
   border-bottom: 1px solid rgba(226, 232, 240, 0.9);
   padding: 20px;
@@ -4916,6 +4954,8 @@
 
 :root[data-theme='dark'] .booking-completion-panel,
 :root[data-theme='dark'] .booking-compatibility-panel,
+:root[data-theme='dark'] .booking-availability-panel,
+:root[data-theme='dark'] .profile-availability-preview,
 :root[data-theme='dark'] .booking-success-panel,
 :root[data-theme='dark'] .booking-review-form,
 :root[data-theme='dark'] .booking-review-summary {
@@ -4927,6 +4967,8 @@
 
 :root[data-theme='dark'] .booking-completion-panel strong,
 :root[data-theme='dark'] .booking-compatibility-panel strong,
+:root[data-theme='dark'] .booking-availability-panel strong,
+:root[data-theme='dark'] .profile-availability-preview strong,
 :root[data-theme='dark'] .booking-success-panel h2,
 :root[data-theme='dark'] .booking-review-form strong,
 :root[data-theme='dark'] .booking-review-summary strong,
@@ -4937,6 +4979,8 @@
 
 :root[data-theme='dark'] .booking-completion-panel p,
 :root[data-theme='dark'] .booking-compatibility-panel p,
+:root[data-theme='dark'] .booking-availability-panel p,
+:root[data-theme='dark'] .profile-availability-preview p,
 :root[data-theme='dark'] .booking-success-panel p,
 :root[data-theme='dark'] .booking-review-form p,
 :root[data-theme='dark'] .booking-review-summary p,
@@ -4956,6 +5000,12 @@
 :root[data-theme='dark'] .booking-completion-actions button:last-child {
   background: rgba(15, 23, 42, 0.86);
   border-color: rgba(148, 163, 184, 0.14);
+}
+
+:root[data-theme='dark'] .availability-chip-row span {
+  background: rgba(15, 23, 42, 0.86);
+  border-color: rgba(52, 211, 153, 0.18);
+  color: #86efac;
 }
 
 :root[data-theme='dark'] .job-message-link {

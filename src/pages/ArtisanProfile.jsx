@@ -7,6 +7,7 @@ import EmptyState from '../components/EmptyState.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import SkeletonPreview from '../components/Skeletons.jsx'
 import { ReviewCard } from '../components/cards.jsx'
+import { getAvailabilityForArtisanId } from '../services/availabilityService.js'
 import { getArtisanById, getArtisanByProfileId } from '../services/artisanService.js'
 import { getReviewsForArtisan } from '../services/reviewService.js'
 import { profilePortfolio, reviews as fallbackReviews } from '../data/reviews.js'
@@ -40,6 +41,7 @@ function ArtisanProfile() {
   const queryId = searchParams.get('id')
   const [artisan, setArtisan] = useState(null)
   const [error, setError] = useState('')
+  const [availability, setAvailability] = useState({ slots: [], unavailableDates: [] })
   const [isFallback, setIsFallback] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [profileReviews, setProfileReviews] = useState([])
@@ -70,7 +72,10 @@ function ArtisanProfile() {
 
         if (result.data) {
           setArtisan(result.data)
-          const reviewResult = await getReviewsForArtisan(result.data.id)
+          const [reviewResult, availabilityResult] = await Promise.all([
+            getReviewsForArtisan(result.data.id),
+            getAvailabilityForArtisanId(result.data.id),
+          ])
 
           if (!isMounted) {
             return
@@ -80,7 +85,12 @@ function ArtisanProfile() {
             setError(reviewResult.error.message)
           }
 
+          if (availabilityResult.error) {
+            setError(availabilityResult.error.message)
+          }
+
           setProfileReviews(reviewResult.data)
+          setAvailability(availabilityResult.data)
           return
         }
 
@@ -90,12 +100,14 @@ function ArtisanProfile() {
         }
 
         setArtisan(fallbackArtisan)
+        setAvailability({ slots: [], unavailableDates: [] })
         setProfileReviews(fallbackReviews)
         setIsFallback(true)
       } catch (loadError) {
         if (isMounted) {
           setError(loadError.message)
           setArtisan(shouldLoadOwnProfile ? null : fallbackArtisan)
+          setAvailability({ slots: [], unavailableDates: [] })
           setProfileReviews(shouldLoadOwnProfile ? [] : fallbackReviews)
           setIsFallback(!shouldLoadOwnProfile)
         }
@@ -114,6 +126,8 @@ function ArtisanProfile() {
   }, [requestedArtisanId, shouldLoadOwnProfile, user])
 
   const skills = useMemo(() => artisan?.skills?.length ? artisan.skills : [artisan?.skill], [artisan])
+  const activeAvailabilitySlots = availability.slots.filter((slot) => slot.isActive)
+  const availabilityDays = [...new Set(activeAvailabilitySlots.map((slot) => slot.dayLabel))]
 
   if (isLoading) {
     return (
@@ -206,6 +220,22 @@ function ArtisanProfile() {
           <span>Starting price</span>
           <strong>{formatMoney(artisan.startingPrice)}</strong>
           <p>Final pricing depends on service type, location, and materials.</p>
+          <div className="profile-availability-preview">
+            <span>Availability</span>
+            {availabilityDays.length > 0 ? (
+              <>
+                <strong>{availabilityDays.slice(0, 3).join(', ')}</strong>
+                <p>
+                  {activeAvailabilitySlots.length} active slot{activeAvailabilitySlots.length === 1 ? '' : 's'}
+                  {availability.unavailableDates.length > 0
+                    ? ` • ${availability.unavailableDates.length} blocked date${availability.unavailableDates.length === 1 ? '' : 's'}`
+                    : ''}
+                </p>
+              </>
+            ) : (
+              <p>This artisan has not published booking hours yet.</p>
+            )}
+          </div>
         </aside>
       </motion.section>
 

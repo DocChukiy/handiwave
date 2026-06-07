@@ -12,6 +12,10 @@ import {
   reportBookingIssueForCustomer,
   respondToBookingReschedule,
 } from '../services/bookingService.js'
+import {
+  getCustomerBookingAvailability,
+  getDayLabel,
+} from '../services/availabilityService.js'
 import { submitBookingReview } from '../services/reviewService.js'
 import { getSupabaseClient } from '../lib/supabaseClient.js'
 import { showToast } from '../utils/toast.js'
@@ -46,6 +50,62 @@ function getErrorMessage(error) {
     error.hint,
     error.code,
   ].filter(Boolean).join(' ')
+}
+
+function getDateDayOfWeek(dateValue) {
+  if (!dateValue) {
+    return null
+  }
+
+  const [year, month, day] = dateValue.split('-').map(Number)
+  return new Date(year, month - 1, day).getDay()
+}
+
+function timeIsInsideSlot(time, slot) {
+  return Boolean(time && slot.startTime <= time && slot.endTime > time)
+}
+
+function getAvailabilityValidationMessage({
+  availability,
+  date,
+  time,
+}) {
+  if (!date || !time) {
+    return ''
+  }
+
+  const isUnavailableDate = availability.unavailableDates.some((item) => (
+    item.unavailableDate === date
+  ))
+
+  if (isUnavailableDate) {
+    return 'This artisan is unavailable on the selected date.'
+  }
+
+  const dayOfWeek = getDateDayOfWeek(date)
+  const matchingDaySlots = availability.slots.filter((slot) => (
+    Number(slot.dayOfWeek) === dayOfWeek
+  ))
+
+  if (matchingDaySlots.length === 0) {
+    return `This artisan has no active availability on ${getDayLabel(dayOfWeek)}.`
+  }
+
+  const matchingTimeSlot = matchingDaySlots.some((slot) => timeIsInsideSlot(time, slot))
+
+  if (!matchingTimeSlot) {
+    return 'Selected time is outside this artisan availability.'
+  }
+
+  const alreadyBooked = availability.bookedSlots.some((slot) => (
+    slot.date === date && slot.time === time
+  ))
+
+  if (alreadyBooked) {
+    return 'This time is already booked. Please choose another slot.'
+  }
+
+  return ''
 }
 
 function CompletionReviewForm({
@@ -300,10 +360,17 @@ function BookingStatusBadge({ status }) {
 
 function Bookings() {
   const { user } = useAuth()
+  const [availability, setAvailability] = useState({
+    bookedSlots: [],
+    slots: [],
+    unavailableDates: [],
+  })
+  const [availabilityError, setAvailabilityError] = useState('')
   const [bookings, setBookings] = useState([])
   const [error, setError] = useState('')
   const [form, setForm] = useState(initialForm)
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingAvailability, setIsLoadingAvailability] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [lastCreatedBooking, setLastCreatedBooking] = useState(null)
   const [options, setOptions] = useState({ artisans: [], services: [] })
@@ -315,6 +382,27 @@ function Bookings() {
   const isCustomer = user?.role === 'customer'
   const selectedArtisan = options.artisans.find((artisan) => artisan.id === form.artisanId)
   const selectedService = options.services.find((service) => service.id === form.serviceId)
+  const availableDayLabels = useMemo(() => (
+    [...new Set(availability.slots.map((slot) => getDayLabel(slot.dayOfWeek)))]
+  ), [availability.slots])
+  const dateDayOfWeek = getDateDayOfWeek(form.scheduledDate)
+  const slotsForSelectedDate = availability.slots.filter((slot) => (
+    Number(slot.dayOfWeek) === dateDayOfWeek
+  ))
+  const availableTimesForSelectedDate = slotsForSelectedDate
+    .filter((slot) => (
+      !availability.bookedSlots.some((bookedSlot) => (
+        bookedSlot.date === form.scheduledDate && bookedSlot.time === slot.startTime
+      ))
+    ))
+  const isSelectedDateUnavailable = availability.unavailableDates.some((date) => (
+    date.unavailableDate === form.scheduledDate
+  ))
+  const availabilityValidationMessage = getAvailabilityValidationMessage({
+    availability,
+    date: form.scheduledDate,
+    time: form.scheduledTime,
+  })
 
   const summary = useMemo(() => {
     const upcomingCount = bookings.filter((booking) => (
@@ -427,6 +515,51 @@ function Bookings() {
     }
   }, [isCustomer, user])
 
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadAvailabilityForSelectedArtisan() {
+      if (!form.artisanId || !isCustomer) {
+        setAvailability({ bookedSlots: [], slots: [], unavailableDates: [] })
+        setAvailabilityError('')
+        return
+      }
+
+      setAvailabilityError('')
+      setIsLoadingAvailability(true)
+
+      try {
+        const { data, error: loadAvailabilityError } =
+          await getCustomerBookingAvailability(form.artisanId)
+
+        if (!isMounted) {
+          return
+        }
+
+        if (loadAvailabilityError) {
+          setAvailabilityError(getErrorMessage(loadAvailabilityError))
+          return
+        }
+
+        setAvailability(data)
+      } catch (loadAvailabilityError) {
+        if (isMounted) {
+          setAvailabilityError(getErrorMessage(loadAvailabilityError))
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingAvailability(false)
+        }
+      }
+    }
+
+    loadAvailabilityForSelectedArtisan()
+
+    return () => {
+      isMounted = false
+    }
+  }, [form.artisanId, isCustomer])
+
   function updateForm(field, value) {
     setForm((currentForm) => ({
       ...currentForm,
@@ -440,7 +573,17 @@ function Bookings() {
     setForm((currentForm) => ({
       ...currentForm,
       artisanId,
+      scheduledDate: '',
+      scheduledTime: '',
       serviceId: artisan?.primary_service_id || currentForm.serviceId,
+    }))
+  }
+
+  function handleDateChange(date) {
+    setForm((currentForm) => ({
+      ...currentForm,
+      scheduledDate: date,
+      scheduledTime: '',
     }))
   }
 
@@ -607,6 +750,11 @@ function Bookings() {
       return
     }
 
+    if (availabilityValidationMessage) {
+      setError(availabilityValidationMessage)
+      return
+    }
+
     if (!form.address.trim() || !form.city.trim() || !form.state.trim()) {
       setError('Please enter your address, city, and state.')
       return
@@ -732,6 +880,35 @@ function Bookings() {
                   : '.'}
               </p>
             )}
+            {selectedArtisan && (
+              <div className="booking-availability-panel">
+                <strong>Available days</strong>
+                {isLoadingAvailability ? (
+                  <p>Loading artisan availability...</p>
+                ) : availabilityError ? (
+                  <p>{availabilityError}</p>
+                ) : availableDayLabels.length > 0 ? (
+                  <>
+                    <div className="availability-chip-row">
+                      {availableDayLabels.map((day) => (
+                        <span key={day}>{day}</span>
+                      ))}
+                    </div>
+                    {availability.unavailableDates.length > 0 && (
+                      <p>
+                        Blocked dates: {availability.unavailableDates
+                          .slice(0, 3)
+                          .map((date) => date.unavailableDate)
+                          .join(', ')}
+                        {availability.unavailableDates.length > 3 ? '...' : ''}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p>This artisan has not added bookable availability yet.</p>
+                )}
+              </div>
+            )}
             <label>
               Address
               <input
@@ -765,22 +942,52 @@ function Bookings() {
               <label>
                 Date
                 <input
-                  disabled={isSaving}
+                  disabled={isSaving || isLoadingAvailability || availability.slots.length === 0}
                   type="date"
                   value={form.scheduledDate}
-                  onChange={(event) => updateForm('scheduledDate', event.target.value)}
+                  onChange={(event) => handleDateChange(event.target.value)}
                 />
               </label>
               <label>
                 Time
-                <input
-                  disabled={isSaving}
-                  type="time"
+                <select
+                  disabled={
+                    isSaving ||
+                    isLoadingAvailability ||
+                    !form.scheduledDate ||
+                    isSelectedDateUnavailable ||
+                    availableTimesForSelectedDate.length === 0
+                  }
                   value={form.scheduledTime}
                   onChange={(event) => updateForm('scheduledTime', event.target.value)}
-                />
+                >
+                  <option value="">Select available time</option>
+                  {availableTimesForSelectedDate.map((slot) => (
+                    <option key={slot.id} value={slot.startTime}>
+                      {slot.startTime} - {slot.endTime}
+                    </option>
+                  ))}
+                </select>
               </label>
             </div>
+            {form.scheduledDate && slotsForSelectedDate.length === 0 && (
+              <p className="auth-hint">
+                No active availability on {getDayLabel(dateDayOfWeek)}. Choose one of the listed available days.
+              </p>
+            )}
+            {isSelectedDateUnavailable && (
+              <p className="auth-error">
+                This artisan is unavailable on the selected date.
+              </p>
+            )}
+            {form.scheduledDate && slotsForSelectedDate.length > 0 && availableTimesForSelectedDate.length === 0 && !isSelectedDateUnavailable && (
+              <p className="auth-error">
+                All available times on this date are already booked.
+              </p>
+            )}
+            {availabilityValidationMessage && (
+              <p className="auth-error">{availabilityValidationMessage}</p>
+            )}
             <label>
               Notes
               <textarea
