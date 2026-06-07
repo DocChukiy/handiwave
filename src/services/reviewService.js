@@ -33,10 +33,12 @@ export function mapReviewRow(review) {
     comment: review.review_text || 'No written comment added.',
     customerId: review.customer_id,
     date: formatDate(review.created_at),
+    editedAt: review.edited_at || '',
     id: review.id,
     initials: getInitials(customerName),
     name: customerName,
     rating,
+    reviewText: review.review_text || '',
     stars: '★'.repeat(rating).padEnd(5, '☆'),
   }
 }
@@ -59,6 +61,7 @@ export async function getReviewsForArtisan(artisanId, limit = 6) {
       rating,
       review_text,
       created_at,
+      edited_at,
       customer:profiles!${reviewCustomerRelation}(id, full_name, email, avatar_url)
     `)
     .eq('artisan_id', artisanId)
@@ -103,7 +106,7 @@ export async function submitBookingReview({
   if (
     booking.customer_id !== customerId ||
     booking.artisan_id !== artisanId ||
-    booking.status !== 'customer_confirmed'
+    !['customer_confirmed', 'completed'].includes(booking.status)
   ) {
     return {
       data: null,
@@ -147,9 +150,53 @@ export async function submitBookingReview({
       rating,
       review_text,
       created_at,
+      edited_at,
       customer:profiles!${reviewCustomerRelation}(id, full_name, email, avatar_url)
     `)
     .single()
+
+  return {
+    data: data ? mapReviewRow(data) : null,
+    error,
+  }
+}
+
+export async function updateBookingReview({
+  bookingId,
+  customerId,
+  rating,
+  reviewId,
+  reviewText,
+}) {
+  const supabase = getSupabaseClient()
+
+  const { data, error } = await supabase
+    .from('reviews')
+    .update({
+      rating: Number(rating),
+      review_text: reviewText.trim() || null,
+    })
+    .eq('id', reviewId)
+    .eq('booking_id', bookingId)
+    .eq('customer_id', customerId)
+    .select(`
+      id,
+      booking_id,
+      customer_id,
+      rating,
+      review_text,
+      created_at,
+      edited_at,
+      customer:profiles!${reviewCustomerRelation}(id, full_name, email, avatar_url)
+    `)
+    .maybeSingle()
+
+  if (!error && !data) {
+    return {
+      data: null,
+      error: new Error('Supabase did not update the review. Check that this review still belongs to your booking.'),
+    }
+  }
 
   return {
     data: data ? mapReviewRow(data) : null,

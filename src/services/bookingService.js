@@ -21,7 +21,7 @@ const bookingSelect = `
     profile:profiles!${artisanProfileRelation}(id, full_name, email, avatar_url)
   ),
   customer:profiles!${bookingCustomerRelation}(id, full_name, email),
-  review:reviews!reviews_booking_id_fkey(id, rating, review_text, created_at)
+  review:reviews!reviews_booking_id_fkey(id, rating, review_text, created_at, edited_at)
 `
 
 const allowedArtisanTransitions = {

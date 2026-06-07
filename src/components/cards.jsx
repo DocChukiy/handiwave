@@ -107,7 +107,7 @@ export function ArtisanCard({ artisan, featured = false }) {
         {artisan.skill} in {artisan.area}, {artisan.location}
       </p>
       <strong className="price-note">{artisan.price}</strong>
-      <Rating jobs={artisan.jobs} value={artisan.rating} />
+      <Rating jobs={artisan.jobs} reviewCount={artisan.reviewCount || 0} value={artisan.rating} />
       <div className="trust-indicators">
         <span>ID checked</span>
         <span>Escrow safe</span>

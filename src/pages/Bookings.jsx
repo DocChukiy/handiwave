@@ -16,7 +16,7 @@ import {
   getCustomerBookingAvailability,
   getDayLabel,
 } from '../services/availabilityService.js'
-import { submitBookingReview } from '../services/reviewService.js'
+import { submitBookingReview, updateBookingReview } from '../services/reviewService.js'
 import { getSupabaseClient } from '../lib/supabaseClient.js'
 import { showToast } from '../utils/toast.js'
 
@@ -208,6 +208,7 @@ function CompletionReviewForm({
   booking,
   form,
   isSubmitting,
+  mode = 'create',
   onChange,
   onSubmit,
 }) {
@@ -241,7 +242,9 @@ function CompletionReviewForm({
         />
       </label>
       <button disabled={isSubmitting} type="submit">
-        {isSubmitting ? 'Submitting review...' : 'Submit Review'}
+        {isSubmitting
+          ? mode === 'edit' ? 'Saving review...' : 'Submitting review...'
+          : mode === 'edit' ? 'Save Review' : 'Submit Review'}
       </button>
     </form>
   )
@@ -258,6 +261,8 @@ function BookingHistorySection({
   participantLabel,
   reviewForms = {},
   showRescheduleActions = false,
+  editingReviewId,
+  onEditReviewStart,
   updatingCompletionId,
   title,
   submittingReviewId,
@@ -370,12 +375,38 @@ function BookingHistorySection({
                     </div>
                   </div>
                 )}
-                {showRescheduleActions && bookingStatus === 'customer_confirmed' && (
+                {showRescheduleActions && ['customer_confirmed', 'completed'].includes(bookingStatus) && (
                   booking.review ? (
                     <div className="booking-review-summary">
-                      <strong>Review submitted</strong>
-                      <span>{booking.review.rating} stars</span>
-                      {booking.review.review_text && <p>{booking.review.review_text}</p>}
+                      {editingReviewId === booking.id ? (
+                        <CompletionReviewForm
+                          booking={booking}
+                          form={reviewForms[booking.id] || {
+                            rating: String(booking.review.rating || 5),
+                            reviewText: booking.review.review_text || '',
+                          }}
+                          isSubmitting={submittingReviewId === booking.id}
+                          mode="edit"
+                          onChange={onReviewChange}
+                          onSubmit={onReviewSubmit}
+                        />
+                      ) : (
+                        <>
+                          <div>
+                            <strong>Review submitted</strong>
+                            <p>{booking.review.review_text || 'No written comment added.'}</p>
+                          </div>
+                          <div className="booking-review-actions">
+                            <span>{booking.review.rating} stars</span>
+                            <button
+                              type="button"
+                              onClick={() => onEditReviewStart?.(booking)}
+                            >
+                              Edit Review
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ) : (
                     <CompletionReviewForm
@@ -464,6 +495,7 @@ function Bookings() {
   })
   const [availabilityError, setAvailabilityError] = useState('')
   const [bookings, setBookings] = useState([])
+  const [editingReviewId, setEditingReviewId] = useState('')
   const [error, setError] = useState('')
   const [form, setForm] = useState(initialForm)
   const [isLoading, setIsLoading] = useState(true)
@@ -802,6 +834,17 @@ function Bookings() {
     }))
   }
 
+  function handleEditReviewStart(booking) {
+    setEditingReviewId(booking.id)
+    setReviewForms((currentForms) => ({
+      ...currentForms,
+      [booking.id]: {
+        rating: String(booking.review?.rating || 5),
+        reviewText: booking.review?.review_text || '',
+      },
+    }))
+  }
+
   async function handleReviewSubmit(event, booking) {
     event.preventDefault()
     setError('')
@@ -810,13 +853,21 @@ function Bookings() {
     const form = reviewForms[booking.id] || { rating: '5', reviewText: '' }
 
     try {
-      const { data, error: reviewError } = await submitBookingReview({
-        artisanId: booking.artisanId,
-        bookingId: booking.id,
-        customerId: user.id,
-        rating: form.rating,
-        reviewText: form.reviewText,
-      })
+      const { data, error: reviewError } = booking.review
+        ? await updateBookingReview({
+          bookingId: booking.id,
+          customerId: user.id,
+          rating: form.rating,
+          reviewId: booking.review.id,
+          reviewText: form.reviewText,
+        })
+        : await submitBookingReview({
+          artisanId: booking.artisanId,
+          bookingId: booking.id,
+          customerId: user.id,
+          rating: form.rating,
+          reviewText: form.reviewText,
+        })
 
       if (reviewError) {
         setError(getErrorMessage(reviewError))
@@ -838,7 +889,10 @@ function Bookings() {
         delete nextForms[booking.id]
         return nextForms
       })
-      showToast('Review submitted. Thank you for helping other customers.')
+      setEditingReviewId('')
+      showToast(booking.review
+        ? 'Review updated.'
+        : 'Review submitted. Thank you for helping other customers.')
     } catch (reviewError) {
       setError(getErrorMessage(reviewError))
     } finally {
@@ -1146,8 +1200,10 @@ function Bookings() {
           <BookingHistorySection
             bookings={bookings}
             emptyText="Your confirmed service requests will appear here after Supabase creates the booking row."
+            editingReviewId={editingReviewId}
             isLoading={isLoading}
             onCompletionAction={handleCompletionAction}
+            onEditReviewStart={handleEditReviewStart}
             onReviewChange={handleReviewChange}
             onReviewSubmit={handleReviewSubmit}
             onRescheduleResponse={handleRescheduleResponse}

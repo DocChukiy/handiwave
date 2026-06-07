@@ -4013,12 +4013,37 @@
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
-.booking-review-summary span {
+.booking-review-actions {
+  align-items: end;
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+}
+
+.booking-review-summary span,
+.booking-review-actions span {
   background: #fffbeb;
   border-radius: 999px;
   color: #b45309;
   font-weight: 900;
   padding: 8px 11px;
+}
+
+.booking-review-actions button {
+  background: #ffffff;
+  border: 1px solid rgba(22, 163, 74, 0.18);
+  border-radius: 999px;
+  color: #047857;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 900;
+  padding: 9px 12px;
+}
+
+.dashboard-reviews-panel {
+  display: grid;
+  gap: 18px;
 }
 
 .artisan-dashboard-page {
@@ -5112,6 +5137,7 @@
 :root[data-theme='dark'] .booking-success-panel h2,
 :root[data-theme='dark'] .booking-review-form strong,
 :root[data-theme='dark'] .booking-review-summary strong,
+:root[data-theme='dark'] .booking-review-actions button,
 :root[data-theme='dark'] .booking-review-form select,
 :root[data-theme='dark'] .booking-review-form textarea {
   color: #f8fafc;
@@ -5141,6 +5167,11 @@
 :root[data-theme='dark'] .availability-status-note.muted {
   background: rgba(148, 163, 184, 0.12);
   color: #cbd5e1;
+}
+
+:root[data-theme='dark'] .booking-review-actions button {
+  background: rgba(15, 23, 42, 0.88);
+  border-color: rgba(52, 211, 153, 0.2);
 }
 
 :root[data-theme='dark'] .action-required-badge,

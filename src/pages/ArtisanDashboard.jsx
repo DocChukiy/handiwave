@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../auth/useAuth.js'
 import Button from '../components/Button.jsx'
+import EmptyState from '../components/EmptyState.jsx'
 import SkeletonPreview from '../components/Skeletons.jsx'
+import { ReviewCard } from '../components/cards.jsx'
 import { getArtisanByProfileId } from '../services/artisanService.js'
 import { getAvailabilityForArtisanId } from '../services/availabilityService.js'
 import { getBookingsForUser } from '../services/bookingService.js'
+import { getReviewsForArtisan } from '../services/reviewService.js'
 
 function formatMoney(value) {
   return value ? `NGN ${Number(value).toLocaleString()}` : 'By quote'
@@ -40,6 +43,7 @@ function ArtisanDashboard() {
   const [bookings, setBookings] = useState([])
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [recentReviews, setRecentReviews] = useState([])
 
   const metrics = useMemo(() => {
     const pending = bookings.filter((booking) => booking.rawStatus === 'pending').length
@@ -77,22 +81,26 @@ function ArtisanDashboard() {
 
       try {
         const artisanResult = await getArtisanByProfileId(user.id)
-        const [bookingResult, availabilityResult] = await Promise.all([
+        const [bookingResult, availabilityResult, reviewResult] = await Promise.all([
           getBookingsForUser(user),
           artisanResult.data
             ? getAvailabilityForArtisanId(artisanResult.data.id)
             : Promise.resolve({ data: { slots: [], unavailableDates: [] }, error: null }),
+          artisanResult.data
+            ? getReviewsForArtisan(artisanResult.data.id, 3)
+            : Promise.resolve({ data: [], error: null }),
         ])
 
         if (!isMounted) {
           return
         }
 
-        if (artisanResult.error || bookingResult.error || availabilityResult.error) {
+        if (artisanResult.error || bookingResult.error || availabilityResult.error || reviewResult.error) {
           setError(
             artisanResult.error?.message ||
               bookingResult.error?.message ||
               availabilityResult.error?.message ||
+              reviewResult.error?.message ||
               'Unable to load artisan dashboard.',
           )
         }
@@ -100,6 +108,7 @@ function ArtisanDashboard() {
         setArtisan(artisanResult.data)
         setAvailability(availabilityResult.data)
         setBookings(bookingResult.data)
+        setRecentReviews(reviewResult.data)
       } catch (loadError) {
         if (isMounted) {
           setError(loadError.message)
@@ -343,6 +352,29 @@ function ArtisanDashboard() {
             </div>
           )}
         </article>
+      </section>
+
+      <section className="artisan-profile-panel dashboard-reviews-panel">
+        <div className="section-heading-row">
+          <div>
+            <p className="section-kicker">Recent reviews</p>
+            <h2>{recentReviews.length ? 'Latest customer feedback' : 'No reviews yet'}</h2>
+          </div>
+          <span className="availability-status-note">
+            {artisan.rating.toFixed(1)} average • {artisan.reviewCount || 0} reviews
+          </span>
+        </div>
+        {recentReviews.length > 0 ? (
+          <div className="reviews-grid">
+            {recentReviews.map((review) => (
+              <ReviewCard key={review.id} review={review} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState compact title="No reviews yet">
+            Customer reviews will appear here after confirmed jobs.
+          </EmptyState>
+        )}
       </section>
     </div>
   )
