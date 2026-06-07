@@ -1,5 +1,6 @@
 import {
   Camera,
+  Bell,
   ChevronDown,
   Mail,
   MapPin,
@@ -13,7 +14,7 @@ import {
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
-import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import AuthProvider from './auth/AuthProvider.jsx'
 import { useAuth } from './auth/useAuth.js'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
@@ -33,6 +34,11 @@ import Services from './pages/Services.jsx'
 import Signup from './pages/Signup.jsx'
 import Wallet from './pages/Wallet.jsx'
 import { getArtisanByProfileId } from './services/artisanService.js'
+import { getTotalUnreadMessagesForUser } from './services/messageService.js'
+import {
+  getNotificationsForUser,
+  markNotificationRead,
+} from './services/notificationService.js'
 import { showToast } from './utils/toast.js'
 import './App.css'
 
@@ -218,6 +224,7 @@ function AnimatedRoutes() {
 function AppShell() {
   const { isAuthenticated, logout, user } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem('handiwave-theme')
 
@@ -231,7 +238,10 @@ function AppShell() {
   })
   const [artisanNeedsSetup, setArtisanNeedsSetup] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [notifications, setNotifications] = useState([])
   const [toast, setToast] = useState(null)
+  const [awarenessRefreshTick, setAwarenessRefreshTick] = useState(0)
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0)
 
   const isDarkMode = theme === 'dark'
   const navLinks = user?.role === 'artisan'
@@ -246,6 +256,18 @@ function AppShell() {
   const primaryNavLinks = visibleNavLinks.slice(0, desktopPrimaryCount)
   const moreNavLinks = visibleNavLinks.slice(desktopPrimaryCount)
   const isMoreActive = moreNavLinks.some((link) => location.pathname === link.path)
+  const unreadNotificationsCount = notifications.filter((notification) => !notification.isRead).length
+
+  function renderNavLabel(link) {
+    const count = link.path === '/messages' ? unreadMessagesCount : 0
+
+    return (
+      <>
+        <span>{link.label}</span>
+        {count > 0 && <span className="nav-count-bubble">{count}</span>}
+      </>
+    )
+  }
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -283,6 +305,55 @@ function AppShell() {
   }, [user?.id, user?.role])
 
   useEffect(() => {
+    let isMounted = true
+
+    async function loadAwarenessCounts() {
+      if (!isAuthenticated || !user?.id) {
+        setNotifications([])
+        setUnreadMessagesCount(0)
+        return
+      }
+
+      const [unreadMessageResult, notificationResult] = await Promise.all([
+        getTotalUnreadMessagesForUser(user),
+        getNotificationsForUser(user.id),
+      ])
+
+      if (!isMounted) {
+        return
+      }
+
+      if (unreadMessageResult.error) {
+        console.error('[Handiwave nav] unread message count failed:', unreadMessageResult.error)
+      } else {
+        setUnreadMessagesCount(unreadMessageResult.data)
+      }
+
+      if (notificationResult.error) {
+        console.error('[Handiwave nav] notification fetch failed:', notificationResult.error)
+      } else {
+        setNotifications(notificationResult.data)
+      }
+    }
+
+    loadAwarenessCounts()
+
+    function handleAwarenessRefresh() {
+      setAwarenessRefreshTick((currentTick) => currentTick + 1)
+    }
+
+    window.addEventListener('handiwave-awareness-refresh', handleAwarenessRefresh)
+
+    const awarenessTimer = window.setInterval(loadAwarenessCounts, 30000)
+
+    return () => {
+      isMounted = false
+      window.removeEventListener('handiwave-awareness-refresh', handleAwarenessRefresh)
+      window.clearInterval(awarenessTimer)
+    }
+  }, [awarenessRefreshTick, isAuthenticated, location.pathname, user])
+
+  useEffect(() => {
     function handleToast(event) {
       setToast(event.detail)
     }
@@ -313,6 +384,35 @@ function AppShell() {
       showToast('You have been logged out.')
     } catch (error) {
       showToast(error.message)
+    }
+  }
+
+  async function handleNotificationClick(notification, event) {
+    event.currentTarget.closest('details')?.removeAttribute('open')
+
+    const { error } = await markNotificationRead(notification.id)
+
+    if (error) {
+      showToast(error.message)
+      return
+    }
+
+    setNotifications((currentNotifications) => (
+      currentNotifications.map((item) => (
+        item.id === notification.id
+          ? { ...item, isRead: true, readAt: new Date().toISOString() }
+          : item
+      ))
+    ))
+    window.dispatchEvent(new CustomEvent('handiwave-awareness-refresh'))
+
+    if (notification.type === 'message' && notification.data?.conversation_id) {
+      navigate(`/messages?conversation=${notification.data.conversation_id}`)
+      return
+    }
+
+    if (notification.data?.booking_id) {
+      navigate(user?.role === 'artisan' ? '/artisan-jobs' : '/bookings')
     }
   }
 
@@ -348,7 +448,7 @@ function AppShell() {
                   onClick={() => setIsMenuOpen(false)}
                   to={link.path}
                 >
-                  {link.label}
+                  {renderNavLabel(link)}
                 </NavLink>
               ))}
               {moreNavLinks.length > 0 && (
@@ -367,7 +467,7 @@ function AppShell() {
                         onClick={() => setIsMenuOpen(false)}
                         to={link.path}
                       >
-                        {link.label}
+                        {renderNavLabel(link)}
                       </NavLink>
                     ))}
                   </div>
@@ -382,7 +482,7 @@ function AppShell() {
                   onClick={() => setIsMenuOpen(false)}
                   to={link.path}
                 >
-                  {link.label}
+                  {renderNavLabel(link)}
                 </NavLink>
               ))}
             </nav>
@@ -392,6 +492,45 @@ function AppShell() {
                 <div className="role-pill">
                   <span>{user.role}</span>
                 </div>
+              )}
+              {isAuthenticated && (
+                <details className="notification-nav">
+                  <summary
+                    aria-label="Notifications"
+                    className="notification-trigger"
+                  >
+                    <Bell size={18} />
+                    {unreadNotificationsCount > 0 && (
+                      <span className="notification-count-bubble">
+                        {unreadNotificationsCount}
+                      </span>
+                    )}
+                  </summary>
+                  <div className="notification-menu">
+                    <div className="notification-menu-header">
+                      <strong>Notifications</strong>
+                      <span>{unreadNotificationsCount} unread</span>
+                    </div>
+                    {notifications.length > 0 ? (
+                      notifications.map((notification) => (
+                        <button
+                          className={notification.isRead ? 'notification-item' : 'notification-item unread'}
+                          key={notification.id}
+                          type="button"
+                          onClick={(event) => handleNotificationClick(notification, event)}
+                        >
+                          <strong>{notification.title}</strong>
+                          {notification.body && <p>{notification.body}</p>}
+                          <span>{notification.time}</span>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="notification-empty">
+                        No notifications yet.
+                      </div>
+                    )}
+                  </div>
+                </details>
               )}
               {isAuthenticated && (
                 <details className="profile-nav">
@@ -566,7 +705,10 @@ function AppShell() {
               {user?.role === 'artisan' ? 'Jobs' : 'Services'}
             </NavLink>
             <NavLink to={user?.role === 'artisan' ? '/messages' : '/bookings'}>
-              {user?.role === 'artisan' ? 'Messages' : 'Bookings'}
+              <span>{user?.role === 'artisan' ? 'Messages' : 'Bookings'}</span>
+              {user?.role === 'artisan' && unreadMessagesCount > 0 && (
+                <span className="nav-count-bubble">{unreadMessagesCount}</span>
+              )}
             </NavLink>
             <NavLink to="/reels">Reels</NavLink>
             <NavLink to="/profile">

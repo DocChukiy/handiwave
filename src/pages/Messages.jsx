@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
 import EmptyState from '../components/EmptyState.jsx'
@@ -8,8 +8,10 @@ import {
   ensureConversationForBooking,
   getConversationsForUser,
   getMessagesForConversation,
+  markConversationMessagesRead,
   sendConversationMessage,
 } from '../services/messageService.js'
+import { markMessageNotificationsForConversationRead } from '../services/notificationService.js'
 import { showToast } from '../utils/toast.js'
 
 function getErrorMessage(error) {
@@ -39,7 +41,7 @@ function Messages() {
     conversations.find((conversation) => conversation.id === activeConversationId) || null
   ), [activeConversationId, conversations])
 
-  async function refreshConversations(nextActiveConversationId = activeConversationId) {
+  const refreshConversations = useCallback(async (nextActiveConversationId = activeConversationId) => {
     const { data, error: conversationError } = await getConversationsForUser(user)
 
     if (conversationError) {
@@ -54,7 +56,7 @@ function Messages() {
     }
 
     return true
-  }
+  }, [activeConversationId, user])
 
   useEffect(() => {
     let isMounted = true
@@ -145,6 +147,79 @@ function Messages() {
         }
 
         setMessages(data)
+
+        const { data: beforeConversations, error: beforeConversationError } =
+          await getConversationsForUser(user)
+
+        if (beforeConversationError) {
+          setError(getErrorMessage(beforeConversationError))
+          return
+        }
+
+        const unreadBeforeOpening = beforeConversations.find((conversation) => (
+          conversation.id === activeConversationId
+        ))?.unreadCount || 0
+
+        console.log('[Handiwave unread debug] unread count before opening:', {
+          conversationId: activeConversationId,
+          unreadCount: unreadBeforeOpening,
+        })
+
+        const { count: markedReadCount, error: readError } = await markConversationMessagesRead({
+          conversationId: activeConversationId,
+          userId: user.id,
+        })
+
+        if (readError) {
+          setError(getErrorMessage(readError))
+          return
+        }
+
+        console.log('[Handiwave unread debug] messages marked as read:', {
+          conversationId: activeConversationId,
+          markedReadCount,
+        })
+
+        const { count: notificationReadCount, error: notificationReadError } =
+          await markMessageNotificationsForConversationRead({
+            conversationId: activeConversationId,
+            userId: user.id,
+          })
+
+        if (notificationReadError) {
+          setError(getErrorMessage(notificationReadError))
+          return
+        }
+
+        console.log('[Handiwave unread debug] message notifications marked read:', {
+          conversationId: activeConversationId,
+          notificationReadCount,
+        })
+
+        const { data: refreshedConversations, error: refreshedConversationError } =
+          await getConversationsForUser(user)
+
+        if (refreshedConversationError) {
+          setError(getErrorMessage(refreshedConversationError))
+          return
+        }
+
+        if (!isMounted) {
+          return
+        }
+
+        setConversations(refreshedConversations)
+
+        const unreadAfterOpening = refreshedConversations.find((conversation) => (
+          conversation.id === activeConversationId
+        ))?.unreadCount || 0
+
+        console.log('[Handiwave unread debug] unread count after opening:', {
+          conversationId: activeConversationId,
+          unreadCount: unreadAfterOpening,
+        })
+
+        window.dispatchEvent(new CustomEvent('handiwave-awareness-refresh'))
       } catch (messageError) {
         if (isMounted) {
           setError(getErrorMessage(messageError))
@@ -161,7 +236,7 @@ function Messages() {
     return () => {
       isMounted = false
     }
-  }, [activeConversationId])
+  }, [activeConversationId, user])
 
   async function handleSendMessage(event) {
     event.preventDefault()
@@ -202,6 +277,7 @@ function Messages() {
 
       setMessages(refreshedMessages)
       await refreshConversations(activeConversationId)
+      window.dispatchEvent(new CustomEvent('handiwave-awareness-refresh'))
       showToast('Message sent.')
     } catch (sendError) {
       setError(getErrorMessage(sendError))
@@ -235,9 +311,11 @@ function Messages() {
             conversations.map((conversation) => (
               <button
                 className={
-                  activeConversationId === conversation.id
-                    ? 'conversation-list-item active'
-                    : 'conversation-list-item'
+                  [
+                    'conversation-list-item',
+                    activeConversationId === conversation.id ? 'active' : '',
+                    conversation.unreadCount > 0 ? 'unread' : '',
+                  ].filter(Boolean).join(' ')
                 }
                 key={conversation.id}
                 type="button"
@@ -249,6 +327,9 @@ function Messages() {
                   <small>{conversation.service} • {conversation.bookingStatus.replaceAll('_', ' ')}</small>
                 </div>
                 <span>{conversation.lastMessageTime}</span>
+                {conversation.unreadCount > 0 && (
+                  <strong className="unread-count-bubble">{conversation.unreadCount}</strong>
+                )}
               </button>
             ))
           ) : (

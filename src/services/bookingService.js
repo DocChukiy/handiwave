@@ -1,6 +1,7 @@
 import { getSupabaseClient } from '../lib/supabaseClient.js'
 import { getArtisanByProfileId } from './artisanService.js'
 import { ensureConversationForBooking } from './messageService.js'
+import { createNotificationSafely } from './notificationService.js'
 
 const bookingServiceRelation = 'bookings_service_id_fkey'
 const bookingArtisanRelation = 'bookings_artisan_id_fkey'
@@ -28,6 +29,21 @@ const allowedArtisanTransitions = {
   in_progress: ['artisan_completed'],
   pending: ['confirmed', 'cancelled', 'reschedule_requested'],
   reschedule_requested: ['cancelled'],
+}
+
+async function getArtisanProfileIdByArtisanId(artisanId) {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('artisans')
+    .select('profile_id')
+    .eq('id', artisanId)
+    .maybeSingle()
+
+  if (error) {
+    console.error('[Handiwave notification] artisan profile lookup failed:', error)
+  }
+
+  return data?.profile_id || ''
 }
 
 function formatDateTime(date, time) {
@@ -115,8 +131,20 @@ export async function proposeBookingTimeForArtisan({
     .eq('id', bookingId)
     .eq('artisan_id', artisanProfile.id)
     .eq('status', 'pending')
-    .select('id, status, proposed_date, proposed_time, reschedule_note, proposed_by, reschedule_requested_at')
+    .select('id, customer_id, status, proposed_date, proposed_time, reschedule_note, proposed_by, reschedule_requested_at')
     .single()
+
+  if (!error && data?.customer_id) {
+    await createNotificationSafely({
+      body: 'Your artisan suggested a new booking time. Review the proposal in your bookings.',
+      data: {
+        booking_id: data.id,
+      },
+      profileId: data.customer_id,
+      title: 'New time proposed',
+      type: 'booking',
+    })
+  }
 
   return {
     data,
@@ -208,6 +236,36 @@ export async function respondToBookingReschedule({
     }
   }
 
+  if (!error && data?.artisan_id) {
+    const artisanProfileId = await getArtisanProfileIdByArtisanId(data.artisan_id)
+
+    await createNotificationSafely({
+      body: decision === 'accept'
+        ? 'The customer accepted your proposed booking time.'
+        : 'The customer rejected your proposed booking time.',
+      data: {
+        booking_id: data.id,
+      },
+      profileId: artisanProfileId,
+      title: decision === 'accept' ? 'Reschedule accepted' : 'Reschedule rejected',
+      type: 'booking',
+    })
+  }
+
+  if (!error && data?.artisanId) {
+    const artisanProfileId = await getArtisanProfileIdByArtisanId(data.artisanId)
+
+    await createNotificationSafely({
+      body: 'The customer confirmed that the job is complete.',
+      data: {
+        booking_id: data.id,
+      },
+      profileId: artisanProfileId,
+      title: 'Job completion confirmed',
+      type: 'booking',
+    })
+  }
+
   return {
     data,
     error,
@@ -265,7 +323,7 @@ export async function updateBookingStatusForArtisan({
     .eq('id', bookingId)
     .eq('artisan_id', artisanProfile.id)
     .eq('status', currentStatus)
-    .select('id, status, completed_at')
+    .select('id, customer_id, status, completed_at')
     .maybeSingle()
 
   console.log('[Handiwave artisan booking status update result]', {
@@ -278,6 +336,30 @@ export async function updateBookingStatusForArtisan({
       data: null,
       error: new Error('Supabase did not update the booking. Check that the booking id, artisan id, and current status still match.'),
     }
+  }
+
+  if (!error && data?.customer_id && nextStatus === 'confirmed') {
+    await createNotificationSafely({
+      body: 'Your artisan accepted the booking request.',
+      data: {
+        booking_id: data.id,
+      },
+      profileId: data.customer_id,
+      title: 'Booking accepted',
+      type: 'booking',
+    })
+  }
+
+  if (!error && data?.customer_id && nextStatus === 'artisan_completed') {
+    await createNotificationSafely({
+      body: 'Your artisan marked the job as completed. Please confirm the work.',
+      data: {
+        booking_id: data.id,
+      },
+      profileId: data.customer_id,
+      title: 'Confirm job completion',
+      type: 'booking',
+    })
   }
 
   return {
@@ -316,6 +398,20 @@ export async function confirmBookingCompleteForCustomer({ bookingId, customerId 
       data: null,
       error: new Error('This booking is not awaiting customer completion confirmation.'),
     }
+  }
+
+  if (!error && data?.artisan_id) {
+    const artisanProfileId = await getArtisanProfileIdByArtisanId(data.artisan_id)
+
+    await createNotificationSafely({
+      body: 'The customer confirmed that the job is complete.',
+      data: {
+        booking_id: data.id,
+      },
+      profileId: artisanProfileId,
+      title: 'Job completion confirmed',
+      type: 'booking',
+    })
   }
 
   return {
@@ -593,6 +689,17 @@ export async function createBooking({
       error: conversationError,
     }
   }
+
+  await createNotificationSafely({
+    body: 'A customer created a new booking request. Open Jobs to review it.',
+    data: {
+      booking_id: insertedBooking.id,
+      conversation_id: conversation?.id,
+    },
+    profileId: artisan.profile_id,
+    title: 'New booking request',
+    type: 'booking',
+  })
 
   return {
     data: {
