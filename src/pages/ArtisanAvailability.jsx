@@ -279,7 +279,7 @@ function ArtisanAvailability() {
         <p className="section-kicker">Availability</p>
         <h1>Set your weekly calendar</h1>
         <p>
-          Add the days and times customers can book you, then block off dates
+          Manage your weekly availability here. Add the days and times customers can book you, then block off dates
           when you are unavailable.
         </p>
       </section>

@@ -161,6 +161,9 @@ function ArtisanDashboard() {
           </div>
         </div>
         <div className="dashboard-profile-actions">
+          <Button className="primary-cta" to="/artisan-availability">
+            Availability
+          </Button>
           <Button className="primary-cta" to="/artisan-onboarding">
             Edit Artisan Profile
           </Button>
@@ -171,6 +174,42 @@ function ArtisanDashboard() {
       </section>
 
       {error && <p className="auth-error page-error">{error}</p>}
+
+      <section className="availability-profile-card availability-top-card">
+        <div>
+          <p className="section-kicker">Availability</p>
+          <h2>{activeAvailabilitySlots.length > 0 ? 'Your booking calendar is active' : 'Set your booking calendar'}</h2>
+          <p>
+            Manage your weekly availability here. Customers can only book times that match your active slots.
+          </p>
+        </div>
+        <div className="availability-summary-grid">
+          <article>
+            <strong>{activeAvailabilitySlots.length > 0 ? 'Complete' : 'Needs setup'}</strong>
+            <span>Setup status</span>
+          </article>
+          <article>
+            <strong>
+              {nextAvailabilitySlot
+                ? `${nextAvailabilitySlot.dayLabel} ${nextAvailabilitySlot.startTime}`
+                : 'Not set'}
+            </strong>
+            <span>Next available pattern</span>
+          </article>
+          <article>
+            <strong>{availability.unavailableDates.length}</strong>
+            <span>Unavailable dates</span>
+          </article>
+        </div>
+        <div className="profile-actions">
+          <Button className="primary-cta" to="/artisan-availability">
+            Manage Availability
+          </Button>
+          <Button className="secondary-cta" to="/profile">
+            Open My Profile
+          </Button>
+        </div>
+      </section>
 
       <section className="artisan-dashboard-grid">
         <article className="artisan-profile-panel">

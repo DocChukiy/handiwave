@@ -726,13 +726,15 @@ function AppShell() {
             <NavLink to={user?.role === 'artisan' ? '/artisan-jobs' : '/services'}>
               {user?.role === 'artisan' ? 'Jobs' : 'Services'}
             </NavLink>
-            <NavLink to={user?.role === 'artisan' ? '/messages' : '/bookings'}>
-              <span>{user?.role === 'artisan' ? 'Messages' : 'Bookings'}</span>
+            <NavLink to={user?.role === 'artisan' ? '/artisan-availability' : '/bookings'}>
+              {user?.role === 'artisan' ? 'Availability' : 'Bookings'}
+            </NavLink>
+            <NavLink to={user?.role === 'artisan' ? '/messages' : '/reels'}>
+              <span>{user?.role === 'artisan' ? 'Messages' : 'Reels'}</span>
               {user?.role === 'artisan' && unreadMessagesCount > 0 && (
                 <span className="nav-count-bubble">{unreadMessagesCount}</span>
               )}
             </NavLink>
-            <NavLink to="/reels">Reels</NavLink>
             <NavLink to="/profile">
               Profile
             </NavLink>

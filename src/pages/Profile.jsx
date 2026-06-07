@@ -130,6 +130,39 @@ function Profile() {
 
     return (
       <div className="starter-page profile-page">
+        <section className="availability-profile-card availability-top-card">
+          <div>
+            <p className="section-kicker">Availability setup</p>
+            <h1>Manage Availability</h1>
+            <p>
+              Manage your weekly availability here. Set the days and times customers can book you,
+              and block dates when you are unavailable.
+            </p>
+          </div>
+          <div className="availability-summary-grid">
+            <article>
+              <strong>{hasAvailability ? 'Complete' : 'Needs setup'}</strong>
+              <span>Setup status</span>
+            </article>
+            <article>
+              <strong>{activeSlots.length}</strong>
+              <span>Active weekly slots</span>
+            </article>
+            <article>
+              <strong>{availability.unavailableDates.length}</strong>
+              <span>Unavailable dates</span>
+            </article>
+          </div>
+          <div className="profile-actions">
+            <Button className="primary-cta" to="/artisan-availability">
+              Manage Availability
+            </Button>
+            <Button className="secondary-cta" to="/artisan-availability">
+              Add Unavailable Date
+            </Button>
+          </div>
+        </section>
+
         <section className="page-hero compact">
           <p className="section-kicker">My Profile</p>
           <h1>{artisan.businessName || artisan.fullName}</h1>
