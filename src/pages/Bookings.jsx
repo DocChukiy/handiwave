@@ -7,6 +7,7 @@ import {
   createBooking,
   getBookingOptions,
   getBookingsForUser,
+  respondToBookingReschedule,
 } from '../services/bookingService.js'
 import { getSupabaseClient } from '../lib/supabaseClient.js'
 import { showToast } from '../utils/toast.js'
@@ -31,13 +32,29 @@ const statusLabels = {
   reschedule_requested: 'Reschedule requested',
 }
 
+function getErrorMessage(error) {
+  return [
+    error.message,
+    error.details,
+    error.hint,
+    error.code,
+  ].filter(Boolean).join(' ')
+}
+
 function BookingHistorySection({
   bookings,
   emptyText,
   isLoading,
+  onRescheduleResponse,
   participantLabel,
+  showRescheduleActions = false,
   title,
+  updatingBookingId,
 }) {
+  const rescheduleRequestCount = bookings.filter((booking) => (
+    (booking.rawStatus || booking.status) === 'reschedule_requested'
+  )).length
+
   return (
     <div className="list-panel booking-history-panel">
       <div className="booking-history-header">
@@ -47,29 +64,99 @@ function BookingHistorySection({
         </div>
       </div>
 
+      {!isLoading && showRescheduleActions && (
+        <div className="customer-reschedule-summary">
+          {rescheduleRequestCount > 0 ? (
+            <>
+              <span className="awaiting-response-badge">Awaiting Your Response</span>
+              <p>
+                {rescheduleRequestCount} booking{rescheduleRequestCount === 1 ? '' : 's'} need your schedule decision.
+              </p>
+            </>
+          ) : (
+            <EmptyState compact title="No reschedule requests">
+              Artisan time-change requests will appear here when they need your response.
+            </EmptyState>
+          )}
+        </div>
+      )}
+
       {isLoading ? (
         <SkeletonPreview count={3} label={`Loading ${title}`} type="service" />
       ) : bookings.length > 0 ? (
-        bookings.map((booking) => (
-          <article className="list-row booking-row" key={booking.id}>
-            <div>
-              <h3>{booking.service}</h3>
-              <p>{participantLabel(booking)} • {booking.date}</p>
-              <p>{booking.address}, {booking.city}, {booking.state}</p>
-              {booking.notes && <p>{booking.notes}</p>}
-              {booking.rawStatus === 'reschedule_requested' && (
-                <div className="booking-reschedule-note">
-                  <strong>Artisan proposed a new time</strong>
-                  <p>
-                    {booking.proposedDate || 'Date pending'} at {booking.proposedTime || 'Time pending'}
-                  </p>
-                  {booking.rescheduleNote && <p>{booking.rescheduleNote}</p>}
+        bookings.map((booking) => {
+          const bookingStatus = booking.rawStatus || booking.status
+
+          if (showRescheduleActions) {
+            console.log('Rendering customer booking card', booking.id, booking.status)
+          }
+
+          return (
+            <article
+              className={
+                bookingStatus === 'reschedule_requested'
+                  ? 'list-row booking-row reschedule-booking-card'
+                  : 'list-row booking-row'
+              }
+              key={booking.id}
+            >
+              <div className="booking-card-content">
+                <div className="booking-card-top-row">
+                  <h3>{booking.service}</h3>
+                  <BookingStatusBadge status={bookingStatus} />
                 </div>
-              )}
-            </div>
-            <BookingStatusBadge status={booking.rawStatus} />
-          </article>
-        ))
+                <div className="booking-card-meta-row">
+                  <span>{participantLabel(booking)}</span>
+                  <span>{booking.address}, {booking.city}, {booking.state}</span>
+                  <span>{booking.scheduledDate} at {booking.scheduledTime}</span>
+                </div>
+                {booking.notes && <p>{booking.notes}</p>}
+                {bookingStatus === 'reschedule_requested' && (
+                  <div className="booking-reschedule-note">
+                    <div className="booking-reschedule-heading">
+                      <strong>Artisan proposed a new time</strong>
+                      <span className="awaiting-response-badge">Awaiting Your Response</span>
+                    </div>
+                    <div className="reschedule-time-grid">
+                      <span>
+                        <strong>Original date/time</strong>
+                        {booking.scheduledDate} at {booking.scheduledTime}
+                      </span>
+                      <span>
+                        <strong>Proposed date/time</strong>
+                        {booking.proposedDate || 'Date pending'} at {booking.proposedTime || 'Time pending'}
+                      </span>
+                    </div>
+                    {booking.rescheduleNote && (
+                      <p className="reschedule-artisan-note">{booking.rescheduleNote}</p>
+                    )}
+                    {showRescheduleActions && (
+                      <div className="booking-reschedule-actions">
+                        <button
+                          disabled={updatingBookingId === booking.id}
+                          type="button"
+                          onClick={() => onRescheduleResponse?.(booking, 'accept')}
+                        >
+                          {updatingBookingId === booking.id ? 'Updating...' : 'Accept New Time'}
+                        </button>
+                        <button
+                          disabled={updatingBookingId === booking.id}
+                          type="button"
+                          onClick={() => onRescheduleResponse?.(booking, 'reject')}
+                        >
+                          {updatingBookingId === booking.id ? 'Updating...' : 'Reject New Time'}
+                        </button>
+                      </div>
+                    )}
+                    {booking.rescheduleRequestedAt && (
+                      <p>Requested: {new Date(booking.rescheduleRequestedAt).toLocaleString()}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </article>
+          )
+        })
       ) : (
         <EmptyState compact title="No bookings yet">
           {emptyText}
@@ -99,6 +186,7 @@ function Bookings() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [options, setOptions] = useState({ artisans: [], services: [] })
+  const [updatingBookingId, setUpdatingBookingId] = useState('')
 
   const isCustomer = user?.role === 'customer'
   const selectedArtisan = options.artisans.find((artisan) => artisan.id === form.artisanId)
@@ -199,7 +287,7 @@ function Bookings() {
           const { data, error: refreshError } = await getBookingsForUser(user)
 
           if (refreshError) {
-            setError(refreshError.message)
+            setError(getErrorMessage(refreshError))
             return
           }
 
@@ -228,6 +316,61 @@ function Bookings() {
       artisanId,
       serviceId: artisan?.primary_service_id || currentForm.serviceId,
     }))
+  }
+
+  async function refreshBookings() {
+    const { data, error: refreshError } = await getBookingsForUser(user)
+
+    if (refreshError) {
+      setError(getErrorMessage(refreshError))
+      return false
+    }
+
+    setBookings(data)
+    return true
+  }
+
+  async function handleRescheduleResponse(booking, decision) {
+    setError('')
+    setUpdatingBookingId(booking.id)
+
+    try {
+      console.log('[Handiwave reschedule response] before update:', {
+        bookingId: booking.id,
+        decision,
+        rawStatus: booking.rawStatus,
+        status: booking.status,
+      })
+
+      const { data, error: responseError } = await respondToBookingReschedule({
+        bookingId: booking.id,
+        customerId: user.id,
+        decision,
+      })
+
+      if (responseError) {
+        setError(getErrorMessage(responseError))
+        return
+      }
+
+      if (!data?.id) {
+        setError('Supabase did not return the updated booking row.')
+        return
+      }
+
+      const didRefresh = await refreshBookings()
+      if (!didRefresh) {
+        return
+      }
+
+      showToast(decision === 'accept'
+        ? 'New booking time accepted.'
+        : 'Proposed booking time rejected.')
+    } catch (responseError) {
+      setError(getErrorMessage(responseError))
+    } finally {
+      setUpdatingBookingId('')
+    }
   }
 
   async function handleSubmit(event) {
@@ -422,8 +565,11 @@ function Bookings() {
             bookings={bookings}
             emptyText="Your confirmed service requests will appear here after Supabase creates the booking row."
             isLoading={isLoading}
+            onRescheduleResponse={handleRescheduleResponse}
             participantLabel={(booking) => booking.artisan}
+            showRescheduleActions
             title="Customer booking history"
+            updatingBookingId={updatingBookingId}
           />
         ) : (
           <BookingHistorySection
@@ -432,6 +578,7 @@ function Bookings() {
             isLoading={isLoading}
             participantLabel={(booking) => booking.customer}
             title="Artisan booking history"
+            updatingBookingId={updatingBookingId}
           />
         )}
       </section>

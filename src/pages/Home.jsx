@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArtisanCard,
@@ -10,11 +11,171 @@ import { featuredArtisans } from '../data/artisans.js'
 import { howItWorksSteps, trustedMarkets } from '../data/home.js'
 import { reelsPreview } from '../data/reels.js'
 import { serviceCategories } from '../data/services.js'
+import {
+  getBookingsForUser,
+  respondToBookingReschedule,
+} from '../services/bookingService.js'
 import { cardVariants } from '../utils/animations.js'
+import { showToast } from '../utils/toast.js'
+
+function getErrorMessage(error) {
+  return [
+    error.message,
+    error.details,
+    error.hint,
+    error.code,
+  ].filter(Boolean).join(' ')
+}
+
+function CustomerActiveBookings({ bookings, onRescheduleResponse, updatingBookingId }) {
+  const activeBookings = bookings
+    .filter((booking) => (
+      ['pending', 'reschedule_requested', 'confirmed', 'in_progress'].includes(booking.rawStatus)
+    ))
+    .slice(0, 3)
+
+  if (activeBookings.length === 0) {
+    return <p>No active bookings yet. Your open requests will appear here.</p>
+  }
+
+  return (
+    <div className="home-active-bookings">
+      {activeBookings.map((booking) => {
+        const bookingStatus = booking.rawStatus || booking.status
+
+        console.log('[Handiwave customer home booking render]', {
+          bookingId: booking.id,
+          status: bookingStatus,
+        })
+
+        return (
+          <div className="home-active-booking-card" key={booking.id}>
+            <strong>{booking.service}</strong>
+            <p>{booking.artisan} - {booking.date}</p>
+            {bookingStatus === 'reschedule_requested' && (
+              <div className="booking-reschedule-note">
+                <div className="booking-reschedule-heading">
+                  <strong>Artisan proposed a new time</strong>
+                  <span className="awaiting-response-badge">Awaiting Your Response</span>
+                </div>
+                <p>Original: {booking.scheduledDate} at {booking.scheduledTime}</p>
+                <p>Proposed: {booking.proposedDate || 'Date pending'} at {booking.proposedTime || 'Time pending'}</p>
+                {booking.rescheduleNote && <p>{booking.rescheduleNote}</p>}
+                <div className="booking-reschedule-actions">
+                  <button
+                    disabled={updatingBookingId === booking.id}
+                    type="button"
+                    onClick={() => onRescheduleResponse(booking, 'accept')}
+                  >
+                    {updatingBookingId === booking.id ? 'Updating...' : 'Accept New Time'}
+                  </button>
+                  <button
+                    disabled={updatingBookingId === booking.id}
+                    type="button"
+                    onClick={() => onRescheduleResponse(booking, 'reject')}
+                  >
+                    {updatingBookingId === booking.id ? 'Updating...' : 'Reject New Time'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 function Home() {
   const { user } = useAuth()
   const isCustomer = user?.role === 'customer'
+  const [bookings, setBookings] = useState([])
+  const [bookingError, setBookingError] = useState('')
+  const [updatingBookingId, setUpdatingBookingId] = useState('')
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadCustomerBookings() {
+      if (!isCustomer) {
+        return
+      }
+
+      const { data, error } = await getBookingsForUser(user)
+
+      if (!isMounted) {
+        return
+      }
+
+      if (error) {
+        setBookingError(getErrorMessage(error))
+        return
+      }
+
+      setBookings(data)
+    }
+
+    loadCustomerBookings()
+
+    return () => {
+      isMounted = false
+    }
+  }, [isCustomer, user])
+
+  async function refreshCustomerBookings() {
+    const { data, error } = await getBookingsForUser(user)
+
+    if (error) {
+      setBookingError(getErrorMessage(error))
+      return false
+    }
+
+    setBookings(data)
+    return true
+  }
+
+  async function handleRescheduleResponse(booking, decision) {
+    setBookingError('')
+    setUpdatingBookingId(booking.id)
+
+    try {
+      console.log('[Handiwave reschedule response] before update:', {
+        bookingId: booking.id,
+        decision,
+        rawStatus: booking.rawStatus,
+        status: booking.status,
+      })
+
+      const { data, error } = await respondToBookingReschedule({
+        bookingId: booking.id,
+        customerId: user.id,
+        decision,
+      })
+
+      if (error) {
+        setBookingError(getErrorMessage(error))
+        return
+      }
+
+      if (!data?.id) {
+        setBookingError('Supabase did not return the updated booking row.')
+        return
+      }
+
+      const didRefresh = await refreshCustomerBookings()
+      if (!didRefresh) {
+        return
+      }
+
+      showToast(decision === 'accept'
+        ? 'New booking time accepted.'
+        : 'Proposed booking time rejected.')
+    } catch (error) {
+      setBookingError(getErrorMessage(error))
+    } finally {
+      setUpdatingBookingId('')
+    }
+  }
 
   return (
     <>
@@ -122,7 +283,12 @@ function Home() {
           <article>
             <p className="section-kicker">Active bookings</p>
             <h2>Track your open service requests</h2>
-            <p>View pending, confirmed, and completed bookings from your customer dashboard.</p>
+            {bookingError && <p className="auth-error">{bookingError}</p>}
+            <CustomerActiveBookings
+              bookings={bookings}
+              onRescheduleResponse={handleRescheduleResponse}
+              updatingBookingId={updatingBookingId}
+            />
             <Link className="primary-cta" to="/bookings">View Bookings</Link>
           </article>
           <article>

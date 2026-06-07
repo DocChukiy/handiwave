@@ -119,6 +119,96 @@ export async function proposeBookingTimeForArtisan({
   }
 }
 
+export async function respondToBookingReschedule({
+  bookingId,
+  customerId,
+  decision,
+}) {
+  if (!['accept', 'reject'].includes(decision)) {
+    return {
+      data: null,
+      error: new Error('Choose whether to accept or reject the proposed time.'),
+    }
+  }
+
+  const supabase = getSupabaseClient()
+  const { data: freshBooking, error: freshBookingError } = await supabase
+    .from('bookings')
+    .select('*')
+    .eq('id', bookingId)
+    .maybeSingle()
+
+  console.log('[Handiwave reschedule response] fresh booking before status validation:', freshBooking)
+
+  if (freshBookingError) {
+    return {
+      data: null,
+      error: freshBookingError,
+    }
+  }
+
+  if (!freshBooking) {
+    return {
+      data: null,
+      error: new Error('Booking not found.'),
+    }
+  }
+
+  if (freshBooking.customer_id !== customerId) {
+    return {
+      data: null,
+      error: new Error('Booking not found.'),
+    }
+  }
+
+  if (freshBooking.status !== 'reschedule_requested') {
+    return {
+      data: null,
+      error: new Error('This reschedule request is no longer awaiting a response.'),
+    }
+  }
+
+  const updatePayload = {
+    proposed_by: null,
+    proposed_date: null,
+    proposed_time: null,
+    reschedule_note: null,
+    reschedule_requested_at: null,
+    status: decision === 'accept' ? 'confirmed' : 'pending',
+  }
+
+  if (decision === 'accept') {
+    if (!freshBooking.proposed_date || !freshBooking.proposed_time) {
+      return {
+        data: null,
+        error: new Error('This reschedule request is missing a proposed date or time.'),
+      }
+    }
+
+    updatePayload.scheduled_date = freshBooking.proposed_date
+    updatePayload.scheduled_time = freshBooking.proposed_time
+  }
+
+  const { data, error } = await supabase
+    .from('bookings')
+    .update(updatePayload)
+    .eq('id', bookingId)
+    .select('*')
+    .maybeSingle()
+
+  if (!error && !data) {
+    return {
+      data: null,
+      error: new Error('Supabase did not return the updated booking row.'),
+    }
+  }
+
+  return {
+    data,
+    error,
+  }
+}
+
 export async function updateBookingStatusForArtisan({
   artisanProfileId,
   bookingId,
