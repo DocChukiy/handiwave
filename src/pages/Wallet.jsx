@@ -29,6 +29,12 @@ function formatMoney(value, currency = 'NGN') {
   return `${currency} ${Number(value || 0).toLocaleString()}`
 }
 
+function sumTransactions(transactions, type) {
+  return transactions
+    .filter((transaction) => transaction.type === type && transaction.status === 'successful')
+    .reduce((total, transaction) => total + Number(transaction.amount || 0), 0)
+}
+
 function Wallet() {
   const { user } = useAuth()
   const [error, setError] = useState('')
@@ -42,11 +48,18 @@ function Wallet() {
   const pendingWithdrawals = useMemo(() => (
     withdrawals.filter((withdrawal) => withdrawal.status === 'pending')
   ), [withdrawals])
+  const releasedEarnings = useMemo(() => (
+    sumTransactions(transactions, 'escrow_release')
+  ), [transactions])
+  const refundedPayments = useMemo(() => (
+    sumTransactions(transactions, 'refund')
+  ), [transactions])
 
   const isArtisan = user?.role === 'artisan'
   const walletCopy = isArtisan
     ? 'Track earnings, escrow releases, and withdrawal requests from completed Handiwave jobs.'
     : 'Track safe booking payments, escrow holds, refunds, and wallet activity.'
+  const canWithdraw = Number(wallet?.availableBalance || 0) > 0
 
   async function loadWallet() {
     setError('')
@@ -140,6 +153,14 @@ function Wallet() {
         <p className="section-kicker">{isArtisan ? 'Artisan wallet' : 'Customer wallet'}</p>
         <h1>{formatMoney(wallet?.availableBalance, wallet?.currency)}</h1>
         <p>{walletCopy}</p>
+        <p className="wallet-payment-note">
+          Real payments are not active yet. Wallet is prepared for future escrow/payment integration.
+        </p>
+        <div className="hero-actions">
+          <button className="primary-cta coming-soon-button" disabled type="button">
+            Pay with Paystack - Coming Soon
+          </button>
+        </div>
       </section>
 
       <RoleNotice />
@@ -156,6 +177,14 @@ function Wallet() {
           <span>Escrow balance</span>
         </div>
         <div>
+          <strong>{formatMoney(wallet?.escrowBalance, wallet?.currency)}</strong>
+          <span>{isArtisan ? 'Pending earnings' : 'Protected payments'}</span>
+        </div>
+        <div>
+          <strong>{formatMoney(isArtisan ? releasedEarnings : refundedPayments, wallet?.currency)}</strong>
+          <span>{isArtisan ? 'Released earnings' : 'Refunds received'}</span>
+        </div>
+        <div>
           <strong>{formatMoney(wallet?.totalCredited, wallet?.currency)}</strong>
           <span>{isArtisan ? 'Total earned/credited' : 'Total credited/refunded'}</span>
         </div>
@@ -170,7 +199,9 @@ function Wallet() {
           <h2>{isArtisan ? 'Request withdrawal' : 'Withdrawal request'}</h2>
           <p className="auth-hint">
             {isArtisan
-              ? 'Withdraw available earnings. Payout processing will be handled manually for now.'
+              ? canWithdraw
+                ? 'Withdraw available earnings. Payout processing will be handled manually for now.'
+                : 'You\'ll be able to withdraw after completed paid jobs.'
               : 'Payments are not connected yet. This request flow is ready for future refunds or wallet withdrawals.'}
           </p>
           <label>
@@ -212,7 +243,7 @@ function Wallet() {
               onChange={(event) => updateForm('accountNumber', event.target.value)}
             />
           </label>
-          <button disabled={isSubmitting} type="submit">
+          <button disabled={isSubmitting || (isArtisan && !canWithdraw)} type="submit">
             {isSubmitting ? 'Submitting...' : 'Request Withdrawal'}
           </button>
         </form>
@@ -220,7 +251,7 @@ function Wallet() {
         <section className="list-panel wallet-panel">
           <div className="booking-history-header">
             <div>
-              <p className="section-kicker">Pending withdrawals</p>
+              <p className="section-kicker">{isArtisan ? 'Pending withdrawals' : 'Pending refunds/payments'}</p>
               <h2>{pendingWithdrawals.length} pending</h2>
             </div>
           </div>
@@ -235,8 +266,10 @@ function Wallet() {
               </article>
             ))
           ) : (
-            <EmptyState compact title="No pending withdrawals">
-              New withdrawal requests will appear here until they are processed.
+            <EmptyState compact title={isArtisan ? 'No pending withdrawals' : 'No pending refunds or payments'}>
+              {isArtisan
+                ? 'New withdrawal requests will appear here until they are processed.'
+                : 'Future refunds, escrow releases, and payment updates will appear here.'}
             </EmptyState>
           )}
         </section>

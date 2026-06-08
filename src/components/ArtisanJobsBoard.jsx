@@ -22,6 +22,18 @@ const jobStatusLabels = {
   reschedule_requested: 'Reschedule Requested',
 }
 
+const paymentStatusLabels = {
+  failed: 'Failed',
+  held_in_escrow: 'Held in escrow',
+  refunded: 'Refunded',
+  released: 'Released',
+  unpaid: 'Unpaid',
+}
+
+function formatMoney(value, currency = 'NGN') {
+  return `${currency} ${Number(value || 0).toLocaleString()}`
+}
+
 function formatCreatedDate(value) {
   if (!value) {
     return 'Created date unavailable'
@@ -32,6 +44,41 @@ function formatCreatedDate(value) {
     month: 'short',
     year: 'numeric',
   }).format(new Date(value))
+}
+
+function getBookingPrice(booking) {
+  return booking.finalPrice || booking.estimatedPrice || booking.escrowAmount || 0
+}
+
+function getFallbackPlatformFee(booking) {
+  const price = getBookingPrice(booking)
+  const rate = booking.commissionRate || 0.1
+
+  return Math.round(price * rate * 100) / 100
+}
+
+function ArtisanPayoutPanel({ booking }) {
+  const price = getBookingPrice(booking)
+  const platformFee = booking.platformFee || getFallbackPlatformFee(booking)
+  const expectedPayout = booking.artisanPayoutAmount || Math.max(price - platformFee, 0)
+
+  return (
+    <div className="job-payment-panel">
+      <span>
+        <strong>{formatMoney(expectedPayout)}</strong>
+        Expected payout
+      </span>
+      <span>
+        <strong>{formatMoney(platformFee)}</strong>
+        Platform fee
+      </span>
+      <span>
+        <strong>{paymentStatusLabels[booking.paymentStatus] || booking.paymentStatus.replaceAll('_', ' ')}</strong>
+        Escrow/payment status
+      </span>
+      <p>Escrow release after customer confirmation. Real payment collection is still coming soon.</p>
+    </div>
+  )
 }
 
 function groupBookings(bookings) {
@@ -159,6 +206,8 @@ function JobCard({
         )}
         {booking.rescheduleNote && <p><strong>Reschedule note:</strong> {booking.rescheduleNote}</p>}
       </div>
+
+      <ArtisanPayoutPanel booking={booking} />
 
       <div className="job-card-meta">
         <small>Payment: {booking.paymentStatus.replaceAll('_', ' ')}</small>

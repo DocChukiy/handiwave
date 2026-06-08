@@ -286,6 +286,33 @@ function Profile() {
           <article><strong>NGN 0</strong><span>Wallet balance</span></article>
         </section>
       </section>
+
+      <section className="availability-profile-card">
+        <div>
+          <p className="section-kicker">Wallet</p>
+          <h2>Payments, escrow, and refunds</h2>
+          <p>
+            Real payments are not active yet. Wallet is prepared for future escrow/payment integration.
+          </p>
+        </div>
+        <div className="availability-summary-grid">
+          <article>
+            <strong>NGN 0</strong>
+            <span>Available balance</span>
+          </article>
+          <article>
+            <strong>NGN 0</strong>
+            <span>Escrow balance</span>
+          </article>
+          <article>
+            <strong>Coming Soon</strong>
+            <span>Top up wallet</span>
+          </article>
+        </div>
+        <div className="profile-actions">
+          <Button className="primary-cta" to="/wallet">Open Wallet</Button>
+        </div>
+      </section>
     </div>
   )
 }

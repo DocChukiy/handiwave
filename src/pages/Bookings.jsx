@@ -43,6 +43,14 @@ const statusLabels = {
   reschedule_requested: 'Reschedule requested',
 }
 
+const paymentStatusLabels = {
+  failed: 'Failed',
+  held_in_escrow: 'Held in escrow',
+  refunded: 'Refunded',
+  released: 'Released',
+  unpaid: 'Unpaid',
+}
+
 function getErrorMessage(error) {
   return [
     error.message,
@@ -50,6 +58,58 @@ function getErrorMessage(error) {
     error.hint,
     error.code,
   ].filter(Boolean).join(' ')
+}
+
+function formatMoney(value, currency = 'NGN') {
+  if (value === null || value === undefined || value === '') {
+    return `${currency} 0`
+  }
+
+  return `${currency} ${Number(value || 0).toLocaleString()}`
+}
+
+function getBookingPrice(booking) {
+  return booking.finalPrice || booking.estimatedPrice || booking.escrowAmount || 0
+}
+
+function PaymentStatusBadge({ status }) {
+  return (
+    <span className={`payment-status-badge payment-${status || 'unpaid'}`}>
+      {paymentStatusLabels[status] || status?.replaceAll('_', ' ') || 'Unpaid'}
+    </span>
+  )
+}
+
+function CustomerEscrowPanel({ booking }) {
+  const price = getBookingPrice(booking)
+  const escrowAmount = booking.escrowAmount || (
+    booking.paymentStatus === 'held_in_escrow' ? price : 0
+  )
+
+  return (
+    <div className="booking-payment-panel">
+      <div className="booking-payment-row">
+        <span>
+          <strong>{formatMoney(price)}</strong>
+          {booking.finalPrice ? 'Final price' : 'Estimated price'}
+        </span>
+        <span>
+          <strong>{formatMoney(escrowAmount)}</strong>
+          Escrow protected
+        </span>
+        <span>
+          <PaymentStatusBadge status={booking.paymentStatus} />
+          Payment status
+        </span>
+      </div>
+      <p>
+        Escrow release after customer confirmation. Platform commission will be deducted from the artisan payout when real payments go live.
+      </p>
+      <button className="paystack-placeholder-button" disabled type="button">
+        Pay with Paystack - Coming Soon
+      </button>
+    </div>
+  )
 }
 
 function getDateDayOfWeek(dateValue) {
@@ -333,6 +393,7 @@ function BookingHistorySection({
                   <span>{booking.address}, {booking.city}, {booking.state}</span>
                   <span>{booking.scheduledDate} at {booking.scheduledTime}</span>
                 </div>
+                {showRescheduleActions && <CustomerEscrowPanel booking={booking} />}
                 {booking.notes && <p>{booking.notes}</p>}
                 {showRescheduleActions && (
                   <div className="booking-message-actions">

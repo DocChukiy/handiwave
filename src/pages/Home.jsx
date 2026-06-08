@@ -301,9 +301,15 @@ function Home() {
             <Link className="secondary-cta" to="/artisans">Find Artisans</Link>
           </article>
           <article>
-            <p className="section-kicker">Recent activity</p>
-            <h2>Wallet, chats, and updates</h2>
-            <p>Check messages and wallet activity before your next service visit.</p>
+            <p className="section-kicker">Wallet</p>
+            <h2>Payments and refunds</h2>
+            <p>View wallet balance, escrow activity, and future refund/payment history.</p>
+            <Link className="secondary-cta" to="/wallet">Open Wallet</Link>
+          </article>
+          <article>
+            <p className="section-kicker">Profile</p>
+            <h2>Account and updates</h2>
+            <p>Update your details and keep track of saved artisans.</p>
             <Link className="secondary-cta" to="/profile">Open Profile</Link>
           </article>
         </section>

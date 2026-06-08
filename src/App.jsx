@@ -58,6 +58,7 @@ const customerNavLinks = [
   { path: '/bookings', label: 'Bookings' },
   { path: '/reels', label: 'Reels' },
   { path: '/messages', label: 'Messages' },
+  { path: '/wallet', label: 'Wallet' },
   { path: '/profile', label: 'Profile' },
 ]
 
@@ -778,8 +779,8 @@ function AppShell() {
                 <span className="nav-count-bubble">{unreadMessagesCount}</span>
               )}
             </NavLink>
-            <NavLink to="/profile">
-              Profile
+            <NavLink to={user?.role === 'artisan' ? '/profile' : '/wallet'}>
+              {user?.role === 'artisan' ? 'Profile' : 'Wallet'}
             </NavLink>
           </nav>
         )}

@@ -53,6 +53,10 @@ function formatDateTime(date, time) {
   return `${dateLabel} • ${timeLabel}`
 }
 
+function toNumber(value) {
+  return Number(value) || 0
+}
+
 export function mapBookingRow(booking) {
   const artisanName =
     booking.artisan?.profile?.full_name ||
@@ -71,11 +75,17 @@ export function mapBookingRow(booking) {
     customerId: booking.customer_id,
     date: formatDateTime(booking.scheduled_date, booking.scheduled_time),
     completedAt: booking.completed_at || '',
+    commissionAmount: toNumber(booking.commission_amount),
+    commissionRate: toNumber(booking.commission_rate),
     createdAt: booking.created_at || '',
+    escrowAmount: toNumber(booking.escrow_amount),
     estimatedPrice: booking.estimated_price,
+    finalPrice: booking.final_price,
     id: booking.id,
     notes: booking.notes || '',
     paymentStatus: booking.payment_status || 'unpaid',
+    paymentReleasedAt: booking.payment_released_at || '',
+    platformFee: toNumber(booking.commission_amount),
     proposedBy: booking.proposed_by || '',
     proposedDate: booking.proposed_date || '',
     proposedTime: booking.proposed_time ? booking.proposed_time.slice(0, 5) : '',
@@ -90,6 +100,8 @@ export function mapBookingRow(booking) {
     serviceId: booking.service_id,
     state: booking.state,
     status: status.replaceAll('_', ' '),
+    artisanPayoutAmount: toNumber(booking.artisan_payout_amount),
+    refundAmount: toNumber(booking.refund_amount),
   }
 }
 
