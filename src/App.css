@@ -3536,6 +3536,64 @@
   color: #0f172a;
 }
 
+.wallet-page {
+  display: grid;
+  gap: 24px;
+}
+
+.wallet-layout {
+  align-items: start;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(300px, 0.8fr) minmax(0, 1.2fr);
+}
+
+.wallet-summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.wallet-panel {
+  overflow: hidden;
+}
+
+.wallet-row {
+  align-items: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.wallet-row-amount {
+  align-items: end;
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+}
+
+.wallet-status-pill {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.76rem;
+  font-weight: 950;
+  padding: 7px 10px;
+  text-transform: capitalize;
+  width: fit-content;
+}
+
+.wallet-status-pill.pending {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.wallet-status-pill.successful {
+  background: #dcfce7;
+  color: #047857;
+}
+
+.wallet-status-pill.failed {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 .booking-layout {
   display: grid;
   gap: 22px;
@@ -5495,6 +5553,7 @@
   .messages-layout,
   .admin-layout,
   .artisan-reels-layout,
+  .wallet-layout,
   .availability-layout,
   .booking-layout,
   .public-availability-card,
@@ -5531,6 +5590,7 @@
 
   .job-card-grid,
   .artisan-reel-grid,
+  .wallet-summary-grid,
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -5607,8 +5667,19 @@
   .availability-layout,
   .artisan-reel-grid,
   .availability-summary-grid,
+  .wallet-summary-grid,
   .summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .wallet-row {
+    align-items: start;
+    grid-template-columns: 1fr;
+  }
+
+  .wallet-row-amount {
+    align-items: start;
+    justify-items: start;
   }
 
   .availability-profile-card,

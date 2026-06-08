@@ -70,6 +70,7 @@ function ArtisanReels() {
   const [editingReelId, setEditingReelId] = useState('')
   const [editForms, setEditForms] = useState({})
   const [error, setError] = useState('')
+  const [fileInputKey, setFileInputKey] = useState(0)
   const [form, setForm] = useState(initialForm)
   const [isLoading, setIsLoading] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
@@ -104,6 +105,19 @@ function ArtisanReels() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  async function refreshArtisanReels() {
+    const { data, error: reelsError } = await getReelsForArtisanProfile(user.id)
+
+    if (reelsError) {
+      setError(getErrorMessage(reelsError))
+      return false
+    }
+
+    setArtisan(data.artisan)
+    setReels(data.reels)
+    return true
   }
 
   useEffect(() => {
@@ -175,12 +189,19 @@ function ArtisanReels() {
         return
       }
 
-      setReels((currentReels) => [data, ...currentReels])
-      setForm({
-        ...initialForm,
-        serviceId: form.serviceId,
-      })
-      event.currentTarget.reset()
+      if (!data?.id) {
+        setError('Supabase did not return the uploaded reel row.')
+        return
+      }
+
+      setForm(initialForm)
+      setFileInputKey((currentKey) => currentKey + 1)
+      const didRefresh = await refreshArtisanReels()
+
+      if (!didRefresh) {
+        return
+      }
+
       showToast('Reel uploaded successfully.')
     } catch (uploadError) {
       setError(getErrorMessage(uploadError))
@@ -308,18 +329,22 @@ function ArtisanReels() {
             <input
               accept="video/*"
               disabled={isUploading}
+              key={`video-${fileInputKey}`}
               type="file"
               onChange={(event) => updateForm('videoFile', event.target.files?.[0] || null)}
             />
+            {form.videoFile && <small>{form.videoFile.name}</small>}
           </label>
           <label>
             Thumbnail image optional
             <input
               accept="image/*"
               disabled={isUploading}
+              key={`thumbnail-${fileInputKey}`}
               type="file"
               onChange={(event) => updateForm('thumbnailFile', event.target.files?.[0] || null)}
             />
+            {form.thumbnailFile && <small>{form.thumbnailFile.name}</small>}
           </label>
           <label>
             Service
