@@ -238,6 +238,11 @@ function ArtisanJobs() {
         <p className="section-kicker">Artisan jobs</p>
         <h1>Manage incoming bookings</h1>
         <p>Accept new requests, start confirmed jobs, and mark completed work from Supabase.</p>
+        <div className="hero-actions">
+          <Button className="secondary-cta" to="/disputes">
+            View Disputes
+          </Button>
+        </div>
       </section>
 
       <section className="summary-grid">

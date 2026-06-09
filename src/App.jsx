@@ -27,6 +27,7 @@ import ArtisanProfile from './pages/ArtisanProfile.jsx'
 import ArtisanReels from './pages/ArtisanReels.jsx'
 import Artisans from './pages/Artisans.jsx'
 import Bookings from './pages/Bookings.jsx'
+import Disputes from './pages/Disputes.jsx'
 import Home from './pages/Home.jsx'
 import Login from './pages/Login.jsx'
 import Messages from './pages/Messages.jsx'
@@ -65,6 +66,7 @@ const customerNavLinks = [
 const artisanNavLinks = [
   { path: '/artisan-dashboard', label: 'Dashboard' },
   { path: '/artisan-jobs', label: 'Jobs' },
+  { path: '/disputes', label: 'Disputes' },
   { path: '/artisan-availability', label: 'Availability' },
   { path: '/messages', label: 'Messages' },
   { path: '/artisan-reels', label: 'My Reels' },
@@ -222,6 +224,14 @@ function AnimatedRoutes() {
             element={(
               <ProtectedRoute allowedRoles={['customer', 'artisan', 'admin']}>
                 <Messages />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/disputes"
+            element={(
+              <ProtectedRoute allowedRoles={['customer', 'artisan', 'admin']}>
+                <Disputes />
               </ProtectedRoute>
             )}
           />

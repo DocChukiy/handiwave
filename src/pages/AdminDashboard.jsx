@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
 import EmptyState from '../components/EmptyState.jsx'
 import RoleNotice from '../components/RoleNotice.jsx'
@@ -284,7 +285,12 @@ function AdminDashboard() {
                 <p>{dispute.customer} and {dispute.artisan}</p>
                 <small>{dispute.requestedResolution || 'No requested resolution'} • {formatDate(dispute.createdAt)}</small>
               </div>
-              <StatusPill tone={dispute.status}>{dispute.status}</StatusPill>
+              <div className="admin-row-actions">
+                <StatusPill tone={dispute.status}>{dispute.status}</StatusPill>
+                <Link className="secondary-mini-link" to={`/disputes?id=${dispute.id}`}>
+                  Open Workspace
+                </Link>
+              </div>
             </article>
           ))}
         </AdminSection>

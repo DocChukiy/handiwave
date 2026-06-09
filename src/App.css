@@ -5037,6 +5037,7 @@
 }
 
 .reschedule-modal input,
+.reschedule-modal select,
 .reschedule-modal textarea {
   background: #f8fafc;
   border: 1px solid rgba(226, 232, 240, 0.9);
@@ -5068,6 +5069,280 @@
 .job-actions button:disabled {
   cursor: wait;
   opacity: 0.6;
+}
+
+.dispute-open-button {
+  background: #fff7ed;
+  border: 1px solid rgba(249, 115, 22, 0.22);
+  border-radius: 999px;
+  color: #c2410c;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 900;
+  min-height: 40px;
+  padding: 0 14px;
+}
+
+.disputes-page {
+  display: grid;
+  gap: 24px;
+}
+
+.disputes-layout {
+  align-items: start;
+  display: grid;
+  gap: 22px;
+  grid-template-columns: minmax(260px, 0.38fr) minmax(0, 1fr);
+}
+
+.dispute-list {
+  overflow: hidden;
+}
+
+.dispute-list-item {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  padding: 18px 20px;
+  text-align: left;
+  width: 100%;
+}
+
+.dispute-list-item:hover,
+.dispute-list-item.active {
+  background: #ecfdf5;
+}
+
+.dispute-list-item strong {
+  color: #0f172a;
+}
+
+.dispute-list-item span:not(.dispute-status-badge) {
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.dispute-detail-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.95)),
+    linear-gradient(135deg, rgba(22, 163, 74, 0.08), transparent);
+  border: 1px solid rgba(220, 239, 228, 0.92);
+  border-radius: 28px;
+  box-shadow: 0 24px 62px rgba(15, 23, 42, 0.08);
+  display: grid;
+  gap: 22px;
+  padding: clamp(18px, 3vw, 26px);
+}
+
+.dispute-detail-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.dispute-detail-header h2,
+.dispute-timeline h3,
+.dispute-evidence-panel h3,
+.dispute-form-card h3,
+.dispute-admin-actions h3 {
+  color: #0f172a;
+  margin: 0;
+}
+
+.dispute-detail-header p,
+.timeline-item p,
+.evidence-grid small {
+  color: #64748b;
+  line-height: 1.6;
+  margin: 6px 0 0;
+}
+
+.dispute-meta-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.dispute-meta-grid article {
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 18px;
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+}
+
+.dispute-meta-grid strong {
+  color: #064e3b;
+}
+
+.dispute-meta-grid span {
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.dispute-status-badge {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.76rem;
+  font-weight: 950;
+  padding: 8px 10px;
+  text-transform: capitalize;
+  width: fit-content;
+}
+
+.dispute-status-badge.open,
+.dispute-status-badge.awaiting_customer,
+.dispute-status-badge.awaiting_artisan {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.dispute-status-badge.in_review {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.dispute-status-badge.resolved,
+.dispute-status-badge.refunded,
+.dispute-status-badge.closed {
+  background: #dcfce7;
+  color: #047857;
+}
+
+.dispute-status-badge.rejected {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.dispute-timeline,
+.dispute-evidence-panel,
+.dispute-form-card,
+.dispute-admin-actions {
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 22px;
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.timeline-item {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.timeline-item > span {
+  background: #16a34a;
+  border-radius: 999px;
+  box-shadow: 0 0 0 6px #ecfdf5;
+  height: 10px;
+  margin-top: 7px;
+  width: 10px;
+}
+
+.timeline-item strong {
+  color: #0f172a;
+}
+
+.timeline-item small {
+  color: #94a3b8;
+  font-weight: 800;
+}
+
+.evidence-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.evidence-grid a {
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 16px;
+  color: #047857;
+  display: grid;
+  gap: 5px;
+  min-height: 110px;
+  padding: 14px;
+  text-decoration: none;
+}
+
+.evidence-grid span {
+  color: #64748b;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.dispute-form-card label,
+.dispute-admin-actions label {
+  color: #334155;
+  display: grid;
+  font-weight: 900;
+  gap: 8px;
+}
+
+.dispute-form-card input,
+.dispute-form-card textarea,
+.dispute-admin-actions input,
+.dispute-admin-actions textarea {
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 16px;
+  color: #0f172a;
+  font: inherit;
+  min-height: 48px;
+  padding: 0 14px;
+}
+
+.dispute-form-card textarea,
+.dispute-admin-actions textarea {
+  min-height: 110px;
+  padding: 14px;
+  resize: vertical;
+}
+
+.dispute-form-card button,
+.dispute-action-grid button {
+  background: linear-gradient(135deg, #16a34a, #059669);
+  border: 0;
+  border-radius: 999px;
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+  min-height: 46px;
+  padding: 0 18px;
+}
+
+.dispute-action-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.dispute-action-grid button:nth-child(2) {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+}
+
+.dispute-action-grid button:nth-child(3) {
+  background: linear-gradient(135deg, #0f172a, #334155);
+}
+
+.dispute-action-grid button:nth-child(4) {
+  background: #fff7ed;
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  color: #b91c1c;
 }
 
 .mobile-bottom-nav {
@@ -5718,6 +5993,60 @@
   color: #94a3b8;
 }
 
+:root[data-theme='dark'] .dispute-detail-panel,
+:root[data-theme='dark'] .dispute-timeline,
+:root[data-theme='dark'] .dispute-evidence-panel,
+:root[data-theme='dark'] .dispute-form-card,
+:root[data-theme='dark'] .dispute-admin-actions {
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.9)),
+    linear-gradient(135deg, rgba(16, 185, 129, 0.08), transparent);
+  border-color: rgba(148, 163, 184, 0.14);
+}
+
+:root[data-theme='dark'] .dispute-list-item:hover,
+:root[data-theme='dark'] .dispute-list-item.active,
+:root[data-theme='dark'] .dispute-meta-grid article,
+:root[data-theme='dark'] .evidence-grid a,
+:root[data-theme='dark'] .dispute-form-card input,
+:root[data-theme='dark'] .dispute-form-card textarea,
+:root[data-theme='dark'] .dispute-admin-actions input,
+:root[data-theme='dark'] .dispute-admin-actions textarea,
+:root[data-theme='dark'] .reschedule-modal select {
+  background: rgba(15, 23, 42, 0.72);
+  border-color: rgba(148, 163, 184, 0.14);
+}
+
+:root[data-theme='dark'] .dispute-list-item strong,
+:root[data-theme='dark'] .dispute-detail-header h2,
+:root[data-theme='dark'] .dispute-timeline h3,
+:root[data-theme='dark'] .dispute-evidence-panel h3,
+:root[data-theme='dark'] .dispute-form-card h3,
+:root[data-theme='dark'] .dispute-admin-actions h3,
+:root[data-theme='dark'] .timeline-item strong,
+:root[data-theme='dark'] .dispute-form-card input,
+:root[data-theme='dark'] .dispute-form-card textarea,
+:root[data-theme='dark'] .dispute-admin-actions input,
+:root[data-theme='dark'] .dispute-admin-actions textarea,
+:root[data-theme='dark'] .reschedule-modal select {
+  color: #f8fafc;
+}
+
+:root[data-theme='dark'] .dispute-list-item span:not(.dispute-status-badge),
+:root[data-theme='dark'] .dispute-detail-header p,
+:root[data-theme='dark'] .timeline-item p,
+:root[data-theme='dark'] .evidence-grid span,
+:root[data-theme='dark'] .evidence-grid small,
+:root[data-theme='dark'] .dispute-meta-grid span,
+:root[data-theme='dark'] .dispute-form-card label,
+:root[data-theme='dark'] .dispute-admin-actions label {
+  color: #94a3b8;
+}
+
+:root[data-theme='dark'] .dispute-meta-grid strong {
+  color: #d1fae5;
+}
+
 :root[data-theme='dark'] .booking-reschedule-note {
   background: rgba(249, 115, 22, 0.1);
   border-color: rgba(251, 146, 60, 0.2);
@@ -5903,6 +6232,7 @@
   .messages-layout,
   .admin-layout,
   .admin-finance-grid,
+  .disputes-layout,
   .artisan-reels-layout,
   .wallet-layout,
   .availability-layout,
@@ -5942,6 +6272,9 @@
   .job-card-grid,
   .artisan-reel-grid,
   .admin-summary-grid,
+  .dispute-meta-grid,
+  .evidence-grid,
+  .dispute-action-grid,
   .wallet-summary-grid,
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

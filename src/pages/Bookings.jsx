@@ -18,6 +18,7 @@ import {
 } from '../services/availabilityService.js'
 import { submitBookingReview, updateBookingReview } from '../services/reviewService.js'
 import { getSupabaseClient } from '../lib/supabaseClient.js'
+import { createDisputeFromBooking } from '../services/disputeService.js'
 import { showToast } from '../utils/toast.js'
 
 const initialForm = {
@@ -29,6 +30,14 @@ const initialForm = {
   scheduledTime: '',
   serviceId: '',
   state: '',
+}
+
+const initialDisputeForm = {
+  description: '',
+  evidenceFile: null,
+  reason: '',
+  refundAmount: '',
+  requestedResolution: '',
 }
 
 const statusLabels = {
@@ -327,6 +336,7 @@ function BookingHistorySection({
   title,
   submittingReviewId,
   updatingBookingId,
+  onReportIssue,
 }) {
   const rescheduleRequestCount = bookings.filter((booking) => (
     (booking.rawStatus || booking.status) === 'reschedule_requested'
@@ -434,6 +444,17 @@ function BookingHistorySection({
                         {updatingCompletionId === booking.id ? 'Reporting...' : 'Report Not Completed'}
                       </button>
                     </div>
+                  </div>
+                )}
+                {showRescheduleActions && ['confirmed', 'in_progress', 'artisan_completed', 'customer_confirmed', 'completed'].includes(bookingStatus) && (
+                  <div className="booking-message-actions">
+                    <button
+                      className="dispute-open-button"
+                      type="button"
+                      onClick={() => onReportIssue?.(booking)}
+                    >
+                      Report Issue
+                    </button>
                   </div>
                 )}
                 {showRescheduleActions && ['customer_confirmed', 'completed'].includes(bookingStatus) && (
@@ -556,12 +577,15 @@ function Bookings() {
   })
   const [availabilityError, setAvailabilityError] = useState('')
   const [bookings, setBookings] = useState([])
+  const [disputeBooking, setDisputeBooking] = useState(null)
+  const [disputeForm, setDisputeForm] = useState(initialDisputeForm)
   const [editingReviewId, setEditingReviewId] = useState('')
   const [error, setError] = useState('')
   const [form, setForm] = useState(initialForm)
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingAvailability, setIsLoadingAvailability] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isSubmittingDispute, setIsSubmittingDispute] = useState(false)
   const [lastCreatedBooking, setLastCreatedBooking] = useState(null)
   const [options, setOptions] = useState({ artisans: [], services: [] })
   const [reviewForms, setReviewForms] = useState({})
@@ -961,6 +985,66 @@ function Bookings() {
     }
   }
 
+  function openDisputeModal(booking) {
+    setError('')
+    setDisputeBooking(booking)
+    setDisputeForm(initialDisputeForm)
+  }
+
+  function updateDisputeForm(field, value) {
+    setDisputeForm((currentForm) => ({
+      ...currentForm,
+      [field]: value,
+    }))
+  }
+
+  async function handleDisputeSubmit(event) {
+    event.preventDefault()
+
+    if (!disputeBooking) {
+      return
+    }
+
+    if (!disputeForm.reason.trim() || !disputeForm.description.trim()) {
+      setError('Enter a dispute reason and description.')
+      return
+    }
+
+    setError('')
+    setIsSubmittingDispute(true)
+
+    try {
+      const { data, error: disputeError } = await createDisputeFromBooking({
+        bookingId: disputeBooking.id,
+        description: disputeForm.description,
+        evidenceFile: disputeForm.evidenceFile,
+        reason: disputeForm.reason,
+        refundAmount: disputeForm.refundAmount,
+        requestedResolution: disputeForm.requestedResolution,
+        userId: user.id,
+      })
+
+      if (disputeError) {
+        setError(getErrorMessage(disputeError))
+        return
+      }
+
+      if (!data) {
+        setError('Supabase did not return the dispute id.')
+        return
+      }
+
+      await refreshBookings()
+      setDisputeBooking(null)
+      setDisputeForm(initialDisputeForm)
+      showToast('Dispute opened. Support can now review the issue.')
+    } catch (disputeError) {
+      setError(getErrorMessage(disputeError))
+    } finally {
+      setIsSubmittingDispute(false)
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault()
     setError('')
@@ -1267,6 +1351,7 @@ function Bookings() {
             onEditReviewStart={handleEditReviewStart}
             onReviewChange={handleReviewChange}
             onReviewSubmit={handleReviewSubmit}
+            onReportIssue={openDisputeModal}
             onRescheduleResponse={handleRescheduleResponse}
             participantLabel={(booking) => booking.artisan}
             reviewForms={reviewForms}
@@ -1287,6 +1372,80 @@ function Bookings() {
           />
         )}
       </section>
+
+      {disputeBooking && (
+        <div className="modal-backdrop" role="presentation">
+          <form className="reschedule-modal dispute-report-modal" onSubmit={handleDisputeSubmit}>
+            <div>
+              <p className="section-kicker">Report issue</p>
+              <h2>{disputeBooking.service}</h2>
+              <p>Share what happened so Handiwave support can review the booking fairly.</p>
+            </div>
+            <label>
+              Reason
+              <select
+                required
+                value={disputeForm.reason}
+                onChange={(event) => updateDisputeForm('reason', event.target.value)}
+              >
+                <option value="">Choose a reason</option>
+                <option value="Job was not completed">Job was not completed</option>
+                <option value="Poor quality work">Poor quality work</option>
+                <option value="Artisan did not arrive">Artisan did not arrive</option>
+                <option value="Payment or refund issue">Payment or refund issue</option>
+                <option value="Safety concern">Safety concern</option>
+              </select>
+            </label>
+            <label>
+              Description
+              <textarea
+                required
+                placeholder="Describe the issue clearly."
+                value={disputeForm.description}
+                onChange={(event) => updateDisputeForm('description', event.target.value)}
+              />
+            </label>
+            <label>
+              Requested resolution
+              <input
+                placeholder="Refund, rework, support review..."
+                value={disputeForm.requestedResolution}
+                onChange={(event) => updateDisputeForm('requestedResolution', event.target.value)}
+              />
+            </label>
+            <label>
+              Optional refund amount
+              <input
+                min="0"
+                placeholder="25000"
+                type="number"
+                value={disputeForm.refundAmount}
+                onChange={(event) => updateDisputeForm('refundAmount', event.target.value)}
+              />
+            </label>
+            <label>
+              Evidence
+              <input
+                type="file"
+                onChange={(event) => updateDisputeForm('evidenceFile', event.target.files?.[0] || null)}
+              />
+            </label>
+            <div className="modal-actions">
+              <button
+                className="secondary-cta"
+                disabled={isSubmittingDispute}
+                type="button"
+                onClick={() => setDisputeBooking(null)}
+              >
+                Cancel
+              </button>
+              <button className="primary-cta" disabled={isSubmittingDispute} type="submit">
+                {isSubmittingDispute ? 'Submitting...' : 'Open Dispute'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   )
 }
