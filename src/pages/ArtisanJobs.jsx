@@ -7,6 +7,7 @@ import { getArtisanByProfileId } from '../services/artisanService.js'
 import {
   getBookingsForUser,
   proposeBookingTimeForArtisan,
+  sendBookingQuote,
   updateBookingStatusForArtisan,
 } from '../services/bookingService.js'
 import { showToast } from '../utils/toast.js'
@@ -27,6 +28,9 @@ function ArtisanJobs() {
   const [bookings, setBookings] = useState([])
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [quoteBooking, setQuoteBooking] = useState(null)
+  const [quoteNotes, setQuoteNotes] = useState('')
+  const [quotedPrice, setQuotedPrice] = useState('')
   const [rescheduleBooking, setRescheduleBooking] = useState(null)
   const [rescheduleNote, setRescheduleNote] = useState('')
   const [rescheduleDate, setRescheduleDate] = useState('')
@@ -171,6 +175,61 @@ function ArtisanJobs() {
     setRescheduleNote('')
   }
 
+  function openQuoteModal(booking) {
+    setError('')
+    setQuoteBooking(booking)
+    setQuotedPrice(booking.quotedPrice || booking.finalPrice || booking.estimatedPrice || '')
+    setQuoteNotes(booking.quoteNotes || '')
+  }
+
+  async function handleQuoteSubmit(event) {
+    event.preventDefault()
+
+    if (!quoteBooking) {
+      return
+    }
+
+    if (!quotedPrice || Number(quotedPrice) <= 0) {
+      setError('Enter a quoted price greater than zero.')
+      return
+    }
+
+    setError('')
+    setUpdatingBookingId(quoteBooking.id)
+
+    try {
+      const { data, error: quoteError } = await sendBookingQuote({
+        bookingId: quoteBooking.id,
+        quoteNotes,
+        quotedPrice,
+      })
+
+      if (quoteError) {
+        setError(getErrorMessage(quoteError))
+        return
+      }
+
+      if (!data) {
+        setError('Supabase did not confirm the quote was sent.')
+        return
+      }
+
+      const didRefresh = await refreshBookings()
+      if (!didRefresh) {
+        return
+      }
+
+      setQuoteBooking(null)
+      setQuotedPrice('')
+      setQuoteNotes('')
+      showToast('Quote sent to customer.')
+    } catch (quoteError) {
+      setError(getErrorMessage(quoteError))
+    } finally {
+      setUpdatingBookingId('')
+    }
+  }
+
   async function handleRescheduleSubmit(event) {
     event.preventDefault()
 
@@ -262,6 +321,7 @@ function ArtisanJobs() {
           bookings={bookings}
           conflictIds={conflictIds}
           onAccept={handleAcceptBooking}
+          onSendQuote={openQuoteModal}
           onStatusFilter={setActiveStatus}
           onStatusUpdate={handleStatusUpdate}
           onSuggestNewTime={openRescheduleModal}
@@ -317,6 +377,49 @@ function ArtisanJobs() {
               </button>
               <button className="primary-cta" disabled={updatingBookingId === rescheduleBooking.id} type="submit">
                 {updatingBookingId === rescheduleBooking.id ? 'Saving...' : 'Send Proposal'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {quoteBooking && (
+        <div className="modal-backdrop" role="presentation">
+          <form className="reschedule-modal" onSubmit={handleQuoteSubmit}>
+            <div>
+              <p className="section-kicker">Send quote</p>
+              <h2>{quoteBooking.service}</h2>
+              <p>Share the agreed price and notes before the customer pays through escrow.</p>
+            </div>
+            <label>
+              Quoted price
+              <input
+                required
+                min="1"
+                placeholder="25000"
+                type="number"
+                value={quotedPrice}
+                onChange={(event) => setQuotedPrice(event.target.value)}
+              />
+            </label>
+            <label>
+              Quote notes
+              <textarea
+                placeholder="Explain what is included in this quote."
+                value={quoteNotes}
+                onChange={(event) => setQuoteNotes(event.target.value)}
+              />
+            </label>
+            <div className="modal-actions">
+              <button
+                className="secondary-cta"
+                type="button"
+                onClick={() => setQuoteBooking(null)}
+              >
+                Cancel
+              </button>
+              <button className="primary-cta" disabled={updatingBookingId === quoteBooking.id} type="submit">
+                {updatingBookingId === quoteBooking.id ? 'Sending...' : 'Send Quote'}
               </button>
             </div>
           </form>

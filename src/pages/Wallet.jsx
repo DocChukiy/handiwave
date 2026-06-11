@@ -154,11 +154,11 @@ function Wallet() {
         <h1>{formatMoney(wallet?.availableBalance, wallet?.currency)}</h1>
         <p>{walletCopy}</p>
         <p className="wallet-payment-note">
-          Real payments are not active yet. Wallet is prepared for future escrow/payment integration.
+          Paystack booking payments move into escrow first, then release after customer confirmation.
         </p>
         <div className="hero-actions">
           <button className="primary-cta coming-soon-button" disabled type="button">
-            Pay with Paystack - Coming Soon
+            Top Up Wallet - Coming Soon
           </button>
         </div>
       </section>

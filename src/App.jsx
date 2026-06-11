@@ -19,6 +19,7 @@ import AuthProvider from './auth/AuthProvider.jsx'
 import { useAuth } from './auth/useAuth.js'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import AdminDashboard from './pages/AdminDashboard.jsx'
+import ArtisanAnalytics from './pages/ArtisanAnalytics.jsx'
 import ArtisanAvailability from './pages/ArtisanAvailability.jsx'
 import ArtisanDashboard from './pages/ArtisanDashboard.jsx'
 import ArtisanJobs from './pages/ArtisanJobs.jsx'
@@ -31,6 +32,7 @@ import Disputes from './pages/Disputes.jsx'
 import Home from './pages/Home.jsx'
 import Login from './pages/Login.jsx'
 import Messages from './pages/Messages.jsx'
+import PaymentCallback from './pages/PaymentCallback.jsx'
 import Profile from './pages/Profile.jsx'
 import Reels from './pages/Reels.jsx'
 import Services from './pages/Services.jsx'
@@ -66,6 +68,7 @@ const customerNavLinks = [
 const artisanNavLinks = [
   { path: '/artisan-dashboard', label: 'Dashboard' },
   { path: '/artisan-jobs', label: 'Jobs' },
+  { path: '/artisan-analytics', label: 'Analytics' },
   { path: '/disputes', label: 'Disputes' },
   { path: '/artisan-availability', label: 'Availability' },
   { path: '/messages', label: 'Messages' },
@@ -177,6 +180,14 @@ function AnimatedRoutes() {
             )}
           />
           <Route
+            path="/artisan-analytics"
+            element={(
+              <ProtectedRoute allowedRoles={['artisan']}>
+                <ArtisanAnalytics />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
             path="/artisan-reviews"
             element={(
               <ProtectedRoute allowedRoles={['artisan']}>
@@ -216,6 +227,14 @@ function AnimatedRoutes() {
             element={(
               <ProtectedRoute allowedRoles={['customer', 'artisan', 'admin']}>
                 <Wallet />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/payment/callback"
+            element={(
+              <ProtectedRoute allowedRoles={['customer', 'admin']}>
+                <PaymentCallback />
               </ProtectedRoute>
             )}
           />
@@ -641,6 +660,16 @@ function AppShell() {
                         >
                           Manage Reels
                         </NavLink>
+                        <NavLink
+                          className="profile-menu-link"
+                          to="/artisan-analytics"
+                          onClick={(event) => {
+                            event.currentTarget.closest('details')?.removeAttribute('open')
+                            setIsMenuOpen(false)
+                          }}
+                        >
+                          Analytics
+                        </NavLink>
                         {artisanNeedsSetup && (
                           <NavLink
                             className="profile-menu-link"
@@ -783,11 +812,8 @@ function AppShell() {
             <NavLink to={user?.role === 'artisan' ? '/artisan-availability' : '/bookings'}>
               {user?.role === 'artisan' ? 'Availability' : 'Bookings'}
             </NavLink>
-            <NavLink to={user?.role === 'artisan' ? '/messages' : '/reels'}>
-              <span>{user?.role === 'artisan' ? 'Messages' : 'Reels'}</span>
-              {user?.role === 'artisan' && unreadMessagesCount > 0 && (
-                <span className="nav-count-bubble">{unreadMessagesCount}</span>
-              )}
+            <NavLink to={user?.role === 'artisan' ? '/artisan-analytics' : '/reels'}>
+              {user?.role === 'artisan' ? 'Analytics' : 'Reels'}
             </NavLink>
             <NavLink to={user?.role === 'artisan' ? '/profile' : '/wallet'}>
               {user?.role === 'artisan' ? 'Profile' : 'Wallet'}

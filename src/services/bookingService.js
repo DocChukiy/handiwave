@@ -84,11 +84,17 @@ export function mapBookingRow(booking) {
     id: booking.id,
     notes: booking.notes || '',
     paymentStatus: booking.payment_status || 'unpaid',
+    paymentReference: booking.payment_reference || '',
     paymentReleasedAt: booking.payment_released_at || '',
     platformFee: toNumber(booking.commission_amount),
     proposedBy: booking.proposed_by || '',
     proposedDate: booking.proposed_date || '',
     proposedTime: booking.proposed_time ? booking.proposed_time.slice(0, 5) : '',
+    quotedPrice: toNumber(booking.quoted_price),
+    quoteAcceptedAt: booking.quote_accepted_at || '',
+    quoteNotes: booking.quote_notes || '',
+    quoteRejectedAt: booking.quote_rejected_at || '',
+    quoteSentAt: booking.quote_sent_at || '',
     rescheduleRequestedAt: booking.reschedule_requested_at || '',
     rescheduleNote: booking.reschedule_note || '',
     rawStatus: status,
@@ -102,6 +108,40 @@ export function mapBookingRow(booking) {
     status: status.replaceAll('_', ' '),
     artisanPayoutAmount: toNumber(booking.artisan_payout_amount),
     refundAmount: toNumber(booking.refund_amount),
+  }
+}
+
+export async function sendBookingQuote({
+  bookingId,
+  quoteNotes,
+  quotedPrice,
+}) {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase.rpc('send_booking_quote', {
+    target_booking_id: bookingId,
+    target_quote_notes: quoteNotes?.trim() || null,
+    target_quoted_price: Number(quotedPrice),
+  })
+
+  return {
+    data,
+    error,
+  }
+}
+
+export async function respondToBookingQuote({
+  bookingId,
+  decision,
+}) {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase.rpc('respond_to_booking_quote', {
+    decision,
+    target_booking_id: bookingId,
+  })
+
+  return {
+    data,
+    error,
   }
 }
 
@@ -593,7 +633,7 @@ export async function createBooking({
   const supabase = getSupabaseClient()
   const { data: artisan, error: artisanError } = await supabase
     .from('artisans')
-    .select('id, profile_id, primary_service_id, verification_status')
+    .select('id, profile_id, primary_service_id, starting_price, verification_status')
     .eq('id', artisanId)
     .maybeSingle()
 
@@ -621,7 +661,7 @@ export async function createBooking({
   const resolvedServiceId = serviceId || artisan.primary_service_id
   const { data: service, error: serviceError } = await supabase
     .from('services')
-    .select('id, name')
+    .select('id, name, base_price')
     .eq('id', resolvedServiceId)
     .maybeSingle()
 
@@ -640,10 +680,32 @@ export async function createBooking({
     }
   }
 
+  const { data: artisanService, error: artisanServiceError } = await supabase
+    .from('artisan_services')
+    .select('price_from')
+    .eq('artisan_id', artisanId)
+    .eq('service_id', resolvedServiceId)
+    .maybeSingle()
+
+  if (artisanServiceError) {
+    return {
+      data: null,
+      error: artisanServiceError,
+    }
+  }
+
+  const estimatedPrice = Number(
+    artisanService?.price_from ||
+      artisan.starting_price ||
+      service.base_price ||
+      0,
+  )
+
   const bookingPayload = {
     artisan_id: artisanId,
     city: city.trim(),
     customer_id: customerId,
+    estimated_price: estimatedPrice > 0 ? estimatedPrice : null,
     location_address: address.trim(),
     notes: notes.trim() || null,
     scheduled_date: scheduledDate,

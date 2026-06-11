@@ -170,6 +170,9 @@ function ArtisanDashboard() {
           </div>
         </div>
         <div className="dashboard-profile-actions">
+          <Button className="primary-cta" to="/artisan-analytics">
+            Analytics
+          </Button>
           <Button className="primary-cta" to="/artisan-availability">
             Availability
           </Button>
@@ -270,6 +273,7 @@ function ArtisanDashboard() {
           <p className="section-kicker">Ratings / reviews</p>
           <h2>{artisan.rating.toFixed(1)} average</h2>
           <p>{artisan.reviewCount || 0} verified reviews and {artisan.completedJobs} confirmed jobs are contributing to your trust score.</p>
+          <Button className="secondary-cta" to="/artisan-analytics">View Analytics</Button>
         </article>
         <article className="artisan-profile-panel">
           <p className="section-kicker">Reels / showcase</p>

@@ -15,6 +15,7 @@ import {
   getBookingsForUser,
   respondToBookingReschedule,
 } from '../services/bookingService.js'
+import { initializeBookingPayment } from '../services/paymentService.js'
 import { cardVariants } from '../utils/animations.js'
 import { showToast } from '../utils/toast.js'
 
@@ -27,7 +28,42 @@ function getErrorMessage(error) {
   ].filter(Boolean).join(' ')
 }
 
-function CustomerActiveBookings({ bookings, onRescheduleResponse, updatingBookingId }) {
+function formatMoney(value, currency = 'NGN') {
+  return `${currency} ${Number(value || 0).toLocaleString()}`
+}
+
+function getBookingPrice(booking) {
+  return booking.finalPrice || booking.quotedPrice || booking.estimatedPrice || booking.escrowAmount || 0
+}
+
+function getQuoteStatus(booking) {
+  if (['held_in_escrow', 'released', 'refunded'].includes(booking.paymentStatus)) {
+    return 'paid'
+  }
+
+  if (booking.quoteAcceptedAt) {
+    return 'accepted'
+  }
+
+  if (booking.quoteRejectedAt) {
+    return 'rejected'
+  }
+
+  if (booking.quoteSentAt) {
+    return 'sent'
+  }
+
+  return 'awaiting'
+}
+
+function CustomerActiveBookings({
+  bookings,
+  onPay,
+  onRescheduleResponse,
+  payingBookingId,
+  updatingBookingId,
+  user,
+}) {
   const activeBookings = bookings
     .filter((booking) => (
       ['pending', 'reschedule_requested', 'confirmed', 'in_progress', 'artisan_completed'].includes(booking.rawStatus)
@@ -42,19 +78,57 @@ function CustomerActiveBookings({ bookings, onRescheduleResponse, updatingBookin
     <div className="home-active-bookings">
       {activeBookings.map((booking) => {
         const bookingStatus = booking.rawStatus || booking.status
+        const paymentStatus = booking.paymentStatus || 'unpaid'
+        const quoteStatus = getQuoteStatus(booking)
+        const price = getBookingPrice(booking)
+        const shouldShowPayButton = (
+          user?.role === 'customer' &&
+          booking.customerId === user.id &&
+          quoteStatus === 'accepted' &&
+          ['unpaid', 'failed'].includes(paymentStatus)
+        )
 
-        console.log('[Handiwave customer home booking render]', {
-          bookingId: booking.id,
-          status: bookingStatus,
+        console.log('[Handiwave Paystack button eligibility]', {
+          'booking.id': booking.id,
+          estimated_price: booking.estimatedPrice,
+          final_price: booking.finalPrice,
+          payment_status: booking.paymentStatus,
+          shouldShowPayButton,
         })
 
         return (
           <div className="home-active-booking-card" key={booking.id}>
             <strong>{booking.service}</strong>
             <p>{booking.artisan} - {booking.date}</p>
+            <div className={`home-quote-status quote-${quoteStatus}`}>
+              <strong>
+                {quoteStatus === 'awaiting' && 'Waiting for artisan quote'}
+                {quoteStatus === 'sent' && `Quote sent: ${formatMoney(booking.quotedPrice)}`}
+                {quoteStatus === 'accepted' && 'Quote accepted. Payment required.'}
+                {quoteStatus === 'rejected' && 'Quote rejected'}
+                {quoteStatus === 'paid' && 'Paid / escrow held'}
+              </strong>
+              {booking.quoteNotes && <span>{booking.quoteNotes}</span>}
+            </div>
             <Link className="job-message-link" to={`/messages?booking=${booking.id}`}>
               Message Artisan
             </Link>
+            {shouldShowPayButton && (
+              <div className="home-payment-action">
+                <strong>{formatMoney(price)}</strong>
+                <button
+                  className="paystack-action-button"
+                  disabled={payingBookingId === booking.id || price <= 0}
+                  type="button"
+                  onClick={() => onPay(booking)}
+                >
+                  {payingBookingId === booking.id ? 'Starting Paystack...' : 'Pay with Paystack'}
+                </button>
+                {price <= 0 && (
+                  <span>Price not set yet. Agree price with artisan before payment.</span>
+                )}
+              </div>
+            )}
             {bookingStatus === 'reschedule_requested' && (
               <div className="booking-reschedule-note">
                 <div className="booking-reschedule-heading">
@@ -94,6 +168,7 @@ function Home() {
   const isCustomer = user?.role === 'customer'
   const [bookings, setBookings] = useState([])
   const [bookingError, setBookingError] = useState('')
+  const [payingBookingId, setPayingBookingId] = useState('')
   const [updatingBookingId, setUpdatingBookingId] = useState('')
 
   useEffect(() => {
@@ -177,6 +252,31 @@ function Home() {
       setBookingError(getErrorMessage(error))
     } finally {
       setUpdatingBookingId('')
+    }
+  }
+
+  async function handlePayWithPaystack(booking) {
+    setBookingError('')
+    setPayingBookingId(booking.id)
+
+    try {
+      const { data, error } = await initializeBookingPayment(booking.id)
+
+      if (error) {
+        setBookingError(getErrorMessage(error))
+        return
+      }
+
+      if (!data?.authorization_url) {
+        setBookingError('Paystack did not return an authorization URL.')
+        return
+      }
+
+      window.location.assign(data.authorization_url)
+    } catch (error) {
+      setBookingError(getErrorMessage(error))
+    } finally {
+      setPayingBookingId('')
     }
   }
 
@@ -289,8 +389,11 @@ function Home() {
             {bookingError && <p className="auth-error">{bookingError}</p>}
             <CustomerActiveBookings
               bookings={bookings}
+              onPay={handlePayWithPaystack}
               onRescheduleResponse={handleRescheduleResponse}
+              payingBookingId={payingBookingId}
               updatingBookingId={updatingBookingId}
+              user={user}
             />
             <Link className="primary-cta" to="/bookings">View Bookings</Link>
           </article>

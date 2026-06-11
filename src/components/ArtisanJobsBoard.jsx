@@ -47,7 +47,43 @@ function formatCreatedDate(value) {
 }
 
 function getBookingPrice(booking) {
-  return booking.finalPrice || booking.estimatedPrice || booking.escrowAmount || 0
+  return booking.finalPrice || booking.quotedPrice || booking.estimatedPrice || booking.escrowAmount || 0
+}
+
+function getQuoteStatus(booking) {
+  if (['held_in_escrow', 'released', 'refunded'].includes(booking.paymentStatus)) {
+    return 'paid'
+  }
+
+  if (booking.quoteAcceptedAt) {
+    return 'accepted'
+  }
+
+  if (booking.quoteRejectedAt) {
+    return 'rejected'
+  }
+
+  if (booking.quoteSentAt) {
+    return 'sent'
+  }
+
+  return 'awaiting'
+}
+
+const quoteStatusLabels = {
+  accepted: 'Quote Accepted',
+  awaiting: 'Awaiting Quote',
+  paid: 'Paid / Escrow Held',
+  rejected: 'Quote Rejected',
+  sent: 'Quote Sent',
+}
+
+function QuoteStatusBadge({ status }) {
+  return (
+    <span className={`quote-status-badge quote-${status}`}>
+      {quoteStatusLabels[status]}
+    </span>
+  )
 }
 
 function getFallbackPlatformFee(booking) {
@@ -76,7 +112,7 @@ function ArtisanPayoutPanel({ booking }) {
         <strong>{paymentStatusLabels[booking.paymentStatus] || booking.paymentStatus.replaceAll('_', ' ')}</strong>
         Escrow/payment status
       </span>
-      <p>Escrow release after customer confirmation. Real payment collection is still coming soon.</p>
+      <p>Escrow release after customer confirmation. Paystack-paid jobs show here as held in escrow until completion is confirmed.</p>
     </div>
   )
 }
@@ -92,6 +128,7 @@ function JobActions({
   booking,
   hasConflict,
   onAccept,
+  onSendQuote,
   onSuggestNewTime,
   onStatusUpdate,
   updatingBookingId,
@@ -101,6 +138,9 @@ function JobActions({
   if (booking.rawStatus === 'pending') {
     return (
       <div className="job-actions">
+        <button disabled={isUpdating} type="button" onClick={() => onSendQuote(booking)}>
+          Send Quote
+        </button>
         <button disabled={isUpdating || hasConflict} type="button" onClick={() => onAccept(booking)}>
           {isUpdating ? 'Updating...' : 'Accept Request'}
         </button>
@@ -175,11 +215,13 @@ function JobCard({
   booking,
   conflictIds,
   onAccept,
+  onSendQuote,
   onSuggestNewTime,
   onStatusUpdate,
   updatingBookingId,
 }) {
   const hasConflict = conflictIds.includes(booking.id)
+  const quoteStatus = getQuoteStatus(booking)
 
   return (
     <article className={hasConflict ? 'job-card has-conflict' : 'job-card'}>
@@ -201,6 +243,25 @@ function JobCard({
         <p><strong>Requested:</strong> {booking.scheduledDate} at {booking.scheduledTime}</p>
         <p><strong>Location:</strong> {booking.address}, {booking.city}, {booking.state}</p>
         {booking.notes && <p><strong>Notes:</strong> {booking.notes}</p>}
+        <div className={`job-quote-panel quote-${quoteStatus}`}>
+          <div>
+            <strong>{quoteStatusLabels[quoteStatus]}</strong>
+            <p>
+              {quoteStatus === 'awaiting' && 'Send a price quote before the customer can pay.'}
+              {quoteStatus === 'sent' && 'Waiting for customer to accept or reject your quote.'}
+              {quoteStatus === 'accepted' && 'Customer accepted the quote. Payment can now be made.'}
+              {quoteStatus === 'rejected' && 'Customer rejected this quote. Send a new quote if needed.'}
+              {quoteStatus === 'paid' && 'Payment is protected in escrow or already resolved.'}
+            </p>
+          </div>
+          <QuoteStatusBadge status={quoteStatus} />
+          {booking.quoteSentAt && (
+            <div className="job-quote-details">
+              <span><strong>{formatMoney(booking.quotedPrice)}</strong> Quoted price</span>
+              {booking.quoteNotes && <span><strong>Notes</strong> {booking.quoteNotes}</span>}
+            </div>
+          )}
+        </div>
         {booking.proposedDate && (
           <p><strong>Proposed:</strong> {booking.proposedDate} at {booking.proposedTime || 'Time pending'}</p>
         )}
@@ -233,6 +294,7 @@ function JobCard({
         booking={booking}
         hasConflict={hasConflict}
         onAccept={onAccept}
+        onSendQuote={onSendQuote}
         onSuggestNewTime={onSuggestNewTime}
         onStatusUpdate={onStatusUpdate}
         updatingBookingId={updatingBookingId}
@@ -246,6 +308,7 @@ function JobGrid({
   conflictIds,
   group,
   onAccept,
+  onSendQuote,
   onStatusFilter,
   onStatusUpdate,
   onSuggestNewTime,
@@ -280,6 +343,7 @@ function JobGrid({
               conflictIds={conflictIds}
               key={booking.id}
               onAccept={onAccept}
+              onSendQuote={onSendQuote}
               onStatusUpdate={onStatusUpdate}
               onSuggestNewTime={onSuggestNewTime}
               updatingBookingId={updatingBookingId}
@@ -298,6 +362,7 @@ function ArtisanJobsBoard({
   emptyText = 'Customer booking requests assigned to your profile will appear here.',
   isLoading = false,
   onAccept,
+  onSendQuote,
   onStatusFilter,
   onStatusUpdate,
   onSuggestNewTime,
@@ -351,8 +416,9 @@ function ArtisanJobsBoard({
             conflictIds={conflictIds}
             group={group}
             key={group.key}
-            onAccept={onAccept}
-            onStatusFilter={onStatusFilter}
+          onAccept={onAccept}
+          onSendQuote={onSendQuote}
+          onStatusFilter={onStatusFilter}
             onStatusUpdate={onStatusUpdate}
             onSuggestNewTime={onSuggestNewTime}
             preview={activeStatus === 'all'}

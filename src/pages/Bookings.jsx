@@ -10,6 +10,7 @@ import {
   getBookingOptions,
   getBookingsForUser,
   reportBookingIssueForCustomer,
+  respondToBookingQuote,
   respondToBookingReschedule,
 } from '../services/bookingService.js'
 import {
@@ -19,6 +20,7 @@ import {
 import { submitBookingReview, updateBookingReview } from '../services/reviewService.js'
 import { getSupabaseClient } from '../lib/supabaseClient.js'
 import { createDisputeFromBooking } from '../services/disputeService.js'
+import { initializeBookingPayment } from '../services/paymentService.js'
 import { showToast } from '../utils/toast.js'
 
 const initialForm = {
@@ -55,6 +57,7 @@ const statusLabels = {
 const paymentStatusLabels = {
   failed: 'Failed',
   held_in_escrow: 'Held in escrow',
+  pending: 'Pending verification',
   refunded: 'Refunded',
   released: 'Released',
   unpaid: 'Unpaid',
@@ -78,7 +81,43 @@ function formatMoney(value, currency = 'NGN') {
 }
 
 function getBookingPrice(booking) {
-  return booking.finalPrice || booking.estimatedPrice || booking.escrowAmount || 0
+  return booking.finalPrice || booking.quotedPrice || booking.estimatedPrice || booking.escrowAmount || 0
+}
+
+function getQuoteStatus(booking) {
+  if (['held_in_escrow', 'released', 'refunded'].includes(booking.paymentStatus)) {
+    return 'paid'
+  }
+
+  if (booking.quoteAcceptedAt) {
+    return 'accepted'
+  }
+
+  if (booking.quoteRejectedAt) {
+    return 'rejected'
+  }
+
+  if (booking.quoteSentAt) {
+    return 'sent'
+  }
+
+  return 'awaiting'
+}
+
+const quoteStatusLabels = {
+  accepted: 'Quote Accepted',
+  awaiting: 'Awaiting Quote',
+  paid: 'Paid / Escrow Held',
+  rejected: 'Quote Rejected',
+  sent: 'Quote Sent',
+}
+
+function getDisplayPaymentStatus(booking) {
+  if (booking.paymentStatus === 'unpaid' && booking.paymentReference) {
+    return 'pending'
+  }
+
+  return booking.paymentStatus || 'unpaid'
 }
 
 function PaymentStatusBadge({ status }) {
@@ -89,14 +128,107 @@ function PaymentStatusBadge({ status }) {
   )
 }
 
-function CustomerEscrowPanel({ booking }) {
+function QuoteStatusBadge({ status }) {
+  return (
+    <span className={`quote-status-badge quote-${status}`}>
+      {quoteStatusLabels[status]}
+    </span>
+  )
+}
+
+function CustomerQuotePanel({
+  booking,
+  isUpdating = false,
+  onQuoteResponse,
+}) {
+  const quoteStatus = getQuoteStatus(booking)
+
+  return (
+    <div className={`booking-quote-panel quote-${quoteStatus}`}>
+      <div className="booking-quote-heading">
+        <div>
+          <strong>{quoteStatusLabels[quoteStatus]}</strong>
+          <p>
+            {quoteStatus === 'awaiting' && 'Waiting for artisan quote.'}
+            {quoteStatus === 'sent' && 'Review the artisan quote before payment becomes available.'}
+            {quoteStatus === 'accepted' && 'Quote accepted. Payment required.'}
+            {quoteStatus === 'rejected' && 'Quote rejected. Message the artisan or wait for a new quote.'}
+            {quoteStatus === 'paid' && 'Payment is already protected in escrow or completed.'}
+          </p>
+        </div>
+        <QuoteStatusBadge status={quoteStatus} />
+      </div>
+
+      {booking.quoteSentAt && (
+        <div className="booking-quote-details">
+          <span>
+            <strong>{formatMoney(booking.quotedPrice)}</strong>
+            Quoted price
+          </span>
+          {booking.quoteNotes && (
+            <span>
+              <strong>Quote notes</strong>
+              {booking.quoteNotes}
+            </span>
+          )}
+        </div>
+      )}
+
+      {quoteStatus === 'sent' && (
+        <div className="booking-quote-actions">
+          <button
+            disabled={isUpdating}
+            type="button"
+            onClick={() => onQuoteResponse?.(booking, 'accept')}
+          >
+            {isUpdating ? 'Updating...' : 'Accept Quote'}
+          </button>
+          <button
+            disabled={isUpdating}
+            type="button"
+            onClick={() => onQuoteResponse?.(booking, 'reject')}
+          >
+            {isUpdating ? 'Updating...' : 'Reject Quote'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CustomerEscrowPanel({ booking, currentUserId, isCustomer = false, isPaying = false, onPay }) {
   const price = getBookingPrice(booking)
+  const displayPaymentStatus = getDisplayPaymentStatus(booking)
+  const normalizedPaymentStatus = booking.paymentStatus || 'unpaid'
+  const belongsToCustomer = booking.customerId === currentUserId
+  const quoteStatus = getQuoteStatus(booking)
+  const hasPrice = price > 0
+  const shouldShowPayButton = (
+    isCustomer &&
+    belongsToCustomer &&
+    quoteStatus === 'accepted' &&
+    ['unpaid', 'failed'].includes(normalizedPaymentStatus)
+  )
   const escrowAmount = booking.escrowAmount || (
     booking.paymentStatus === 'held_in_escrow' ? price : 0
   )
 
+  console.log('[Handiwave Paystack button eligibility]', {
+    'booking.id': booking.id,
+    estimated_price: booking.estimatedPrice,
+    final_price: booking.finalPrice,
+    payment_status: booking.paymentStatus,
+    shouldShowPayButton,
+  })
+
   return (
-    <div className="booking-payment-panel">
+    <div className={shouldShowPayButton ? 'booking-payment-panel payment-action-panel' : 'booking-payment-panel'}>
+      {shouldShowPayButton && (
+        <div className="payment-action-heading">
+          <strong>Payment required</strong>
+          <span>Secure this booking through Paystack escrow.</span>
+        </div>
+      )}
       <div className="booking-payment-row">
         <span>
           <strong>{formatMoney(price)}</strong>
@@ -107,16 +239,41 @@ function CustomerEscrowPanel({ booking }) {
           Escrow protected
         </span>
         <span>
-          <PaymentStatusBadge status={booking.paymentStatus} />
+          <PaymentStatusBadge status={displayPaymentStatus} />
           Payment status
         </span>
       </div>
       <p>
-        Escrow release after customer confirmation. Platform commission will be deducted from the artisan payout when real payments go live.
+        Escrow release after customer confirmation. Platform commission is deducted from the artisan payout after payment is confirmed.
       </p>
-      <button className="paystack-placeholder-button" disabled type="button">
-        Pay with Paystack - Coming Soon
-      </button>
+      {shouldShowPayButton ? (
+        <div className="payment-action-row">
+          <button
+            className="paystack-action-button"
+            disabled={isPaying || !hasPrice}
+            type="button"
+            onClick={() => onPay?.(booking)}
+          >
+            {isPaying ? 'Starting Paystack...' : 'Pay with Paystack'}
+          </button>
+          <strong>{formatMoney(price)}</strong>
+          {!hasPrice && (
+            <span>Price not set yet. Agree price with artisan before payment.</span>
+          )}
+        </div>
+      ) : (
+        <span className="payment-helper-note">
+          {quoteStatus === 'awaiting'
+            ? 'Waiting for artisan quote'
+            : quoteStatus === 'sent'
+            ? 'Accept or reject the artisan quote before payment.'
+            : quoteStatus === 'rejected'
+            ? 'Quote rejected. Payment is locked until a new quote is accepted.'
+            : displayPaymentStatus === 'pending'
+            ? 'Payment started. Complete Paystack checkout or verify from the callback page.'
+            : paymentStatusLabels[displayPaymentStatus] || 'Payment status updated.'}
+        </span>
+      )}
     </div>
   )
 }
@@ -337,6 +494,11 @@ function BookingHistorySection({
   submittingReviewId,
   updatingBookingId,
   onReportIssue,
+  onPay,
+  onQuoteResponse,
+  payingBookingId,
+  updatingQuoteId,
+  user,
 }) {
   const rescheduleRequestCount = bookings.filter((booking) => (
     (booking.rawStatus || booking.status) === 'reschedule_requested'
@@ -403,7 +565,22 @@ function BookingHistorySection({
                   <span>{booking.address}, {booking.city}, {booking.state}</span>
                   <span>{booking.scheduledDate} at {booking.scheduledTime}</span>
                 </div>
-                {showRescheduleActions && <CustomerEscrowPanel booking={booking} />}
+                {showRescheduleActions && (
+                  <CustomerQuotePanel
+                    booking={booking}
+                    isUpdating={updatingQuoteId === booking.id}
+                    onQuoteResponse={onQuoteResponse}
+                  />
+                )}
+                {showRescheduleActions && (
+                  <CustomerEscrowPanel
+                    booking={booking}
+                    currentUserId={user?.id}
+                    isCustomer={user?.role === 'customer'}
+                    isPaying={payingBookingId === booking.id}
+                    onPay={onPay}
+                  />
+                )}
                 {booking.notes && <p>{booking.notes}</p>}
                 {showRescheduleActions && (
                   <div className="booking-message-actions">
@@ -588,10 +765,12 @@ function Bookings() {
   const [isSubmittingDispute, setIsSubmittingDispute] = useState(false)
   const [lastCreatedBooking, setLastCreatedBooking] = useState(null)
   const [options, setOptions] = useState({ artisans: [], services: [] })
+  const [payingBookingId, setPayingBookingId] = useState('')
   const [reviewForms, setReviewForms] = useState({})
   const [submittingReviewId, setSubmittingReviewId] = useState('')
   const [updatingBookingId, setUpdatingBookingId] = useState('')
   const [updatingCompletionId, setUpdatingCompletionId] = useState('')
+  const [updatingQuoteId, setUpdatingQuoteId] = useState('')
 
   const isCustomer = user?.role === 'customer'
   const requestedArtisanId = searchParams.get('artisan')
@@ -1045,6 +1224,66 @@ function Bookings() {
     }
   }
 
+  async function handlePayWithPaystack(booking) {
+    setError('')
+    setPayingBookingId(booking.id)
+
+    try {
+      const { data, error: paymentError } = await initializeBookingPayment(booking.id)
+
+      if (paymentError) {
+        setError(getErrorMessage(paymentError))
+        return
+      }
+
+      if (!data?.authorization_url) {
+        setError('Paystack did not return an authorization URL.')
+        return
+      }
+
+      window.location.assign(data.authorization_url)
+    } catch (paymentError) {
+      setError(getErrorMessage(paymentError))
+    } finally {
+      setPayingBookingId('')
+    }
+  }
+
+  async function handleQuoteResponse(booking, decision) {
+    setError('')
+    setUpdatingQuoteId(booking.id)
+
+    try {
+      const { data, error: quoteError } = await respondToBookingQuote({
+        bookingId: booking.id,
+        decision,
+      })
+
+      if (quoteError) {
+        setError(getErrorMessage(quoteError))
+        return
+      }
+
+      if (!data) {
+        setError('Supabase did not confirm the quote response.')
+        return
+      }
+
+      const didRefresh = await refreshBookings()
+      if (!didRefresh) {
+        return
+      }
+
+      showToast(decision === 'accept'
+        ? 'Quote accepted. Payment is now available.'
+        : 'Quote rejected.')
+    } catch (quoteError) {
+      setError(getErrorMessage(quoteError))
+    } finally {
+      setUpdatingQuoteId('')
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault()
     setError('')
@@ -1144,6 +1383,18 @@ function Bookings() {
           <Link className="primary-cta" to={`/messages?booking=${lastCreatedBooking.id}`}>
             Message Artisan
           </Link>
+          {getQuoteStatus(lastCreatedBooking) === 'accepted' ? (
+            <button
+              className="secondary-cta"
+              disabled={payingBookingId === lastCreatedBooking.id}
+              type="button"
+              onClick={() => handlePayWithPaystack(lastCreatedBooking)}
+            >
+              {payingBookingId === lastCreatedBooking.id ? 'Starting Paystack...' : 'Pay with Paystack'}
+            </button>
+          ) : (
+            <span className="payment-helper-note">Waiting for artisan quote</span>
+          )}
         </section>
       )}
 
@@ -1352,14 +1603,19 @@ function Bookings() {
             onReviewChange={handleReviewChange}
             onReviewSubmit={handleReviewSubmit}
             onReportIssue={openDisputeModal}
+            onPay={handlePayWithPaystack}
+            onQuoteResponse={handleQuoteResponse}
             onRescheduleResponse={handleRescheduleResponse}
             participantLabel={(booking) => booking.artisan}
+            payingBookingId={payingBookingId}
             reviewForms={reviewForms}
             showRescheduleActions
             submittingReviewId={submittingReviewId}
             title="Customer booking history"
             updatingBookingId={updatingBookingId}
             updatingCompletionId={updatingCompletionId}
+            updatingQuoteId={updatingQuoteId}
+            user={user}
           />
         ) : (
           <BookingHistorySection
@@ -1369,6 +1625,7 @@ function Bookings() {
             participantLabel={(booking) => booking.customer}
             title="Artisan booking history"
             updatingBookingId={updatingBookingId}
+            user={user}
           />
         )}
       </section>
