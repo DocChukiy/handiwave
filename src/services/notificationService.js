@@ -65,7 +65,10 @@ export async function createNotificationSafely(payload) {
 
   if (error) {
     console.error('[Handiwave notification] insert failed:', error)
+    return
   }
+
+  window.dispatchEvent(new CustomEvent('handiwave-awareness-refresh'))
 }
 
 export async function getNotificationsForUser(userId) {
@@ -86,6 +89,27 @@ export async function getNotificationsForUser(userId) {
 
   return {
     data: (data || []).map(mapNotificationRow),
+    error,
+  }
+}
+
+export async function getUnreadNotificationsCount(userId) {
+  if (!userId) {
+    return {
+      data: 0,
+      error: new Error('You must be logged in to view notifications.'),
+    }
+  }
+
+  const supabase = getSupabaseClient()
+  const { count, error } = await supabase
+    .from('notifications')
+    .select('id', { count: 'exact', head: true })
+    .eq('profile_id', userId)
+    .is('read_at', null)
+
+  return {
+    data: count || 0,
     error,
   }
 }

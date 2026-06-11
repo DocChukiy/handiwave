@@ -87,6 +87,24 @@ function QuoteStatusBadge({ status }) {
   )
 }
 
+function ImagePreviewModal({ altText, imageUrl, title, onClose }) {
+  return (
+    <div className="modal-backdrop image-preview-backdrop" role="presentation" onClick={onClose}>
+      <div className="image-preview-modal" role="dialog" aria-modal="true" aria-label={title} onClick={(event) => event.stopPropagation()}>
+        <div className="image-preview-header">
+          <strong>{title}</strong>
+          <button type="button" onClick={onClose}>Close</button>
+        </div>
+        {imageUrl ? (
+          <img alt={altText} src={imageUrl} />
+        ) : (
+          <p>Preview is unavailable for this attachment.</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function getFallbackPlatformFee(booking) {
   const price = getBookingPrice(booking)
   const rate = booking.commissionRate || 0.1
@@ -95,29 +113,12 @@ function getFallbackPlatformFee(booking) {
 }
 
 function ArtisanPayoutPanel({ booking }) {
-  const quoteStatus = getQuoteStatus(booking)
+  const price = getBookingPrice(booking)
 
-  if (quoteStatus === 'awaiting' || quoteStatus === 'rejected') {
-    return (
-      <div className="job-payment-panel">
-        <span>
-          <strong>Quote needed</strong>
-          Expected payout
-        </span>
-        <span>
-          <strong>Not calculated</strong>
-          Platform fee
-        </span>
-        <span>
-          <strong>{paymentStatusLabels[booking.paymentStatus] || booking.paymentStatus.replaceAll('_', ' ')}</strong>
-          Escrow/payment status
-        </span>
-        <p>Send a quote first. Expected payout appears after the customer has a real quoted price.</p>
-      </div>
-    )
+  if (!price) {
+    return null
   }
 
-  const price = getBookingPrice(booking)
   const platformFee = booking.platformFee || getFallbackPlatformFee(booking)
   const expectedPayout = booking.artisanPayoutAmount || Math.max(price - platformFee, 0)
 
@@ -291,9 +292,14 @@ function JobCard({
   const [isQuoteFormOpen, setIsQuoteFormOpen] = useState(false)
   const [quoteNotes, setQuoteNotes] = useState(booking.quoteNotes || '')
   const [quotedPrice, setQuotedPrice] = useState(booking.quotedPrice || booking.finalPrice || '')
+  const [selectedAttachment, setSelectedAttachment] = useState(null)
   const hasConflict = conflictIds.includes(booking.id)
   const quoteStatus = getQuoteStatus(booking)
   const isUpdating = updatingBookingId === booking.id
+  const shouldShowPayoutPanel = (
+    booking.rawStatus !== 'pending' ||
+    booking.paymentStatus === 'held_in_escrow'
+  )
 
   async function handleInlineQuoteSubmit(event) {
     event.preventDefault()
@@ -333,18 +339,17 @@ function JobCard({
             <strong>Issue photos</strong>
             <div className="job-attachment-grid">
               {booking.attachments.map((attachment) => (
-                <a
-                  href={attachment.fileUrl}
+                <button
                   key={attachment.id || attachment.filePath}
-                  rel="noreferrer"
-                  target="_blank"
+                  type="button"
+                  onClick={() => setSelectedAttachment(attachment)}
                 >
                   {attachment.fileUrl ? (
                     <img alt={attachment.fileName} src={attachment.fileUrl} />
                   ) : (
                     <span>{attachment.fileName}</span>
                   )}
-                </a>
+                </button>
               ))}
             </div>
           </div>
@@ -405,10 +410,12 @@ function JobCard({
         {booking.rescheduleNote && <p><strong>Reschedule note:</strong> {booking.rescheduleNote}</p>}
       </div>
 
-      <ArtisanPayoutPanel booking={booking} />
+      {shouldShowPayoutPanel && <ArtisanPayoutPanel booking={booking} />}
 
       <div className="job-card-meta">
-        <small>Payment: {booking.paymentStatus.replaceAll('_', ' ')}</small>
+        {shouldShowPayoutPanel && (
+          <small>Payment: {booking.paymentStatus.replaceAll('_', ' ')}</small>
+        )}
         <small>Created: {formatCreatedDate(booking.createdAt)}</small>
         {booking.rawStatus === 'reschedule_requested' && (
           <small>Requested: {formatCreatedDate(booking.rescheduleRequestedAt)}</small>
@@ -435,6 +442,14 @@ function JobCard({
         onStatusUpdate={onStatusUpdate}
         updatingBookingId={updatingBookingId}
       />
+      {selectedAttachment && (
+        <ImagePreviewModal
+          altText={selectedAttachment.fileName}
+          imageUrl={selectedAttachment.fileUrl}
+          title={selectedAttachment.fileName}
+          onClose={() => setSelectedAttachment(null)}
+        />
+      )}
     </article>
   )
 }

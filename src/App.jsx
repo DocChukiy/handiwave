@@ -42,8 +42,10 @@ import { getArtisanByProfileId } from './services/artisanService.js'
 import { getTotalUnreadMessagesForUser, touchProfileLastSeen } from './services/messageService.js'
 import {
   getNotificationsForUser,
+  getUnreadNotificationsCount,
   markNotificationRead,
 } from './services/notificationService.js'
+import { getSupabaseClient } from './lib/supabaseClient.js'
 import { showToast } from './utils/toast.js'
 import './App.css'
 
@@ -291,6 +293,7 @@ function AppShell() {
   const [toast, setToast] = useState(null)
   const [awarenessRefreshTick, setAwarenessRefreshTick] = useState(0)
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0)
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0)
 
   const isDarkMode = theme === 'dark'
   const navLinks = user?.role === 'artisan'
@@ -305,8 +308,6 @@ function AppShell() {
   const primaryNavLinks = visibleNavLinks.slice(0, desktopPrimaryCount)
   const moreNavLinks = visibleNavLinks.slice(desktopPrimaryCount)
   const isMoreActive = moreNavLinks.some((link) => location.pathname === link.path)
-  const unreadNotificationsCount = notifications.filter((notification) => !notification.isRead).length
-
   function renderNavLabel(link) {
     const count = link.path === '/messages' ? unreadMessagesCount : 0
 
@@ -387,9 +388,10 @@ function AppShell() {
         return
       }
 
-      const [unreadMessageResult, notificationResult] = await Promise.all([
+      const [unreadMessageResult, notificationResult, unreadNotificationResult] = await Promise.all([
         getTotalUnreadMessagesForUser(user),
         getNotificationsForUser(user.id),
+        getUnreadNotificationsCount(user.id),
       ])
 
       if (!isMounted) {
@@ -406,6 +408,12 @@ function AppShell() {
         console.error('[Handiwave nav] notification fetch failed:', notificationResult.error)
       } else {
         setNotifications(notificationResult.data)
+      }
+
+      if (unreadNotificationResult.error) {
+        console.error('[Handiwave nav] unread notification count failed:', unreadNotificationResult.error)
+      } else {
+        setUnreadNotificationsCount(unreadNotificationResult.data)
       }
     }
 
@@ -425,6 +433,33 @@ function AppShell() {
       window.clearInterval(awarenessTimer)
     }
   }, [awarenessRefreshTick, isAuthenticated, location.pathname, user])
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) {
+      return undefined
+    }
+
+    const supabase = getSupabaseClient()
+    const channel = supabase
+      .channel(`notifications-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          filter: `profile_id=eq.${user.id}`,
+          schema: 'public',
+          table: 'notifications',
+        },
+        () => {
+          setAwarenessRefreshTick((currentTick) => currentTick + 1)
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [isAuthenticated, user?.id])
 
   useEffect(() => {
     function handleToast(event) {
@@ -477,6 +512,7 @@ function AppShell() {
           : item
       ))
     ))
+    setUnreadNotificationsCount((currentCount) => Math.max(currentCount - 1, 0))
     window.dispatchEvent(new CustomEvent('handiwave-awareness-refresh'))
 
     if (notification.type === 'message' && notification.data?.conversation_id) {

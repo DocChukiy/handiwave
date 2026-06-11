@@ -4866,7 +4866,9 @@
 }
 
 .booking-attachment-grid a,
-.job-attachment-grid a {
+.booking-attachment-grid button,
+.job-attachment-grid a,
+.job-attachment-grid button {
   align-items: center;
   aspect-ratio: 1;
   background: #f8fafc;
@@ -4877,15 +4879,138 @@
   font-size: 0.78rem;
   font-weight: 850;
   justify-items: center;
+  padding: 0;
   overflow: hidden;
   text-align: center;
   text-decoration: none;
 }
 
 .booking-attachment-grid img,
+.booking-attachment-grid button img,
 .job-attachment-grid img {
   height: 100%;
   object-fit: cover;
+  width: 100%;
+}
+
+.booking-preview-panel,
+.booking-upload-progress {
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 18px;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.booking-preview-panel > strong,
+.booking-upload-progress > strong {
+  color: #0f172a;
+}
+
+.booking-preview-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+}
+
+.booking-preview-card {
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 16px;
+  display: grid;
+  gap: 8px;
+  overflow: hidden;
+  padding: 8px;
+}
+
+.booking-preview-card img {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  object-fit: cover;
+  width: 100%;
+}
+
+.booking-preview-card button {
+  background: #fef2f2;
+  border: 1px solid rgba(239, 68, 68, 0.18);
+  border-radius: 999px;
+  color: #b91c1c;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 950;
+  min-height: 34px;
+}
+
+.booking-preview-card small {
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.booking-upload-progress span {
+  color: #64748b;
+  font-size: 0.84rem;
+  font-weight: 850;
+}
+
+.booking-upload-progress progress {
+  accent-color: #16a34a;
+  height: 10px;
+  width: 100%;
+}
+
+.image-preview-backdrop {
+  padding: 18px;
+}
+
+.image-preview-modal {
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.28);
+  display: grid;
+  gap: 14px;
+  max-height: min(86vh, 760px);
+  max-width: min(92vw, 780px);
+  overflow: hidden;
+  padding: 16px;
+  width: 100%;
+}
+
+.image-preview-header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.image-preview-header strong {
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.image-preview-header button {
+  background: #ecfdf5;
+  border: 1px solid rgba(22, 163, 74, 0.18);
+  border-radius: 999px;
+  color: #047857;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 950;
+  min-height: 38px;
+  padding: 0 14px;
+}
+
+.image-preview-modal img {
+  border-radius: 18px;
+  max-height: calc(86vh - 98px);
+  object-fit: contain;
   width: 100%;
 }
 
@@ -6557,7 +6682,13 @@
 :root[data-theme='dark'] .job-quote-details span,
 :root[data-theme='dark'] .booking-selected-files span,
 :root[data-theme='dark'] .booking-attachment-grid a,
+:root[data-theme='dark'] .booking-attachment-grid button,
 :root[data-theme='dark'] .job-attachment-grid a,
+:root[data-theme='dark'] .job-attachment-grid button,
+:root[data-theme='dark'] .booking-preview-panel,
+:root[data-theme='dark'] .booking-preview-card,
+:root[data-theme='dark'] .booking-upload-progress,
+:root[data-theme='dark'] .image-preview-modal,
 :root[data-theme='dark'] .inline-quote-form,
 :root[data-theme='dark'] .inline-quote-form input,
 :root[data-theme='dark'] .inline-quote-form textarea,
@@ -6568,7 +6699,10 @@
 }
 
 :root[data-theme='dark'] .booking-attachment-gallery > strong,
-:root[data-theme='dark'] .job-attachment-gallery > strong {
+:root[data-theme='dark'] .job-attachment-gallery > strong,
+:root[data-theme='dark'] .booking-preview-panel > strong,
+:root[data-theme='dark'] .booking-upload-progress > strong,
+:root[data-theme='dark'] .image-preview-header strong {
   color: #d1fae5;
 }
 
@@ -6576,6 +6710,11 @@
 :root[data-theme='dark'] .inline-quote-form input,
 :root[data-theme='dark'] .inline-quote-form textarea {
   color: #d1fae5;
+}
+
+:root[data-theme='dark'] .booking-preview-card small,
+:root[data-theme='dark'] .booking-upload-progress span {
+  color: #94a3b8;
 }
 
 :root[data-theme='dark'] .booking-quote-actions button:last-child {

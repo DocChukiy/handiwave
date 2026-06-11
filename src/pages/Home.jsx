@@ -105,7 +105,7 @@ function CustomerActiveBookings({
                 {quoteStatus === 'awaiting' && 'Waiting for artisan quote'}
                 {quoteStatus === 'sent' && `Quote sent: ${formatMoney(booking.quotedPrice)}`}
                 {quoteStatus === 'accepted' && 'Quote accepted. Payment required.'}
-                {quoteStatus === 'rejected' && 'Quote rejected'}
+                {quoteStatus === 'rejected' && 'Waiting for revised quote'}
                 {quoteStatus === 'paid' && 'Paid / escrow held'}
               </strong>
               {booking.quoteNotes && <span>{booking.quoteNotes}</span>}

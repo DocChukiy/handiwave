@@ -7,6 +7,78 @@ type VerifyPaymentBody = {
   reference?: string
 }
 
+async function createPaymentSuccessNotifications(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  bookingId: string,
+) {
+  const { data: existingNotification } = await supabase
+    .from("notifications")
+    .select("id")
+    .contains("data", {
+      booking_id: bookingId,
+      event: "payment_success",
+    })
+    .limit(1)
+    .maybeSingle()
+
+  if (existingNotification) {
+    return
+  }
+
+  const { data: booking, error } = await supabase
+    .from("bookings")
+    .select(`
+      id,
+      customer_id,
+      artisan_id,
+      payment_status,
+      service:services!bookings_service_id_fkey(name),
+      artisan:artisans!bookings_artisan_id_fkey(profile_id)
+    `)
+    .eq("id", bookingId)
+    .maybeSingle()
+
+  if (error || !booking) {
+    console.error("[Handiwave payment notification] booking lookup failed:", error)
+    return
+  }
+
+  const serviceName = booking.service?.name || "booking"
+  const notifications = [
+    {
+      body: `Your ${serviceName} payment is successful and held in escrow.`,
+      data: {
+        booking_id: booking.id,
+        event: "payment_success",
+      },
+      profile_id: booking.customer_id,
+      title: "Payment successful",
+      type: "wallet",
+    },
+  ]
+
+  if (booking.artisan?.profile_id) {
+    notifications.push({
+      body: `Customer payment for ${serviceName} is now held in escrow.`,
+      data: {
+        booking_id: booking.id,
+        event: "payment_success",
+      },
+      profile_id: booking.artisan.profile_id,
+      title: "Payment held in escrow",
+      type: "wallet",
+    })
+  }
+
+  const { error: notificationError } = await supabase
+    .from("notifications")
+    .insert(notifications)
+
+  if (notificationError) {
+    console.error("[Handiwave payment notification] insert failed:", notificationError)
+  }
+}
+
 async function getReference(request: Request) {
   if (request.method === "GET") {
     return new URL(request.url).searchParams.get("reference") || ""
@@ -92,6 +164,8 @@ serve(async (request) => {
           .update({ status: "confirmed" })
           .eq("id", bookingId)
           .eq("payment_status", "held_in_escrow")
+
+        await createPaymentSuccessNotifications(supabase, bookingId)
       }
 
       return jsonResponse({

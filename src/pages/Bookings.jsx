@@ -153,7 +153,7 @@ function CustomerQuotePanel({
             {quoteStatus === 'awaiting' && 'Waiting for artisan quote.'}
             {quoteStatus === 'sent' && 'Review the artisan quote before payment becomes available.'}
             {quoteStatus === 'accepted' && 'Quote accepted. Payment required.'}
-            {quoteStatus === 'rejected' && 'Quote rejected. Message the artisan or wait for a new quote.'}
+            {quoteStatus === 'rejected' && 'Quote rejected. Waiting for a revised quote.'}
             {quoteStatus === 'paid' && 'Payment is already protected in escrow or completed.'}
           </p>
         </div>
@@ -271,7 +271,7 @@ function CustomerEscrowPanel({ booking, currentUserId, isCustomer = false, isPay
             : quoteStatus === 'sent'
             ? 'Accept or reject the artisan quote before payment.'
             : quoteStatus === 'rejected'
-            ? 'Quote rejected. Payment is locked until a new quote is accepted.'
+            ? 'Waiting for revised quote.'
             : displayPaymentStatus === 'pending'
             ? 'Payment started. Complete Paystack checkout or verify from the callback page.'
             : paymentStatusLabels[displayPaymentStatus] || 'Payment status updated.'}
@@ -282,6 +282,8 @@ function CustomerEscrowPanel({ booking, currentUserId, isCustomer = false, isPay
 }
 
 function BookingAttachmentGallery({ attachments = [], label = 'Uploaded issue photos' }) {
+  const [selectedAttachment, setSelectedAttachment] = useState(null)
+
   if (!attachments.length) {
     return null
   }
@@ -291,18 +293,70 @@ function BookingAttachmentGallery({ attachments = [], label = 'Uploaded issue ph
       <strong>{label}</strong>
       <div className="booking-attachment-grid">
         {attachments.map((attachment) => (
-          <a
-            href={attachment.fileUrl}
+          <button
             key={attachment.id || attachment.filePath}
-            rel="noreferrer"
-            target="_blank"
+            type="button"
+            onClick={() => setSelectedAttachment(attachment)}
           >
             {attachment.fileUrl ? (
               <img alt={attachment.fileName} src={attachment.fileUrl} />
             ) : (
               <span>{attachment.fileName}</span>
             )}
-          </a>
+          </button>
+        ))}
+      </div>
+      {selectedAttachment && (
+        <ImagePreviewModal
+          altText={selectedAttachment.fileName}
+          imageUrl={selectedAttachment.fileUrl}
+          title={selectedAttachment.fileName}
+          onClose={() => setSelectedAttachment(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+function ImagePreviewModal({ altText, imageUrl, title, onClose }) {
+  return (
+    <div className="modal-backdrop image-preview-backdrop" role="presentation" onClick={onClose}>
+      <div className="image-preview-modal" role="dialog" aria-modal="true" aria-label={title} onClick={(event) => event.stopPropagation()}>
+        <div className="image-preview-header">
+          <strong>{title}</strong>
+          <button type="button" onClick={onClose}>Close</button>
+        </div>
+        {imageUrl ? (
+          <img alt={altText} src={imageUrl} />
+        ) : (
+          <p>Preview is unavailable for this attachment.</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function BookingImagePreviews({ files = [], previews = [], onRemove }) {
+  if (!files.length) {
+    return null
+  }
+
+  return (
+    <div className="booking-preview-panel">
+      <strong>Selected photos</strong>
+      <div className="booking-preview-grid">
+        {files.map((file, index) => (
+          <div className="booking-preview-card" key={`${file.name}-${file.size}-${index}`}>
+            {previews[index]?.url ? (
+              <img alt={file.name} src={previews[index].url} />
+            ) : (
+              <span>{file.name}</span>
+            )}
+            <button type="button" onClick={() => onRemove(index)}>
+              Remove
+            </button>
+            <small>{file.name}</small>
+          </div>
         ))}
       </div>
     </div>
@@ -785,6 +839,7 @@ function Bookings() {
     unavailableDates: [],
   })
   const [availabilityError, setAvailabilityError] = useState('')
+  const [attachmentInputKey, setAttachmentInputKey] = useState(0)
   const [bookings, setBookings] = useState([])
   const [disputeBooking, setDisputeBooking] = useState(null)
   const [disputeForm, setDisputeForm] = useState(initialDisputeForm)
@@ -803,11 +858,18 @@ function Bookings() {
   const [updatingBookingId, setUpdatingBookingId] = useState('')
   const [updatingCompletionId, setUpdatingCompletionId] = useState('')
   const [updatingQuoteId, setUpdatingQuoteId] = useState('')
+  const [uploadProgress, setUploadProgress] = useState(null)
 
   const isCustomer = user?.role === 'customer'
   const requestedArtisanId = searchParams.get('artisan')
   const selectedArtisan = options.artisans.find((artisan) => artisan.id === form.artisanId)
   const selectedService = options.services.find((service) => service.id === form.serviceId)
+  const imagePreviews = useMemo(() => (
+    form.attachmentFiles.map((file) => ({
+      name: file.name,
+      url: URL.createObjectURL(file),
+    }))
+  ), [form.attachmentFiles])
   const availableDayLabels = useMemo(() => (
     [...new Set(availability.slots.map((slot) => getDayLabel(slot.dayOfWeek)))]
   ), [availability.slots])
@@ -998,6 +1060,12 @@ function Bookings() {
     }
   }, [form.artisanId, isCustomer])
 
+  useEffect(() => {
+    return () => {
+      imagePreviews.forEach((preview) => URL.revokeObjectURL(preview.url))
+    }
+  }, [imagePreviews])
+
   function updateForm(field, value) {
     setForm((currentForm) => ({
       ...currentForm,
@@ -1010,6 +1078,16 @@ function Bookings() {
       ...currentForm,
       attachmentFiles: Array.from(files || []),
     }))
+    setUploadProgress(null)
+  }
+
+  function handleRemoveAttachment(indexToRemove) {
+    setForm((currentForm) => ({
+      ...currentForm,
+      attachmentFiles: currentForm.attachmentFiles.filter((_, index) => index !== indexToRemove),
+    }))
+    setAttachmentInputKey((currentKey) => currentKey + 1)
+    setUploadProgress(null)
   }
 
   function handleArtisanChange(artisanId) {
@@ -1348,6 +1426,7 @@ function Bookings() {
     }
 
     setIsSaving(true)
+    setUploadProgress(null)
 
     try {
       const { data, error: saveError } = await createBooking({
@@ -1357,6 +1436,7 @@ function Bookings() {
         city: form.city,
         customerId: user.id,
         notes: form.notes,
+        onAttachmentProgress: setUploadProgress,
         scheduledDate: form.scheduledDate,
         scheduledTime: form.scheduledTime,
         serviceId: form.serviceId,
@@ -1381,6 +1461,8 @@ function Bookings() {
         artisanId: currentForm.artisanId,
         serviceId: currentForm.serviceId,
       }))
+      setAttachmentInputKey((currentKey) => currentKey + 1)
+      setUploadProgress(null)
       showToast('Booking request saved to Supabase successfully.')
     } catch (saveError) {
       setError(getErrorMessage(saveError))
@@ -1631,6 +1713,7 @@ function Bookings() {
               <input
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 disabled={isSaving}
+                key={attachmentInputKey}
                 multiple
                 type="file"
                 onChange={(event) => handleAttachmentChange(event.target.files)}
@@ -1640,10 +1723,20 @@ function Bookings() {
               </span>
             </label>
             {form.attachmentFiles.length > 0 && (
-              <div className="booking-selected-files">
-                {form.attachmentFiles.map((file) => (
-                  <span key={`${file.name}-${file.size}`}>{file.name}</span>
-                ))}
+              <BookingImagePreviews
+                files={form.attachmentFiles}
+                previews={imagePreviews}
+                onRemove={handleRemoveAttachment}
+              />
+            )}
+            {uploadProgress && (
+              <div className="booking-upload-progress">
+                <strong>Uploading photos</strong>
+                <span>
+                  {uploadProgress.current} of {uploadProgress.total}
+                  {uploadProgress.fileName ? ` • ${uploadProgress.fileName}` : ''}
+                </span>
+                <progress max={uploadProgress.total} value={uploadProgress.current} />
               </div>
             )}
             <button disabled={isLoading || isSaving} type="submit">

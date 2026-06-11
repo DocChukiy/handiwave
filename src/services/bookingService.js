@@ -58,6 +58,29 @@ async function getArtisanProfileIdByArtisanId(artisanId) {
   return data?.profile_id || ''
 }
 
+async function getBookingNotificationContext(bookingId) {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('bookings')
+    .select(`
+      id,
+      customer_id,
+      artisan_id,
+      quoted_price,
+      service:services!${bookingServiceRelation}(id, name),
+      artisan:artisans!${bookingArtisanRelation}(id, business_name, profile_id)
+    `)
+    .eq('id', bookingId)
+    .maybeSingle()
+
+  if (error) {
+    console.error('[Handiwave notification] booking context lookup failed:', error)
+    return null
+  }
+
+  return data
+}
+
 function formatDateTime(date, time) {
   const dateLabel = date || 'Date pending'
   const timeLabel = time ? time.slice(0, 5) : 'Time pending'
@@ -181,6 +204,7 @@ async function mapBookingRows(rows = []) {
 async function uploadBookingAttachments({
   bookingId,
   files = [],
+  onProgress,
   uploadedBy,
 }) {
   const imageFiles = Array.from(files || []).filter(Boolean)
@@ -195,13 +219,19 @@ async function uploadBookingAttachments({
   const supabase = getSupabaseClient()
   const attachmentRows = []
 
-  for (const file of imageFiles) {
+  for (const [index, file] of imageFiles.entries()) {
     if (!file.type?.startsWith('image/')) {
       return {
         data: [],
         error: new Error(`${file.name} is not a supported image file.`),
       }
     }
+
+    onProgress?.({
+      current: index,
+      fileName: file.name,
+      total: imageFiles.length,
+    })
 
     const extension = file.name.split('.').pop() || 'jpg'
     const path = `${bookingId}/${uploadedBy}/${Date.now()}-${getSafeFileName(file.name || `issue.${extension}`)}`
@@ -228,6 +258,12 @@ async function uploadBookingAttachments({
       file_url: null,
       uploaded_by: uploadedBy,
     })
+
+    onProgress?.({
+      current: index + 1,
+      fileName: file.name,
+      total: imageFiles.length,
+    })
   }
 
   const { data, error } = await supabase
@@ -253,6 +289,22 @@ export async function sendBookingQuote({
     target_quoted_price: Number(quotedPrice),
   })
 
+  if (!error) {
+    const booking = await getBookingNotificationContext(bookingId)
+
+    if (booking?.customer_id) {
+      await createNotificationSafely({
+        body: `${booking.service?.name || 'Your service'} quote: NGN ${Number(quotedPrice || booking.quoted_price || 0).toLocaleString()}.`,
+        data: {
+          booking_id: booking.id,
+        },
+        profileId: booking.customer_id,
+        title: 'Quote sent',
+        type: 'booking',
+      })
+    }
+  }
+
   return {
     data,
     error,
@@ -268,6 +320,24 @@ export async function respondToBookingQuote({
     decision,
     target_booking_id: bookingId,
   })
+
+  if (!error) {
+    const booking = await getBookingNotificationContext(bookingId)
+
+    if (booking?.artisan?.profile_id) {
+      await createNotificationSafely({
+        body: decision === 'accept'
+          ? 'The customer accepted your quote. Payment is now required before the booking can be confirmed.'
+          : 'The customer rejected your quote. You can send a revised quote from Jobs.',
+        data: {
+          booking_id: booking.id,
+        },
+        profileId: booking.artisan.profile_id,
+        title: decision === 'accept' ? 'Quote accepted' : 'Quote rejected',
+        type: 'booking',
+      })
+    }
+  }
 
   return {
     data,
@@ -545,12 +615,24 @@ export async function updateBookingStatusForArtisan({
 
   if (!error && data?.customer_id && nextStatus === 'confirmed') {
     await createNotificationSafely({
-      body: 'Your artisan accepted the booking request.',
+      body: 'Your booking is confirmed. Payment is safely held in escrow.',
       data: {
         booking_id: data.id,
       },
       profileId: data.customer_id,
-      title: 'Booking accepted',
+      title: 'Booking confirmed',
+      type: 'booking',
+    })
+  }
+
+  if (!error && data?.customer_id && nextStatus === 'in_progress') {
+    await createNotificationSafely({
+      body: 'Your artisan started the job.',
+      data: {
+        booking_id: data.id,
+      },
+      profileId: data.customer_id,
+      title: 'Job started',
       type: 'booking',
     })
   }
@@ -771,6 +853,7 @@ export async function createBooking({
   city,
   customerId,
   notes,
+  onAttachmentProgress,
   scheduledDate,
   scheduledTime,
   serviceId,
@@ -899,6 +982,7 @@ export async function createBooking({
   const { error: attachmentError } = await uploadBookingAttachments({
     bookingId: insertedBooking.id,
     files: attachmentFiles,
+    onProgress: onAttachmentProgress,
     uploadedBy: customerId,
   })
 
