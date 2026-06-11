@@ -60,10 +60,14 @@ export function mapWithdrawalRow(withdrawal) {
     createdAt: withdrawal.created_at || '',
     currency,
     id: withdrawal.id,
+    payoutMethod: withdrawal.payout_method || 'manual',
+    processedAt: withdrawal.processed_at || '',
+    rejectionReason: withdrawal.rejection_reason || '',
     requestedAt: withdrawal.requested_at || '',
     status: withdrawal.status || 'pending',
     time: formatDate(withdrawal.requested_at),
     transactionId: withdrawal.transaction_id || '',
+    transferStatus: withdrawal.transfer_status || '',
   }
 }
 

@@ -29,6 +29,30 @@ function formatMoney(value, currency = 'NGN') {
   return `${currency} ${Number(value || 0).toLocaleString()}`
 }
 
+function getWithdrawalStatusLabel(status) {
+  if (['successful', 'approved', 'processed'].includes(status)) {
+    return 'Approved / Paid manually'
+  }
+
+  if (['failed', 'rejected', 'cancelled'].includes(status)) {
+    return 'Rejected / Failed'
+  }
+
+  return 'Pending'
+}
+
+function getWithdrawalStatusTone(status) {
+  if (['successful', 'approved', 'processed'].includes(status)) {
+    return 'successful'
+  }
+
+  if (['failed', 'rejected', 'cancelled'].includes(status)) {
+    return 'failed'
+  }
+
+  return 'pending'
+}
+
 function sumTransactions(transactions, type) {
   return transactions
     .filter((transaction) => transaction.type === type && transaction.status === 'successful')
@@ -106,6 +130,11 @@ function Wallet() {
 
     if (!form.bankName.trim() || !form.accountName.trim() || !form.accountNumber.trim()) {
       setError('Enter bank name, account name, and account number.')
+      return
+    }
+
+    if (Number(form.amount) > Number(wallet?.availableBalance || 0)) {
+      setError('Insufficient available balance for this withdrawal.')
       return
     }
 
@@ -195,78 +224,101 @@ function Wallet() {
       </section>
 
       <section className="wallet-layout">
-        <form className="booking-form wallet-withdrawal-form" onSubmit={handleWithdrawalSubmit}>
-          <h2>{isArtisan ? 'Request withdrawal' : 'Withdrawal request'}</h2>
-          <p className="auth-hint">
-            {isArtisan
-              ? canWithdraw
-                ? 'Withdraw available earnings. Payout processing will be handled manually for now.'
-                : 'You\'ll be able to withdraw after completed paid jobs.'
-              : 'Payments are not connected yet. This request flow is ready for future refunds or wallet withdrawals.'}
-          </p>
-          <label>
-            Amount
-            <input
-              disabled={isSubmitting}
-              min="1"
-              placeholder="10000"
-              type="number"
-              value={form.amount}
-              onChange={(event) => updateForm('amount', event.target.value)}
-            />
-          </label>
-          <label>
-            Bank name
-            <input
-              disabled={isSubmitting}
-              placeholder="Kuda Bank"
-              value={form.bankName}
-              onChange={(event) => updateForm('bankName', event.target.value)}
-            />
-          </label>
-          <label>
-            Account name
-            <input
-              disabled={isSubmitting}
-              placeholder="Ada Okafor"
-              value={form.accountName}
-              onChange={(event) => updateForm('accountName', event.target.value)}
-            />
-          </label>
-          <label>
-            Account number
-            <input
-              disabled={isSubmitting}
-              inputMode="numeric"
-              placeholder="0123456789"
-              value={form.accountNumber}
-              onChange={(event) => updateForm('accountNumber', event.target.value)}
-            />
-          </label>
-          <button disabled={isSubmitting || (isArtisan && !canWithdraw)} type="submit">
-            {isSubmitting ? 'Submitting...' : 'Request Withdrawal'}
-          </button>
-        </form>
+        {isArtisan ? (
+          <form className="booking-form wallet-withdrawal-form" onSubmit={handleWithdrawalSubmit}>
+            <h2>Request withdrawal</h2>
+            <p className="auth-hint">
+              {canWithdraw
+                ? 'Withdraw available earnings. Payout processing is manual for now, with Paystack transfer readiness coming later.'
+                : 'You\'ll be able to withdraw after completed paid jobs.'}
+            </p>
+            <label>
+              Amount
+              <input
+                disabled={isSubmitting || !canWithdraw}
+                max={wallet?.availableBalance || 0}
+                min="1"
+                placeholder="10000"
+                type="number"
+                value={form.amount}
+                onChange={(event) => updateForm('amount', event.target.value)}
+              />
+            </label>
+            <label>
+              Bank name
+              <input
+                disabled={isSubmitting || !canWithdraw}
+                placeholder="Kuda Bank"
+                value={form.bankName}
+                onChange={(event) => updateForm('bankName', event.target.value)}
+              />
+            </label>
+            <label>
+              Account name
+              <input
+                disabled={isSubmitting || !canWithdraw}
+                placeholder="Ada Okafor"
+                value={form.accountName}
+                onChange={(event) => updateForm('accountName', event.target.value)}
+              />
+            </label>
+            <label>
+              Account number
+              <input
+                disabled={isSubmitting || !canWithdraw}
+                inputMode="numeric"
+                placeholder="0123456789"
+                value={form.accountNumber}
+                onChange={(event) => updateForm('accountNumber', event.target.value)}
+              />
+            </label>
+            <button disabled={isSubmitting || !canWithdraw} type="submit">
+              {isSubmitting ? 'Submitting...' : 'Request Withdrawal'}
+            </button>
+          </form>
+        ) : (
+          <section className="list-panel wallet-panel">
+            <div className="booking-history-header">
+              <div>
+                <p className="section-kicker">Customer wallet</p>
+                <h2>Payments and refunds</h2>
+              </div>
+            </div>
+            <EmptyState compact title="Withdrawals are for artisans">
+              Customer payments, refunds, and escrow updates will appear in wallet history.
+            </EmptyState>
+          </section>
+        )}
 
         <section className="list-panel wallet-panel">
           <div className="booking-history-header">
             <div>
-              <p className="section-kicker">{isArtisan ? 'Pending withdrawals' : 'Pending refunds/payments'}</p>
-              <h2>{pendingWithdrawals.length} pending</h2>
+              <p className="section-kicker">{isArtisan ? 'Withdrawal requests' : 'Pending refunds/payments'}</p>
+              <h2>{isArtisan ? `${withdrawals.length} total` : `${pendingWithdrawals.length} pending`}</h2>
             </div>
           </div>
-          {pendingWithdrawals.length > 0 ? (
-            pendingWithdrawals.map((withdrawal) => (
+          {withdrawals.length > 0 ? (
+            withdrawals.map((withdrawal) => (
               <article className="list-row wallet-row" key={withdrawal.id}>
                 <div>
                   <h3>{withdrawal.amountLabel}</h3>
-                  <p>{withdrawal.bankName || 'Bank pending'} • {withdrawal.time}</p>
+                  <p>
+                    {withdrawal.bankName || 'Bank pending'} • {withdrawal.accountNumber || 'Account pending'} • {withdrawal.time}
+                  </p>
+                  {withdrawal.rejectionReason && (
+                    <small>Reason: {withdrawal.rejectionReason}</small>
+                  )}
+                  {['successful', 'approved', 'processed'].includes(withdrawal.status) && (
+                    <small>Manual payout recorded.</small>
+                  )}
                 </div>
-                <span className="wallet-status-pill pending">{withdrawal.status}</span>
+                <span className={`wallet-status-pill ${getWithdrawalStatusTone(withdrawal.status)}`}>
+                  {getWithdrawalStatusLabel(withdrawal.status)}
+                </span>
               </article>
             ))
           ) : (
-            <EmptyState compact title={isArtisan ? 'No pending withdrawals' : 'No pending refunds or payments'}>
+            <EmptyState compact title={isArtisan ? 'No withdrawal requests yet' : 'No pending refunds or payments'}>
               {isArtisan
                 ? 'New withdrawal requests will appear here until they are processed.'
                 : 'Future refunds, escrow releases, and payment updates will appear here.'}

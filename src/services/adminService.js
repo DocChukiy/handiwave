@@ -104,12 +104,20 @@ function mapModerationCase(item) {
 
 function mapWithdrawal(withdrawal) {
   return {
+    accountName: withdrawal.account_name || '',
+    accountNumber: withdrawal.account_number || '',
     amount: Number(withdrawal.amount) || 0,
     amountLabel: formatMoney(withdrawal.amount, withdrawal.currency || 'NGN'),
     bankName: withdrawal.bank_name || 'Bank pending',
     createdAt: withdrawal.created_at || withdrawal.requested_at || '',
+    currency: withdrawal.currency || 'NGN',
     id: withdrawal.id,
+    payoutMethod: withdrawal.payout_method || 'manual',
+    processedAt: withdrawal.processed_at || '',
+    rejectionReason: withdrawal.rejection_reason || '',
+    requestedAt: withdrawal.requested_at || '',
     status: withdrawal.status || 'pending',
+    transferStatus: withdrawal.transfer_status || '',
   }
 }
 
@@ -344,6 +352,34 @@ export async function updateArtisanVerification({
       target_table_name: 'artisans',
     })
   }
+
+  return { data, error }
+}
+
+export async function approveWalletWithdrawal({
+  adminNote = '',
+  payoutMethod = 'manual',
+  withdrawalId,
+}) {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase.rpc('approve_wallet_withdrawal', {
+    admin_note: adminNote,
+    payout_method: payoutMethod,
+    withdrawal_request_id: withdrawalId,
+  })
+
+  return { data, error }
+}
+
+export async function rejectWalletWithdrawal({
+  rejectionReason,
+  withdrawalId,
+}) {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase.rpc('reject_wallet_withdrawal', {
+    rejection_reason: rejectionReason,
+    withdrawal_request_id: withdrawalId,
+  })
 
   return { data, error }
 }

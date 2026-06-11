@@ -5,7 +5,9 @@ import EmptyState from '../components/EmptyState.jsx'
 import RoleNotice from '../components/RoleNotice.jsx'
 import SkeletonPreview from '../components/Skeletons.jsx'
 import {
+  approveWalletWithdrawal,
   getAdminDashboardData,
+  rejectWalletWithdrawal,
   updateArtisanVerification,
 } from '../services/adminService.js'
 import { showToast } from '../utils/toast.js'
@@ -68,6 +70,30 @@ function StatusPill({ children, tone = 'neutral' }) {
   return <span className={`admin-status-pill ${tone}`}>{children}</span>
 }
 
+function getWithdrawalStatusLabel(status) {
+  if (['successful', 'approved', 'processed'].includes(status)) {
+    return 'Approved / Paid manually'
+  }
+
+  if (['failed', 'rejected', 'cancelled'].includes(status)) {
+    return 'Rejected / Failed'
+  }
+
+  return 'Pending'
+}
+
+function getWithdrawalStatusTone(status) {
+  if (['successful', 'approved', 'processed'].includes(status)) {
+    return 'successful'
+  }
+
+  if (['failed', 'rejected', 'cancelled'].includes(status)) {
+    return 'failed'
+  }
+
+  return 'pending'
+}
+
 function AdminSection({ children, emptyText, items, title }) {
   return (
     <section className="list-panel admin-data-panel">
@@ -93,7 +119,9 @@ function AdminDashboard() {
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [rejectionReasons, setRejectionReasons] = useState({})
   const [updatingArtisanId, setUpdatingArtisanId] = useState('')
+  const [updatingWithdrawalId, setUpdatingWithdrawalId] = useState('')
 
   const pendingArtisans = useMemo(() => (
     data?.artisans.filter((artisan) => artisan.verificationStatus === 'pending') || []
@@ -146,6 +174,73 @@ function AdminDashboard() {
       setError(getErrorMessage(updateError))
     } finally {
       setUpdatingArtisanId('')
+    }
+  }
+
+  function updateRejectionReason(withdrawalId, value) {
+    setRejectionReasons((currentReasons) => ({
+      ...currentReasons,
+      [withdrawalId]: value,
+    }))
+  }
+
+  async function handleApproveWithdrawal(withdrawal) {
+    setError('')
+    setUpdatingWithdrawalId(withdrawal.id)
+
+    try {
+      const { error: approvalError } = await approveWalletWithdrawal({
+        adminNote: 'Manual payout recorded from admin dashboard.',
+        payoutMethod: 'manual',
+        withdrawalId: withdrawal.id,
+      })
+
+      if (approvalError) {
+        setError(getErrorMessage(approvalError))
+        return
+      }
+
+      await loadAdminDashboard()
+      showToast('Manual payout recorded.')
+    } catch (approvalError) {
+      setError(getErrorMessage(approvalError))
+    } finally {
+      setUpdatingWithdrawalId('')
+    }
+  }
+
+  async function handleRejectWithdrawal(withdrawal) {
+    const rejectionReason = rejectionReasons[withdrawal.id]?.trim()
+    setError('')
+
+    if (!rejectionReason) {
+      setError('Enter a rejection reason before rejecting this withdrawal.')
+      return
+    }
+
+    setUpdatingWithdrawalId(withdrawal.id)
+
+    try {
+      const { error: rejectionError } = await rejectWalletWithdrawal({
+        rejectionReason,
+        withdrawalId: withdrawal.id,
+      })
+
+      if (rejectionError) {
+        setError(getErrorMessage(rejectionError))
+        return
+      }
+
+      setRejectionReasons((currentReasons) => ({
+        ...currentReasons,
+        [withdrawal.id]: '',
+      }))
+      await loadAdminDashboard()
+      showToast('Withdrawal rejected.')
+    } catch (rejectionError) {
+      setError(getErrorMessage(rejectionError))
+    } finally {
+      setUpdatingWithdrawalId('')
     }
   }
 
@@ -314,16 +409,63 @@ function AdminDashboard() {
       {activeTab === 'finance' && (
         <section className="admin-finance-grid">
           <AdminSection emptyText="Withdrawal requests will appear here." items={data.withdrawals} title="Wallet withdrawals">
-            {data.withdrawals.map((withdrawal) => (
-              <article className="list-row admin-list-row" key={withdrawal.id}>
-                <div>
-                  <h3>{withdrawal.amountLabel}</h3>
-                  <p>{withdrawal.bankName}</p>
-                  <small>{formatDate(withdrawal.createdAt)}</small>
-                </div>
-                <StatusPill tone={withdrawal.status}>{withdrawal.status}</StatusPill>
-              </article>
-            ))}
+            {data.withdrawals.map((withdrawal) => {
+              const isPending = withdrawal.status === 'pending'
+              const isUpdating = updatingWithdrawalId === withdrawal.id
+
+              return (
+                <article className="list-row admin-list-row admin-withdrawal-row" key={withdrawal.id}>
+                  <div>
+                    <h3>{withdrawal.amountLabel}</h3>
+                    <p>
+                      {withdrawal.bankName} • {withdrawal.accountName || 'Account name pending'} • {withdrawal.accountNumber || 'Account pending'}
+                    </p>
+                    <small>
+                      Requested {formatDate(withdrawal.requestedAt || withdrawal.createdAt)} • Manual payout / Paystack transfer coming soon
+                    </small>
+                    {withdrawal.rejectionReason && (
+                      <small>Reason: {withdrawal.rejectionReason}</small>
+                    )}
+                    {['successful', 'approved', 'processed'].includes(withdrawal.status) && (
+                      <small>Manual payout recorded.</small>
+                    )}
+                  </div>
+                  <div className="admin-row-actions admin-withdrawal-actions">
+                    <StatusPill tone={getWithdrawalStatusTone(withdrawal.status)}>
+                      {getWithdrawalStatusLabel(withdrawal.status)}
+                    </StatusPill>
+                    {isPending && (
+                      <>
+                        <button
+                          disabled={isUpdating}
+                          type="button"
+                          onClick={() => handleApproveWithdrawal(withdrawal)}
+                        >
+                          {isUpdating ? 'Approving...' : 'Approve'}
+                        </button>
+                        <label className="admin-rejection-field">
+                          <span>Rejection reason</span>
+                          <input
+                            disabled={isUpdating}
+                            placeholder="Reason if rejecting"
+                            value={rejectionReasons[withdrawal.id] || ''}
+                            onChange={(event) => updateRejectionReason(withdrawal.id, event.target.value)}
+                          />
+                        </label>
+                        <button
+                          className="danger-action"
+                          disabled={isUpdating}
+                          type="button"
+                          onClick={() => handleRejectWithdrawal(withdrawal)}
+                        >
+                          {isUpdating ? 'Rejecting...' : 'Reject'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </article>
+              )
+            })}
           </AdminSection>
           <AdminSection emptyText="Commission entries will appear after escrow releases." items={data.commissions} title="Commission entries">
             {data.commissions.map((entry) => (

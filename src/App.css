@@ -6472,9 +6472,43 @@
   color: #b91c1c;
 }
 
+.admin-row-actions button.danger-action {
+  border-color: rgba(248, 113, 113, 0.32);
+  color: #b91c1c;
+}
+
 .admin-row-actions button:disabled {
   cursor: wait;
   opacity: 0.58;
+}
+
+.admin-withdrawal-row {
+  gap: 18px;
+}
+
+.admin-withdrawal-actions {
+  align-items: flex-end;
+  max-width: 520px;
+}
+
+.admin-rejection-field {
+  color: #334155;
+  display: grid;
+  font-size: 0.78rem;
+  font-weight: 900;
+  gap: 6px;
+  min-width: 190px;
+}
+
+.admin-rejection-field input {
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 999px;
+  color: #0f172a;
+  font: inherit;
+  min-height: 38px;
+  outline: 0;
+  padding: 0 12px;
 }
 
 .admin-status-pill {
@@ -7119,6 +7153,7 @@
 :root[data-theme='dark'] .dispute-form-card textarea,
 :root[data-theme='dark'] .dispute-admin-actions input,
 :root[data-theme='dark'] .dispute-admin-actions textarea,
+:root[data-theme='dark'] .admin-rejection-field input,
 :root[data-theme='dark'] .reschedule-modal select {
   background: rgba(15, 23, 42, 0.72);
   border-color: rgba(148, 163, 184, 0.14);
@@ -7135,6 +7170,7 @@
 :root[data-theme='dark'] .dispute-form-card textarea,
 :root[data-theme='dark'] .dispute-admin-actions input,
 :root[data-theme='dark'] .dispute-admin-actions textarea,
+:root[data-theme='dark'] .admin-rejection-field input,
 :root[data-theme='dark'] .reschedule-modal select {
   color: #f8fafc;
 }
@@ -7146,7 +7182,8 @@
 :root[data-theme='dark'] .evidence-grid small,
 :root[data-theme='dark'] .dispute-meta-grid span,
 :root[data-theme='dark'] .dispute-form-card label,
-:root[data-theme='dark'] .dispute-admin-actions label {
+:root[data-theme='dark'] .dispute-admin-actions label,
+:root[data-theme='dark'] .admin-rejection-field {
   color: #94a3b8;
 }
 
