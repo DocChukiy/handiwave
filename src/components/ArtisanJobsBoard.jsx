@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import EmptyState from './EmptyState.jsx'
 import SkeletonPreview from './Skeletons.jsx'
@@ -47,7 +48,7 @@ function formatCreatedDate(value) {
 }
 
 function getBookingPrice(booking) {
-  return booking.finalPrice || booking.quotedPrice || booking.estimatedPrice || booking.escrowAmount || 0
+  return booking.finalPrice || booking.quotedPrice || booking.escrowAmount || 0
 }
 
 function getQuoteStatus(booking) {
@@ -94,6 +95,28 @@ function getFallbackPlatformFee(booking) {
 }
 
 function ArtisanPayoutPanel({ booking }) {
+  const quoteStatus = getQuoteStatus(booking)
+
+  if (quoteStatus === 'awaiting' || quoteStatus === 'rejected') {
+    return (
+      <div className="job-payment-panel">
+        <span>
+          <strong>Quote needed</strong>
+          Expected payout
+        </span>
+        <span>
+          <strong>Not calculated</strong>
+          Platform fee
+        </span>
+        <span>
+          <strong>{paymentStatusLabels[booking.paymentStatus] || booking.paymentStatus.replaceAll('_', ' ')}</strong>
+          Escrow/payment status
+        </span>
+        <p>Send a quote first. Expected payout appears after the customer has a real quoted price.</p>
+      </div>
+    )
+  }
+
   const price = getBookingPrice(booking)
   const platformFee = booking.platformFee || getFallbackPlatformFee(booking)
   const expectedPayout = booking.artisanPayoutAmount || Math.max(price - platformFee, 0)
@@ -127,35 +150,82 @@ function groupBookings(bookings) {
 function JobActions({
   booking,
   hasConflict,
-  onSendQuote,
   onSuggestNewTime,
+  onToggleQuoteForm,
   onStatusUpdate,
   updatingBookingId,
 }) {
   const isUpdating = updatingBookingId === booking.id
+  const quoteStatus = getQuoteStatus(booking)
+  const hasEscrowPayment = booking.paymentStatus === 'held_in_escrow'
 
   if (booking.rawStatus === 'pending') {
+    if (quoteStatus === 'awaiting' || quoteStatus === 'rejected') {
+      return (
+        <div className="job-actions">
+          <button className="primary-job-action" disabled={isUpdating} type="button" onClick={onToggleQuoteForm}>
+            {quoteStatus === 'rejected' ? 'Send Revised Quote' : 'Send Quote'}
+          </button>
+          <Link className="job-message-link" to={`/messages?booking=${booking.id}`}>
+            Message Customer
+          </Link>
+          <button
+            disabled={isUpdating}
+            type="button"
+            onClick={() => onStatusUpdate(booking.id, 'cancelled', booking.rawStatus)}
+          >
+            Reject Request
+          </button>
+        </div>
+      )
+    }
+
+    if (quoteStatus === 'sent') {
+      return (
+        <div className="job-actions">
+          <Link className="job-message-link" to={`/messages?booking=${booking.id}`}>
+            Message Customer
+          </Link>
+          <span className="job-action-note">Waiting for customer response.</span>
+        </div>
+      )
+    }
+
+    if (quoteStatus === 'accepted' && !hasEscrowPayment) {
+      return (
+        <div className="job-actions">
+          <Link className="job-message-link" to={`/messages?booking=${booking.id}`}>
+            Message Customer
+          </Link>
+          <span className="job-action-note">Waiting for customer payment.</span>
+        </div>
+      )
+    }
+
+    if (hasEscrowPayment) {
+      return (
+        <div className="job-actions">
+          <button disabled={isUpdating || hasConflict} type="button" onClick={() => onStatusUpdate(booking.id, 'confirmed', booking.rawStatus)}>
+            {isUpdating ? 'Updating...' : 'Accept Request'}
+          </button>
+          <button type="button" onClick={() => onSuggestNewTime(booking)}>
+            Suggest New Time
+          </button>
+          <Link className="job-message-link" to={`/messages?booking=${booking.id}`}>
+            Message Customer
+          </Link>
+          {hasConflict && (
+            <span className="job-action-note">Resolve schedule conflict before this can be confirmed.</span>
+          )}
+        </div>
+      )
+    }
+
     return (
       <div className="job-actions">
-        <button className="primary-job-action" disabled={isUpdating} type="button" onClick={() => onSendQuote(booking)}>
-          Send Quote
-        </button>
-        <button type="button" onClick={() => onSuggestNewTime(booking)}>
-          Suggest New Time
-        </button>
-        <button
-          disabled={isUpdating}
-          type="button"
-          onClick={() => onStatusUpdate(booking.id, 'cancelled', booking.rawStatus)}
-        >
-          Reject Request
-        </button>
         <Link className="job-message-link" to={`/messages?booking=${booking.id}`}>
           Message Customer
         </Link>
-        {hasConflict && (
-          <span className="job-action-note">Resolve schedule conflict before this can be confirmed.</span>
-        )}
       </div>
     )
   }
@@ -213,13 +283,30 @@ function JobActions({
 function JobCard({
   booking,
   conflictIds,
-  onSendQuote,
+  onSubmitQuote,
   onSuggestNewTime,
   onStatusUpdate,
   updatingBookingId,
 }) {
+  const [isQuoteFormOpen, setIsQuoteFormOpen] = useState(false)
+  const [quoteNotes, setQuoteNotes] = useState(booking.quoteNotes || '')
+  const [quotedPrice, setQuotedPrice] = useState(booking.quotedPrice || booking.finalPrice || '')
   const hasConflict = conflictIds.includes(booking.id)
   const quoteStatus = getQuoteStatus(booking)
+  const isUpdating = updatingBookingId === booking.id
+
+  async function handleInlineQuoteSubmit(event) {
+    event.preventDefault()
+
+    const didSubmit = await onSubmitQuote?.(booking, {
+      quoteNotes,
+      quotedPrice,
+    })
+
+    if (didSubmit) {
+      setIsQuoteFormOpen(false)
+    }
+  }
 
   return (
     <article className={hasConflict ? 'job-card has-conflict' : 'job-card'}>
@@ -268,9 +355,9 @@ function JobCard({
             <p>
               {quoteStatus === 'awaiting' && 'Send a price quote before the customer can pay.'}
               {quoteStatus === 'sent' && 'Waiting for customer to accept or reject your quote.'}
-              {quoteStatus === 'accepted' && 'Customer accepted the quote. Payment can now be made.'}
+              {quoteStatus === 'accepted' && 'Quote accepted. Waiting for customer payment.'}
               {quoteStatus === 'rejected' && 'Customer rejected this quote. Send a new quote if needed.'}
-              {quoteStatus === 'paid' && 'Payment is protected in escrow or already resolved.'}
+              {quoteStatus === 'paid' && 'Payment held in escrow. You can now accept and start the job.'}
             </p>
           </div>
           <QuoteStatusBadge status={quoteStatus} />
@@ -281,6 +368,37 @@ function JobCard({
             </div>
           )}
         </div>
+        {isQuoteFormOpen && (
+          <form className="inline-quote-form" onSubmit={handleInlineQuoteSubmit}>
+            <label>
+              Quoted price
+              <input
+                required
+                min="1"
+                placeholder="25000"
+                type="number"
+                value={quotedPrice}
+                onChange={(event) => setQuotedPrice(event.target.value)}
+              />
+            </label>
+            <label>
+              Quote notes
+              <textarea
+                placeholder="Explain what is included, materials needed, timing, and assumptions."
+                value={quoteNotes}
+                onChange={(event) => setQuoteNotes(event.target.value)}
+              />
+            </label>
+            <div className="inline-quote-actions">
+              <button className="secondary-cta" disabled={isUpdating} type="button" onClick={() => setIsQuoteFormOpen(false)}>
+                Cancel
+              </button>
+              <button className="primary-cta" disabled={isUpdating} type="submit">
+                {isUpdating ? 'Sending...' : 'Submit Quote'}
+              </button>
+            </div>
+          </form>
+        )}
         {booking.proposedDate && (
           <p><strong>Proposed:</strong> {booking.proposedDate} at {booking.proposedTime || 'Time pending'}</p>
         )}
@@ -312,8 +430,8 @@ function JobCard({
       <JobActions
         booking={booking}
         hasConflict={hasConflict}
-        onSendQuote={onSendQuote}
         onSuggestNewTime={onSuggestNewTime}
+        onToggleQuoteForm={() => setIsQuoteFormOpen((isOpen) => !isOpen)}
         onStatusUpdate={onStatusUpdate}
         updatingBookingId={updatingBookingId}
       />
@@ -325,7 +443,7 @@ function JobGrid({
   bookings,
   conflictIds,
   group,
-  onSendQuote,
+  onSubmitQuote,
   onStatusFilter,
   onStatusUpdate,
   onSuggestNewTime,
@@ -359,7 +477,7 @@ function JobGrid({
               booking={booking}
               conflictIds={conflictIds}
               key={booking.id}
-              onSendQuote={onSendQuote}
+              onSubmitQuote={onSubmitQuote}
               onStatusUpdate={onStatusUpdate}
               onSuggestNewTime={onSuggestNewTime}
               updatingBookingId={updatingBookingId}
@@ -377,7 +495,7 @@ function ArtisanJobsBoard({
   conflictIds = [],
   emptyText = 'Customer booking requests assigned to your profile will appear here.',
   isLoading = false,
-  onSendQuote,
+  onSubmitQuote,
   onStatusFilter,
   onStatusUpdate,
   onSuggestNewTime,
@@ -431,7 +549,7 @@ function ArtisanJobsBoard({
             conflictIds={conflictIds}
             group={group}
             key={group.key}
-            onSendQuote={onSendQuote}
+            onSubmitQuote={onSubmitQuote}
             onStatusFilter={onStatusFilter}
             onStatusUpdate={onStatusUpdate}
             onSuggestNewTime={onSuggestNewTime}

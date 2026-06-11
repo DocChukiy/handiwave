@@ -491,6 +491,29 @@ export async function updateBookingStatusForArtisan({
   }
 
   const supabase = getSupabaseClient()
+
+  if (currentStatus === 'pending' && nextStatus === 'confirmed') {
+    const { data: freshBooking, error: freshBookingError } = await supabase
+      .from('bookings')
+      .select('id, payment_status, quote_accepted_at')
+      .eq('id', bookingId)
+      .maybeSingle()
+
+    if (freshBookingError) {
+      return {
+        data: null,
+        error: freshBookingError,
+      }
+    }
+
+    if (!freshBooking?.quote_accepted_at || freshBooking.payment_status !== 'held_in_escrow') {
+      return {
+        data: null,
+        error: new Error('Send a quote and wait for Paystack escrow payment before confirming this booking.'),
+      }
+    }
+  }
+
   const updatePayload = {
     status: nextStatus,
   }

@@ -4900,6 +4900,46 @@
   font-weight: 900;
 }
 
+.inline-quote-form {
+  background: #ffffff;
+  border: 1px solid rgba(22, 163, 74, 0.16);
+  border-radius: 18px;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.inline-quote-form label {
+  color: #334155;
+  display: grid;
+  font-size: 0.84rem;
+  font-weight: 900;
+  gap: 7px;
+}
+
+.inline-quote-form input,
+.inline-quote-form textarea {
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.96);
+  border-radius: 14px;
+  color: #0f172a;
+  font: inherit;
+  font-weight: 800;
+  padding: 12px;
+}
+
+.inline-quote-form textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.inline-quote-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .artisan-dashboard-hero,
 .artisan-profile-panel,
 .dashboard-metric-grid article,
@@ -6518,6 +6558,9 @@
 :root[data-theme='dark'] .booking-selected-files span,
 :root[data-theme='dark'] .booking-attachment-grid a,
 :root[data-theme='dark'] .job-attachment-grid a,
+:root[data-theme='dark'] .inline-quote-form,
+:root[data-theme='dark'] .inline-quote-form input,
+:root[data-theme='dark'] .inline-quote-form textarea,
 :root[data-theme='dark'] .booking-quote-actions button:last-child {
   background: rgba(15, 23, 42, 0.72);
   border-color: rgba(148, 163, 184, 0.16);
@@ -6526,6 +6569,12 @@
 
 :root[data-theme='dark'] .booking-attachment-gallery > strong,
 :root[data-theme='dark'] .job-attachment-gallery > strong {
+  color: #d1fae5;
+}
+
+:root[data-theme='dark'] .inline-quote-form label,
+:root[data-theme='dark'] .inline-quote-form input,
+:root[data-theme='dark'] .inline-quote-form textarea {
   color: #d1fae5;
 }
 
@@ -6971,6 +7020,7 @@
   .profile-actions,
   .hero-actions,
   .person-actions,
+  .inline-quote-actions,
   .job-actions,
   .dashboard-profile-actions {
     display: grid;
@@ -6980,6 +7030,7 @@
   .profile-actions a,
   .hero-actions a,
   .person-actions a,
+  .inline-quote-actions button,
   .job-actions button {
     justify-content: center;
     width: 100%;
