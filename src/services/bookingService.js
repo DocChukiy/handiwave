@@ -7,6 +7,8 @@ const bookingServiceRelation = 'bookings_service_id_fkey'
 const bookingArtisanRelation = 'bookings_artisan_id_fkey'
 const bookingCustomerRelation = 'bookings_customer_id_fkey'
 const artisanProfileRelation = 'artisans_profile_id_fkey'
+const bookingAttachmentRelation = 'booking_attachments_booking_id_fkey'
+const bookingAttachmentBucket = 'handiwave-booking-attachments'
 
 const bookingSelect = `
   *,
@@ -21,6 +23,16 @@ const bookingSelect = `
     profile:profiles!${artisanProfileRelation}(id, full_name, email, avatar_url)
   ),
   customer:profiles!${bookingCustomerRelation}(id, full_name, email),
+  attachments:booking_attachments!${bookingAttachmentRelation}(
+    id,
+    file_name,
+    file_path,
+    file_size,
+    file_type,
+    file_url,
+    uploaded_by,
+    created_at
+  ),
   review:reviews!reviews_booking_id_fkey(id, rating, review_text, created_at, edited_at)
 `
 
@@ -57,6 +69,23 @@ function toNumber(value) {
   return Number(value) || 0
 }
 
+function getSafeFileName(fileName = 'issue-photo') {
+  return fileName.replace(/[^a-zA-Z0-9._-]/g, '-')
+}
+
+function mapAttachmentRow(attachment) {
+  return {
+    createdAt: attachment.created_at || '',
+    fileName: attachment.file_name || attachment.file_path?.split('/').pop() || 'Issue image',
+    filePath: attachment.file_path || '',
+    fileSize: Number(attachment.file_size) || 0,
+    fileType: attachment.file_type || '',
+    fileUrl: attachment.file_url || '',
+    id: attachment.id,
+    uploadedBy: attachment.uploaded_by || '',
+  }
+}
+
 export function mapBookingRow(booking) {
   const artisanName =
     booking.artisan?.profile?.full_name ||
@@ -70,6 +99,7 @@ export function mapBookingRow(booking) {
     address: booking.location_address,
     artisan: artisanName,
     artisanId: booking.artisan_id,
+    attachments: (booking.attachments || []).map(mapAttachmentRow),
     city: booking.city,
     customer: customerName,
     customerId: booking.customer_id,
@@ -108,6 +138,106 @@ export function mapBookingRow(booking) {
     status: status.replaceAll('_', ' '),
     artisanPayoutAmount: toNumber(booking.artisan_payout_amount),
     refundAmount: toNumber(booking.refund_amount),
+  }
+}
+
+async function signBookingAttachments(booking) {
+  if (!booking?.attachments?.length) {
+    return booking
+  }
+
+  const supabase = getSupabaseClient()
+  const attachments = await Promise.all(booking.attachments.map(async (attachment) => {
+    if (!attachment.filePath) {
+      return attachment
+    }
+
+    const { data, error } = await supabase.storage
+      .from(bookingAttachmentBucket)
+      .createSignedUrl(attachment.filePath, 60 * 30)
+
+    if (error) {
+      console.error('[Handiwave booking attachments] signed URL failed:', error)
+      return attachment
+    }
+
+    return {
+      ...attachment,
+      fileUrl: data?.signedUrl || attachment.fileUrl,
+    }
+  }))
+
+  return {
+    ...booking,
+    attachments,
+  }
+}
+
+async function mapBookingRows(rows = []) {
+  const mappedRows = rows.map(mapBookingRow)
+  return Promise.all(mappedRows.map(signBookingAttachments))
+}
+
+async function uploadBookingAttachments({
+  bookingId,
+  files = [],
+  uploadedBy,
+}) {
+  const imageFiles = Array.from(files || []).filter(Boolean)
+
+  if (imageFiles.length === 0) {
+    return {
+      data: [],
+      error: null,
+    }
+  }
+
+  const supabase = getSupabaseClient()
+  const attachmentRows = []
+
+  for (const file of imageFiles) {
+    if (!file.type?.startsWith('image/')) {
+      return {
+        data: [],
+        error: new Error(`${file.name} is not a supported image file.`),
+      }
+    }
+
+    const extension = file.name.split('.').pop() || 'jpg'
+    const path = `${bookingId}/${uploadedBy}/${Date.now()}-${getSafeFileName(file.name || `issue.${extension}`)}`
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from(bookingAttachmentBucket)
+      .upload(path, file, {
+        cacheControl: '3600',
+        upsert: false,
+      })
+
+    if (uploadError) {
+      return {
+        data: [],
+        error: uploadError,
+      }
+    }
+
+    attachmentRows.push({
+      booking_id: bookingId,
+      file_name: file.name,
+      file_path: uploadData?.path || path,
+      file_size: file.size,
+      file_type: file.type,
+      file_url: null,
+      uploaded_by: uploadedBy,
+    })
+  }
+
+  const { data, error } = await supabase
+    .from('booking_attachments')
+    .insert(attachmentRows)
+    .select('*')
+
+  return {
+    data,
+    error,
   }
 }
 
@@ -580,7 +710,7 @@ export async function getBookingsForUser(user) {
       .order('created_at', { ascending: false })
 
     return {
-      data: (data || []).map(mapBookingRow),
+      data: await mapBookingRows(data || []),
       error,
     }
   }
@@ -592,7 +722,7 @@ export async function getBookingsForUser(user) {
     .order('created_at', { ascending: false })
 
   return {
-    data: (data || []).map(mapBookingRow),
+    data: await mapBookingRows(data || []),
     error,
   }
 }
@@ -606,7 +736,7 @@ async function getBookingById(bookingId) {
     .single()
 
   return {
-    data: data ? mapBookingRow(data) : null,
+    data: data ? await signBookingAttachments(mapBookingRow(data)) : null,
     error,
   }
 }
@@ -614,6 +744,7 @@ async function getBookingById(bookingId) {
 export async function createBooking({
   address,
   artisanId,
+  attachmentFiles = [],
   city,
   customerId,
   notes,
@@ -742,10 +873,18 @@ export async function createBooking({
     }
   }
 
-  const { data: displayBooking, error: displayError } = await getBookingById(insertedBooking.id)
+  const { error: attachmentError } = await uploadBookingAttachments({
+    bookingId: insertedBooking.id,
+    files: attachmentFiles,
+    uploadedBy: customerId,
+  })
 
-  if (displayError) {
-    console.error('[Handiwave booking debug] booking display fetch failed:', displayError)
+  if (attachmentError) {
+    console.error('[Handiwave booking attachments] upload failed:', attachmentError)
+    return {
+      data: null,
+      error: attachmentError,
+    }
   }
 
   const { data: conversation, error: conversationError } = await ensureConversationForBooking({
@@ -762,6 +901,12 @@ export async function createBooking({
       data: null,
       error: conversationError,
     }
+  }
+
+  const { data: displayBooking, error: displayError } = await getBookingById(insertedBooking.id)
+
+  if (displayError) {
+    console.error('[Handiwave booking debug] booking display fetch failed:', displayError)
   }
 
   await createNotificationSafely({

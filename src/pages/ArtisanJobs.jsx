@@ -158,15 +158,6 @@ function ArtisanJobs() {
     }
   }
 
-  function handleAcceptBooking(booking) {
-    if (conflictIds.includes(booking.id)) {
-      setError('Schedule conflict detected. Suggest a new time before accepting this request.')
-      return
-    }
-
-    handleStatusUpdate(booking.id, 'confirmed', booking.rawStatus)
-  }
-
   function openRescheduleModal(booking) {
     setError('')
     setRescheduleBooking(booking)
@@ -320,7 +311,6 @@ function ArtisanJobs() {
           activeStatus={activeStatus}
           bookings={bookings}
           conflictIds={conflictIds}
-          onAccept={handleAcceptBooking}
           onSendQuote={openQuoteModal}
           onStatusFilter={setActiveStatus}
           onStatusUpdate={handleStatusUpdate}

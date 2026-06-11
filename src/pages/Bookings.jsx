@@ -26,6 +26,7 @@ import { showToast } from '../utils/toast.js'
 const initialForm = {
   address: '',
   artisanId: '',
+  attachmentFiles: [],
   city: '',
   notes: '',
   scheduledDate: '',
@@ -218,6 +219,8 @@ function CustomerEscrowPanel({ booking, currentUserId, isCustomer = false, isPay
     estimated_price: booking.estimatedPrice,
     final_price: booking.finalPrice,
     payment_status: booking.paymentStatus,
+    quote_accepted_at: booking.quoteAcceptedAt,
+    quoted_price: booking.quotedPrice,
     shouldShowPayButton,
   })
 
@@ -232,7 +235,7 @@ function CustomerEscrowPanel({ booking, currentUserId, isCustomer = false, isPay
       <div className="booking-payment-row">
         <span>
           <strong>{formatMoney(price)}</strong>
-          {booking.finalPrice ? 'Final price' : 'Estimated price'}
+          {booking.finalPrice ? 'Final price' : booking.quotedPrice ? 'Quoted price' : 'Estimated price'}
         </span>
         <span>
           <strong>{formatMoney(escrowAmount)}</strong>
@@ -274,6 +277,34 @@ function CustomerEscrowPanel({ booking, currentUserId, isCustomer = false, isPay
             : paymentStatusLabels[displayPaymentStatus] || 'Payment status updated.'}
         </span>
       )}
+    </div>
+  )
+}
+
+function BookingAttachmentGallery({ attachments = [], label = 'Uploaded issue photos' }) {
+  if (!attachments.length) {
+    return null
+  }
+
+  return (
+    <div className="booking-attachment-gallery">
+      <strong>{label}</strong>
+      <div className="booking-attachment-grid">
+        {attachments.map((attachment) => (
+          <a
+            href={attachment.fileUrl}
+            key={attachment.id || attachment.filePath}
+            rel="noreferrer"
+            target="_blank"
+          >
+            {attachment.fileUrl ? (
+              <img alt={attachment.fileName} src={attachment.fileUrl} />
+            ) : (
+              <span>{attachment.fileName}</span>
+            )}
+          </a>
+        ))}
+      </div>
     </div>
   )
 }
@@ -582,6 +613,7 @@ function BookingHistorySection({
                   />
                 )}
                 {booking.notes && <p>{booking.notes}</p>}
+                <BookingAttachmentGallery attachments={booking.attachments} />
                 {showRescheduleActions && (
                   <div className="booking-message-actions">
                     <Link to={`/messages?booking=${booking.id}`}>
@@ -973,6 +1005,13 @@ function Bookings() {
     }))
   }
 
+  function handleAttachmentChange(files) {
+    setForm((currentForm) => ({
+      ...currentForm,
+      attachmentFiles: Array.from(files || []),
+    }))
+  }
+
   function handleArtisanChange(artisanId) {
     const artisan = options.artisans.find((item) => item.id === artisanId)
 
@@ -1314,6 +1353,7 @@ function Bookings() {
       const { data, error: saveError } = await createBooking({
         address: form.address,
         artisanId: form.artisanId,
+        attachmentFiles: form.attachmentFiles,
         city: form.city,
         customerId: user.id,
         notes: form.notes,
@@ -1586,8 +1626,28 @@ function Bookings() {
                 onChange={(event) => updateForm('notes', event.target.value)}
               />
             </label>
+            <label>
+              Issue photos
+              <input
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                disabled={isSaving}
+                multiple
+                type="file"
+                onChange={(event) => handleAttachmentChange(event.target.files)}
+              />
+              <span className="auth-hint">
+                Upload photos of the issue so the artisan can estimate properly.
+              </span>
+            </label>
+            {form.attachmentFiles.length > 0 && (
+              <div className="booking-selected-files">
+                {form.attachmentFiles.map((file) => (
+                  <span key={`${file.name}-${file.size}`}>{file.name}</span>
+                ))}
+              </div>
+            )}
             <button disabled={isLoading || isSaving} type="submit">
-              {isSaving ? 'Sending request...' : 'Confirm Booking'}
+              {isSaving ? 'Sending request...' : 'Send Booking Request'}
             </button>
           </form>
         )}

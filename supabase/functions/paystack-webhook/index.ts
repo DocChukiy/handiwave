@@ -128,7 +128,7 @@ serve(async (request) => {
 
   try {
     if (eventType === "charge.success" && payload.data?.status === "success") {
-      const { error: applyError } = await supabase.rpc(
+      const { data: bookingId, error: applyError } = await supabase.rpc(
         "apply_paystack_booking_payment_success",
         {
           target_provider_payload: payload,
@@ -138,6 +138,14 @@ serve(async (request) => {
 
       if (applyError) {
         throw applyError
+      }
+
+      if (bookingId) {
+        await supabase
+          .from("bookings")
+          .update({ status: "confirmed" })
+          .eq("id", bookingId)
+          .eq("payment_status", "held_in_escrow")
       }
 
       await updateWebhookEvent(supabase, webhookEvent.id, { status: "processed" })

@@ -4830,6 +4830,76 @@
   color: #b91c1c;
 }
 
+.booking-selected-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.booking-selected-files span {
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 999px;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 850;
+  padding: 8px 10px;
+}
+
+.booking-attachment-gallery,
+.job-attachment-gallery {
+  display: grid;
+  gap: 10px;
+}
+
+.booking-attachment-gallery > strong,
+.job-attachment-gallery > strong {
+  color: #0f172a;
+  font-size: 0.9rem;
+}
+
+.booking-attachment-grid,
+.job-attachment-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+}
+
+.booking-attachment-grid a,
+.job-attachment-grid a {
+  align-items: center;
+  aspect-ratio: 1;
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 16px;
+  color: #64748b;
+  display: grid;
+  font-size: 0.78rem;
+  font-weight: 850;
+  justify-items: center;
+  overflow: hidden;
+  text-align: center;
+  text-decoration: none;
+}
+
+.booking-attachment-grid img,
+.job-attachment-grid img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.job-actions .primary-job-action {
+  background: linear-gradient(135deg, #16a34a, #059669);
+  color: #ffffff;
+}
+
+.job-action-note {
+  color: #b45309;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
 .artisan-dashboard-hero,
 .artisan-profile-panel,
 .dashboard-metric-grid article,
@@ -6445,10 +6515,18 @@
 
 :root[data-theme='dark'] .booking-quote-details span,
 :root[data-theme='dark'] .job-quote-details span,
+:root[data-theme='dark'] .booking-selected-files span,
+:root[data-theme='dark'] .booking-attachment-grid a,
+:root[data-theme='dark'] .job-attachment-grid a,
 :root[data-theme='dark'] .booking-quote-actions button:last-child {
   background: rgba(15, 23, 42, 0.72);
   border-color: rgba(148, 163, 184, 0.16);
   color: #94a3b8;
+}
+
+:root[data-theme='dark'] .booking-attachment-gallery > strong,
+:root[data-theme='dark'] .job-attachment-gallery > strong {
+  color: #d1fae5;
 }
 
 :root[data-theme='dark'] .booking-quote-actions button:last-child {

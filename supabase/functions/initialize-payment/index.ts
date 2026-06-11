@@ -59,10 +59,14 @@ serve(async (request) => {
       return jsonResponse({ error: `Booking payment is already ${booking.payment_status}.` }, 409)
     }
 
-    const amount = Number(booking.final_price || booking.estimated_price || booking.escrow_amount || 0)
+    if (!booking.quote_accepted_at) {
+      return jsonResponse({ error: "Accept the artisan quote before starting payment." }, 409)
+    }
+
+    const amount = Number(booking.final_price || booking.quoted_price || 0)
 
     if (!amount || amount <= 0) {
-      return jsonResponse({ error: "Booking does not have a valid payable amount." }, 400)
+      return jsonResponse({ error: "Booking does not have an accepted quoted price to pay." }, 400)
     }
 
     const { data: profile, error: profileError } = await supabase

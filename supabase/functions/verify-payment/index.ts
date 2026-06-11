@@ -86,6 +86,14 @@ serve(async (request) => {
         return jsonResponse({ error: applyError.message }, 500)
       }
 
+      if (bookingId) {
+        await supabase
+          .from("bookings")
+          .update({ status: "confirmed" })
+          .eq("id", bookingId)
+          .eq("payment_status", "held_in_escrow")
+      }
+
       return jsonResponse({
         booking_id: bookingId,
         payment_status: "held_in_escrow",

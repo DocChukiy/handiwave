@@ -127,7 +127,6 @@ function groupBookings(bookings) {
 function JobActions({
   booking,
   hasConflict,
-  onAccept,
   onSendQuote,
   onSuggestNewTime,
   onStatusUpdate,
@@ -138,11 +137,8 @@ function JobActions({
   if (booking.rawStatus === 'pending') {
     return (
       <div className="job-actions">
-        <button disabled={isUpdating} type="button" onClick={() => onSendQuote(booking)}>
+        <button className="primary-job-action" disabled={isUpdating} type="button" onClick={() => onSendQuote(booking)}>
           Send Quote
-        </button>
-        <button disabled={isUpdating || hasConflict} type="button" onClick={() => onAccept(booking)}>
-          {isUpdating ? 'Updating...' : 'Accept Request'}
         </button>
         <button type="button" onClick={() => onSuggestNewTime(booking)}>
           Suggest New Time
@@ -157,6 +153,9 @@ function JobActions({
         <Link className="job-message-link" to={`/messages?booking=${booking.id}`}>
           Message Customer
         </Link>
+        {hasConflict && (
+          <span className="job-action-note">Resolve schedule conflict before this can be confirmed.</span>
+        )}
       </div>
     )
   }
@@ -214,7 +213,6 @@ function JobActions({
 function JobCard({
   booking,
   conflictIds,
-  onAccept,
   onSendQuote,
   onSuggestNewTime,
   onStatusUpdate,
@@ -242,7 +240,28 @@ function JobCard({
       <div className="job-card-details">
         <p><strong>Requested:</strong> {booking.scheduledDate} at {booking.scheduledTime}</p>
         <p><strong>Location:</strong> {booking.address}, {booking.city}, {booking.state}</p>
-        {booking.notes && <p><strong>Notes:</strong> {booking.notes}</p>}
+        {booking.notes && <p><strong>Issue description:</strong> {booking.notes}</p>}
+        {booking.attachments?.length > 0 && (
+          <div className="job-attachment-gallery">
+            <strong>Issue photos</strong>
+            <div className="job-attachment-grid">
+              {booking.attachments.map((attachment) => (
+                <a
+                  href={attachment.fileUrl}
+                  key={attachment.id || attachment.filePath}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  {attachment.fileUrl ? (
+                    <img alt={attachment.fileName} src={attachment.fileUrl} />
+                  ) : (
+                    <span>{attachment.fileName}</span>
+                  )}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
         <div className={`job-quote-panel quote-${quoteStatus}`}>
           <div>
             <strong>{quoteStatusLabels[quoteStatus]}</strong>
@@ -293,7 +312,6 @@ function JobCard({
       <JobActions
         booking={booking}
         hasConflict={hasConflict}
-        onAccept={onAccept}
         onSendQuote={onSendQuote}
         onSuggestNewTime={onSuggestNewTime}
         onStatusUpdate={onStatusUpdate}
@@ -307,7 +325,6 @@ function JobGrid({
   bookings,
   conflictIds,
   group,
-  onAccept,
   onSendQuote,
   onStatusFilter,
   onStatusUpdate,
@@ -342,7 +359,6 @@ function JobGrid({
               booking={booking}
               conflictIds={conflictIds}
               key={booking.id}
-              onAccept={onAccept}
               onSendQuote={onSendQuote}
               onStatusUpdate={onStatusUpdate}
               onSuggestNewTime={onSuggestNewTime}
@@ -361,7 +377,6 @@ function ArtisanJobsBoard({
   conflictIds = [],
   emptyText = 'Customer booking requests assigned to your profile will appear here.',
   isLoading = false,
-  onAccept,
   onSendQuote,
   onStatusFilter,
   onStatusUpdate,
@@ -416,9 +431,8 @@ function ArtisanJobsBoard({
             conflictIds={conflictIds}
             group={group}
             key={group.key}
-          onAccept={onAccept}
-          onSendQuote={onSendQuote}
-          onStatusFilter={onStatusFilter}
+            onSendQuote={onSendQuote}
+            onStatusFilter={onStatusFilter}
             onStatusUpdate={onStatusUpdate}
             onSuggestNewTime={onSuggestNewTime}
             preview={activeStatus === 'all'}
