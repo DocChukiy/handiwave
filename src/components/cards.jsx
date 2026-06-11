@@ -5,6 +5,41 @@ import Badge from './Badge.jsx'
 import Button from './Button.jsx'
 import Rating from './Rating.jsx'
 
+function getJobMilestone(completedJobs = 0) {
+  if (completedJobs >= 100) {
+    return '100+ Jobs Completed'
+  }
+
+  if (completedJobs >= 50) {
+    return '50+ Jobs Completed'
+  }
+
+  if (completedJobs >= 10) {
+    return '10+ Jobs Completed'
+  }
+
+  return ''
+}
+
+function TrustBadges({ artisan, compact = false }) {
+  const completedJobs = artisan.completedJobs || artisan.jobs || 0
+  const reviewCount = artisan.reviewCount || 0
+  const rating = Number(artisan.rating) || 0
+  const jobMilestone = getJobMilestone(completedJobs)
+  const isTopRated = rating >= 4.5 && reviewCount >= 3
+
+  return (
+    <div className={compact ? 'trust-badge-row compact' : 'trust-badge-row'}>
+      {(artisan.verified || artisan.verificationStatus === 'verified') && (
+        <span className="trust-badge verified">Verified Artisan</span>
+      )}
+      {isTopRated && <span className="trust-badge top-rated">Top Rated</span>}
+      <span className="trust-badge fast">Fast Responder</span>
+      {jobMilestone && <span className="trust-badge jobs">{jobMilestone}</span>}
+    </div>
+  )
+}
+
 export function ServiceCategoryCard({ category }) {
   return (
     <motion.article
@@ -67,12 +102,14 @@ export function ArtisanCard({ artisan, featured = false }) {
             <h3>{artisan.name}</h3>
             <p>{artisan.featuredSkill}</p>
           </div>
-          <Badge>Verified</Badge>
+          {artisan.verified && <Badge>Verified</Badge>}
         </div>
+
+        <TrustBadges artisan={artisan} compact />
 
         <div className="artisan-metrics">
           <span>
-            <strong>{artisan.rating}</strong>
+            <strong>{Number(artisan.rating || 0).toFixed(1)}</strong>
             Rating
           </span>
           <span>
@@ -107,6 +144,7 @@ export function ArtisanCard({ artisan, featured = false }) {
         {artisan.skill} in {artisan.area}, {artisan.location}
       </p>
       <strong className="price-note">{artisan.price}</strong>
+      <TrustBadges artisan={artisan} />
       <Rating jobs={artisan.jobs} reviewCount={artisan.reviewCount || 0} value={artisan.rating} />
       <div className="trust-indicators">
         <span>ID checked</span>

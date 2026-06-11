@@ -822,6 +822,72 @@ function getArtisanName(artisan) {
   return artisan.profile?.full_name || artisan.business_name || 'Handiwave artisan'
 }
 
+function getBookingArtisanTrust(artisan) {
+  const rating = Number(artisan?.average_rating) || 0
+  const reviewCount = artisan?.review_count || 0
+  const completedJobs = artisan?.completed_jobs || 0
+  const isVerified = artisan?.verification_status === 'verified'
+  const isTopRated = rating >= 4.5 && reviewCount >= 3
+
+  return {
+    completedJobs,
+    isTopRated,
+    isVerified,
+    primaryService: artisan?.primary_service?.name || 'Service professional',
+    rating,
+    reviewCount,
+  }
+}
+
+function BookingArtisanTrustCard({ artisan }) {
+  if (!artisan) {
+    return null
+  }
+
+  const trust = getBookingArtisanTrust(artisan)
+
+  return (
+    <div className="booking-artisan-trust-card">
+      <div className="booking-artisan-trust-header">
+        <div>
+          <strong>{getArtisanName(artisan)}</strong>
+          <span>{trust.primaryService} in {artisan.city}, {artisan.state}</span>
+        </div>
+        {trust.isVerified && <span className="trust-badge verified">Verified Artisan</span>}
+      </div>
+
+      <div className="booking-artisan-trust-grid">
+        <span>
+          <strong>{trust.reviewCount > 0 ? trust.rating.toFixed(1) : 'New'}</strong>
+          {trust.reviewCount > 0 ? `${trust.reviewCount} review${trust.reviewCount === 1 ? '' : 's'}` : 'No reviews yet'}
+        </span>
+        <span>
+          <strong>{trust.completedJobs}</strong>
+          Completed jobs
+        </span>
+        <span>
+          <strong>{trust.isTopRated ? 'Yes' : 'Building'}</strong>
+          Top rated
+        </span>
+      </div>
+
+      <div className="trust-badge-row compact">
+        {trust.isTopRated && <span className="trust-badge top-rated">Top Rated</span>}
+        <span className="trust-badge fast">Fast Responder</span>
+        {trust.completedJobs >= 10 && (
+          <span className="trust-badge jobs">
+            {trust.completedJobs >= 100
+              ? '100+ Jobs Completed'
+              : trust.completedJobs >= 50
+              ? '50+ Jobs Completed'
+              : '10+ Jobs Completed'}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function BookingStatusBadge({ status }) {
   return (
     <span className={`booking-status status-${status}`}>
@@ -1562,6 +1628,7 @@ function Bookings() {
                   : '.'}
               </p>
             )}
+            <BookingArtisanTrustCard artisan={selectedArtisan} />
             {selectedArtisan && (
               <div className="booking-availability-panel">
                 <strong>Available slots</strong>

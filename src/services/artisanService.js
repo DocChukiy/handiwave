@@ -25,6 +25,8 @@ export function mapArtisanRow(artisan) {
   const state = artisan.state || profile.state || 'Nigeria'
   const serviceName = primaryService.name || 'General Service'
   const priceValue = Number(artisan.starting_price) || 30000
+  const rating = Number(artisan.average_rating) || 0
+  const reviewCount = artisan.review_count || 0
 
   return {
     bio: artisan.bio || '',
@@ -32,6 +34,7 @@ export function mapArtisanRow(artisan) {
     area: city,
     category: primaryService.category || serviceName,
     completedJobs: artisan.completed_jobs || 0,
+    createdAt: artisan.created_at || '',
     featuredSkill: serviceName,
     fullLocation: `${city}, ${state}`,
     id: artisan.id,
@@ -45,13 +48,13 @@ export function mapArtisanRow(artisan) {
     priceValue,
     profileId: artisan.profile_id,
     raw: artisan,
-    rating: Number(artisan.average_rating) || 0,
-    reviewCount: artisan.review_count || 0,
+    rating,
+    reviewCount,
     serviceArea: artisan.service_area || '',
     skill: serviceName,
     startingPrice: artisan.starting_price,
     verificationStatus: artisan.verification_status || 'pending',
-    topRated: Number(artisan.average_rating) >= 4.8,
+    topRated: rating >= 4.5 && reviewCount >= 3,
     verified: artisan.verification_status === 'verified',
     yearsExperience: artisan.years_experience || 0,
   }

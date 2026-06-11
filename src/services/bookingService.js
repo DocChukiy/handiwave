@@ -763,6 +763,11 @@ export async function getBookingOptions() {
         state,
         primary_service_id,
         starting_price,
+        average_rating,
+        review_count,
+        completed_jobs,
+        created_at,
+        service_area,
         verification_status,
         profile:profiles!${artisanProfileRelation}(id, full_name),
         primary_service:services!artisans_primary_service_id_fkey(id, name, category)
