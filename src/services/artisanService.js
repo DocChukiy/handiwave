@@ -39,6 +39,7 @@ export function mapArtisanRow(artisan) {
     fullLocation: `${city}, ${state}`,
     id: artisan.id,
     initials: getInitials(name),
+    isAvailable: artisan.is_available !== false,
     jobs: artisan.completed_jobs || 0,
     location: state,
     name,

@@ -13,15 +13,58 @@ import {
 } from '../data/artisans.js'
 import { getVerifiedArtisans } from '../services/artisanService.js'
 
+const sortOptions = [
+  { label: 'Recommended', value: 'recommended' },
+  { label: 'Highest Rated', value: 'highest-rated' },
+  { label: 'Most Reviews', value: 'most-reviews' },
+  { label: 'Most Jobs Completed', value: 'most-jobs' },
+  { label: 'Recently Joined', value: 'recently-joined' },
+]
+
+function getSearchText(artisan) {
+  return [
+    artisan.name,
+    artisan.businessName,
+    artisan.skill,
+    artisan.featuredSkill,
+    artisan.category,
+    artisan.area,
+    artisan.location,
+    artisan.fullLocation,
+    artisan.serviceArea,
+    artisan.bio,
+  ].filter(Boolean).join(' ').toLowerCase()
+}
+
+function getCompletedJobLabel(value) {
+  if (value === '100') {
+    return '100+ jobs'
+  }
+
+  if (value === '50') {
+    return '50+ jobs'
+  }
+
+  if (value === '10') {
+    return '10+ jobs'
+  }
+
+  return 'Any jobs'
+}
+
 function Artisans() {
   const [searchTerm, setSearchTerm] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
   const [availableArtisans, setAvailableArtisans] = useState(artisans)
   const [dataError, setDataError] = useState('')
+  const [completedJobsFilter, setCompletedJobsFilter] = useState('0')
+  const [isAvailableOnly, setIsAvailableOnly] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [locationFilter, setLocationFilter] = useState('All locations')
   const [minimumRating, setMinimumRating] = useState('0')
-  const [maximumPrice, setMaximumPrice] = useState(30000)
+  const [sortBy, setSortBy] = useState('recommended')
+  const [topRatedOnly, setTopRatedOnly] = useState(false)
+  const [verifiedOnly, setVerifiedOnly] = useState(false)
 
   useEffect(() => {
     let isMounted = true
@@ -63,32 +106,77 @@ function Artisans() {
     }
   }, [])
 
-  const filteredArtisans = useMemo(() => {
+  const filteredAndSortedArtisans = useMemo(() => {
     const query = searchTerm.trim().toLowerCase()
 
-    return availableArtisans.filter((artisan) => {
-      const matchesSearch =
-        !query ||
-        artisan.name.toLowerCase().includes(query) ||
-        artisan.skill.toLowerCase().includes(query) ||
-        artisan.location.toLowerCase().includes(query) ||
-        artisan.area.toLowerCase().includes(query)
+    const filtered = availableArtisans.filter((artisan) => {
+      const matchesSearch = !query || getSearchText(artisan).includes(query)
       const matchesCategory =
-        activeCategory === 'All' || artisan.category === activeCategory
+        activeCategory === 'All' ||
+        artisan.category === activeCategory ||
+        artisan.skill === activeCategory
       const matchesLocation =
-        locationFilter === 'All locations' || artisan.location === locationFilter
+        locationFilter === 'All locations' ||
+        artisan.location === locationFilter ||
+        artisan.area === locationFilter ||
+        artisan.fullLocation === locationFilter
       const matchesRating = artisan.rating >= Number(minimumRating)
-      const matchesPrice = artisan.priceValue <= Number(maximumPrice)
+      const matchesCompletedJobs = (artisan.completedJobs || 0) >= Number(completedJobsFilter)
+      const matchesVerified = !verifiedOnly || artisan.verified
+      const matchesTopRated = !topRatedOnly || (
+        Number(artisan.rating) >= 4.5 &&
+        Number(artisan.reviewCount || 0) >= 3
+      )
+      const matchesAvailability = !isAvailableOnly || artisan.isAvailable !== false
 
       return (
         matchesSearch &&
         matchesCategory &&
         matchesLocation &&
         matchesRating &&
-        matchesPrice
+        matchesCompletedJobs &&
+        matchesVerified &&
+        matchesTopRated &&
+        matchesAvailability
       )
     })
-  }, [activeCategory, availableArtisans, locationFilter, maximumPrice, minimumRating, searchTerm])
+
+    return [...filtered].sort((first, second) => {
+      if (sortBy === 'highest-rated') {
+        return (second.rating || 0) - (first.rating || 0)
+      }
+
+      if (sortBy === 'most-reviews') {
+        return (second.reviewCount || 0) - (first.reviewCount || 0)
+      }
+
+      if (sortBy === 'most-jobs') {
+        return (second.completedJobs || 0) - (first.completedJobs || 0)
+      }
+
+      if (sortBy === 'recently-joined') {
+        return new Date(second.createdAt || 0) - new Date(first.createdAt || 0)
+      }
+
+      return (
+        Number(second.verified) - Number(first.verified) ||
+        Number(second.topRated) - Number(first.topRated) ||
+        (second.rating || 0) - (first.rating || 0) ||
+        (second.completedJobs || 0) - (first.completedJobs || 0)
+      )
+    })
+  }, [
+    activeCategory,
+    availableArtisans,
+    completedJobsFilter,
+    isAvailableOnly,
+    locationFilter,
+    minimumRating,
+    searchTerm,
+    sortBy,
+    topRatedOnly,
+    verifiedOnly,
+  ])
 
   const categories = useMemo(
     () => [
@@ -104,10 +192,33 @@ function Artisans() {
       ...new Set([
         ...artisanLocations,
         ...availableArtisans.map((artisan) => artisan.location).filter(Boolean),
+        ...availableArtisans.map((artisan) => artisan.area).filter(Boolean),
       ]),
     ],
     [availableArtisans],
   )
+  const activeFilterCount = [
+    searchTerm.trim(),
+    activeCategory !== 'All',
+    locationFilter !== 'All locations',
+    minimumRating !== '0',
+    completedJobsFilter !== '0',
+    verifiedOnly,
+    topRatedOnly,
+    isAvailableOnly,
+  ].filter(Boolean).length
+
+  function resetFilters() {
+    setSearchTerm('')
+    setActiveCategory('All')
+    setLocationFilter('All locations')
+    setMinimumRating('0')
+    setCompletedJobsFilter('0')
+    setVerifiedOnly(false)
+    setTopRatedOnly(false)
+    setIsAvailableOnly(false)
+    setSortBy('recommended')
+  }
 
   return (
     <div className="starter-page">
@@ -120,13 +231,25 @@ function Artisans() {
         </p>
       </section>
 
-      <section className="toolbar-card filter-toolbar">
-        <input
-          placeholder="Search by service, artisan, or location"
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
-        />
-        <button type="button">Search</button>
+      <section className="toolbar-card filter-toolbar artisan-search-toolbar">
+        <label className="global-artisan-search">
+          <span>Search artisans</span>
+          <input
+            placeholder="Search name, service, category, city, state, or keyword"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+          />
+        </label>
+        <label className="sort-select-label">
+          <span>Sort</span>
+          <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </section>
 
       <section className="category-filters" aria-label="Artisan categories">
@@ -143,6 +266,30 @@ function Artisans() {
       </section>
 
       <section className="filter-panel">
+        <label className="toggle-filter">
+          <input
+            checked={verifiedOnly}
+            type="checkbox"
+            onChange={(event) => setVerifiedOnly(event.target.checked)}
+          />
+          Verified Only
+        </label>
+        <label className="toggle-filter">
+          <input
+            checked={topRatedOnly}
+            type="checkbox"
+            onChange={(event) => setTopRatedOnly(event.target.checked)}
+          />
+          Top Rated
+        </label>
+        <label className="toggle-filter">
+          <input
+            checked={isAvailableOnly}
+            type="checkbox"
+            onChange={(event) => setIsAvailableOnly(event.target.checked)}
+          />
+          Available Now
+        </label>
         <label>
           Location
           <select
@@ -167,17 +314,29 @@ function Artisans() {
           </select>
         </label>
         <label>
-          Max price: NGN {Number(maximumPrice).toLocaleString()}
-          <input
-            type="range"
-            min="5000"
-            max="30000"
-            step="1000"
-            value={maximumPrice}
-            onChange={(event) => setMaximumPrice(event.target.value)}
-          />
+          Completed jobs
+          <select
+            value={completedJobsFilter}
+            onChange={(event) => setCompletedJobsFilter(event.target.value)}
+          >
+            <option value="0">{getCompletedJobLabel('0')}</option>
+            <option value="10">{getCompletedJobLabel('10')}</option>
+            <option value="50">{getCompletedJobLabel('50')}</option>
+            <option value="100">{getCompletedJobLabel('100')}</option>
+          </select>
         </label>
       </section>
+
+      <div className="search-results-meta">
+        <span>
+          {isLoading ? 'Searching artisans...' : `${filteredAndSortedArtisans.length} artisan${filteredAndSortedArtisans.length === 1 ? '' : 's'} found`}
+        </span>
+        {activeFilterCount > 0 && (
+          <button type="button" onClick={resetFilters}>
+            Clear {activeFilterCount} filter{activeFilterCount === 1 ? '' : 's'}
+          </button>
+        )}
+      </div>
 
       <section className="saved-artisans-section">
         <SectionHeader
@@ -203,8 +362,6 @@ function Artisans() {
         )}
       </section>
 
-      <SkeletonPreview label="Artisan card loading placeholders" type="artisan" />
-
       {dataError && (
         <p className="auth-error">
           Supabase artisans could not load, so Handiwave is showing starter data. {dataError}
@@ -213,10 +370,10 @@ function Artisans() {
 
       {isLoading ? (
         <SkeletonPreview label="Loading artisans" type="artisan" />
-      ) : filteredArtisans.length > 0 ? (
+      ) : filteredAndSortedArtisans.length > 0 ? (
         <section className="starter-grid four">
-          {filteredArtisans.map((artisan) => (
-            <ArtisanCard artisan={artisan} key={artisan.name} />
+          {filteredAndSortedArtisans.map((artisan) => (
+            <ArtisanCard artisan={artisan} key={artisan.id || artisan.name} />
           ))}
         </section>
       ) : (
@@ -224,13 +381,7 @@ function Artisans() {
           action={(
             <button
               type="button"
-              onClick={() => {
-                setSearchTerm('')
-                setActiveCategory('All')
-                setLocationFilter('All locations')
-                setMinimumRating('0')
-                setMaximumPrice(30000)
-              }}
+              onClick={resetFilters}
             >
               Reset filters
             </button>
