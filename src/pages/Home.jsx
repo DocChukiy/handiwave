@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   ArtisanCard,
   ReelCard,
@@ -166,6 +166,8 @@ function CustomerActiveBookings({
 
 function Home() {
   const { user } = useAuth()
+  const navigate = useNavigate()
+  const [searchQuery, setSearchQuery] = useState('')
   const isCustomer = user?.role === 'customer'
   const [bookings, setBookings] = useState([])
   const [bookingError, setBookingError] = useState('')
@@ -298,12 +300,18 @@ function Home() {
 
           <form
             className="hero-search"
-            onSubmit={(event) => event.preventDefault()}
+            onSubmit={(event) => {
+              event.preventDefault()
+              const query = searchQuery.trim()
+              navigate(query ? `/services?search=${encodeURIComponent(query)}` : '/services')
+            }}
           >
             <input
               aria-label="Search for artisans or services"
               placeholder="Search plumbers, cleaners, electricians..."
               type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
             />
             <button type="submit">Search</button>
           </form>

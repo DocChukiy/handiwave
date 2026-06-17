@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import EmptyState from '../components/EmptyState.jsx'
 import SkeletonPreview from '../components/Skeletons.jsx'
 import { ServiceCard } from '../components/cards.jsx'
@@ -18,6 +18,15 @@ function Services() {
   const [locationFilter, setLocationFilter] = useState('All locations')
   const [minimumRating, setMinimumRating] = useState('0')
   const [maximumPrice, setMaximumPrice] = useState(30000)
+  const [searchParams] = useSearchParams()
+
+  useEffect(() => {
+    const query = searchParams.get('search') || ''
+
+    if (query !== searchTerm) {
+      setSearchTerm(query)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     let isMounted = true
