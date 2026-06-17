@@ -13,6 +13,7 @@ import {
   respondToBookingQuote,
   respondToBookingReschedule,
 } from '../services/bookingService.js'
+import logger from '../utils/logger.js'
 import {
   getCustomerBookingAvailability,
   getDayLabel,
@@ -214,7 +215,7 @@ function CustomerEscrowPanel({ booking, currentUserId, isCustomer = false, isPay
     booking.paymentStatus === 'held_in_escrow' ? price : 0
   )
 
-  console.log('[Handiwave Paystack button eligibility]', {
+  logger.debug('[Handiwave Paystack button eligibility]', {
     'booking.id': booking.id,
     estimated_price: booking.estimatedPrice,
     final_price: booking.finalPrice,
@@ -622,7 +623,7 @@ function BookingHistorySection({
           const bookingStatus = booking.rawStatus || booking.status
 
           if (showRescheduleActions) {
-            console.log('[Handiwave customer booking history render]', {
+            logger.debug('[Handiwave customer booking history render]', {
               bookingId: booking.id,
               displayStatus: booking.status,
               rawStatus: booking.rawStatus,
@@ -936,6 +937,14 @@ function Bookings() {
       url: URL.createObjectURL(file),
     }))
   ), [form.attachmentFiles])
+
+  useEffect(() => () => {
+    imagePreviews.forEach((preview) => {
+      if (preview.url) {
+        URL.revokeObjectURL(preview.url)
+      }
+    })
+  }, [imagePreviews])
   const availableDayLabels = useMemo(() => (
     [...new Set(availability.slots.map((slot) => getDayLabel(slot.dayOfWeek)))]
   ), [availability.slots])
@@ -1193,7 +1202,7 @@ function Bookings() {
     setUpdatingBookingId(booking.id)
 
     try {
-      console.log('[Handiwave reschedule response] before update:', {
+      logger.debug('[Handiwave reschedule response] before update:', {
         bookingId: booking.id,
         decision,
         rawStatus: booking.rawStatus,

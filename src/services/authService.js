@@ -54,10 +54,10 @@ export async function getProfileForSupabaseUser(supabaseUser, options = {}) {
       break
     }
 
-    console.log('[Handiwave auth debug] profile not found yet, retrying:', {
-      attempt: attempt + 1,
-      authUserId: supabaseUser.id,
-    })
+      logger.debug('[Handiwave auth debug] profile not found yet, retrying:', {
+        attempt: attempt + 1,
+        authUserId: supabaseUser.id,
+      })
 
     await wait(profileRetryDelayMs)
   }
@@ -103,10 +103,10 @@ export async function ensureProfileForSupabaseUser(
     role,
   }
 
-  console.log('[Handiwave auth debug] profile missing; attempting profile repair insert:', {
-    authUserId: supabaseUser.id,
-    profilePayload,
-  })
+    logger.debug('[Handiwave auth debug] profile missing; attempting profile repair insert:', {
+      authUserId: supabaseUser.id,
+      profilePayload,
+    })
 
   const { data: createdProfile, error: createProfileError } = await supabase
     .from('profiles')
@@ -114,10 +114,10 @@ export async function ensureProfileForSupabaseUser(
     .select('*')
     .single()
 
-  console.log('[Handiwave auth debug] profile repair result:', {
-    error: createProfileError,
-    profile: createdProfile,
-  })
+    logger.debug('[Handiwave auth debug] profile repair result:', {
+      error: createProfileError,
+      profile: createdProfile,
+    })
 
   return {
     data: mapProfile(createdProfile),
@@ -130,9 +130,9 @@ export async function getCurrentSessionProfile(options = {}) {
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
   const authUser = sessionData.session?.user || null
 
-  console.log('[Handiwave auth debug] auth user id:', authUser?.id || null)
-  console.log('[Handiwave auth debug] session:', sessionData.session)
-  console.log('[Handiwave auth debug] auth error:', sessionError)
+    logger.debug('[Handiwave auth debug] auth user id:', authUser?.id || null)
+    logger.debug('[Handiwave auth debug] session:', sessionData.session)
+    logger.debug('[Handiwave auth debug] auth error:', sessionError)
 
   if (sessionError || !authUser) {
     return {
@@ -154,10 +154,10 @@ export async function getCurrentSessionProfile(options = {}) {
     },
   )
 
-  console.log('[Handiwave auth debug] profile result:', {
-    error: profileError,
-    profile,
-  })
+    logger.debug('[Handiwave auth debug] profile result:', {
+      error: profileError,
+      profile,
+    })
 
   return {
     data: {
@@ -177,7 +177,7 @@ export async function signInWithRole({ email, password, role = 'customer' }) {
   })
 
   if (error) {
-    console.log('[Handiwave auth debug] auth error:', error)
+      logger.error('[Handiwave auth debug] auth error:', error)
     return {
       data: {
         session: null,
@@ -224,7 +224,7 @@ export async function signUpWithRole({
   })
 
   if (error) {
-    console.log('[Handiwave auth debug] auth error:', error)
+      logger.error('[Handiwave auth debug] auth error:', error)
     return {
       data: {
         session: null,

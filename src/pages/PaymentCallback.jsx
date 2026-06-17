@@ -41,6 +41,9 @@ function PaymentResultCard({ error, result, status }) {
       <p className="section-kicker">Payment failed</p>
       <h1>We could not verify this payment.</h1>
       <p>{error || result?.message || 'Paystack did not confirm a successful payment.'}</p>
+      {result?.debugCode && (
+        <p className="payment-debug-note">Debug: {result.debugCode}</p>
+      )}
       <div className="hero-actions">
         <Link className="primary-cta" to="/bookings">Try Again</Link>
         <Link className="secondary-cta" to="/messages">Contact Artisan</Link>
@@ -78,7 +81,7 @@ function PaymentCallback() {
 
         if (verifyError) {
           setError(verifyError.message)
-          setResult(data)
+          setResult(data || verifyError.payload || null)
           setStatus('failed')
           return
         }

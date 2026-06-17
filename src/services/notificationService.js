@@ -1,4 +1,5 @@
 import { getSupabaseClient } from '../lib/supabaseClient.js'
+import logger from '../utils/logger.js'
 
 function formatDate(value) {
   if (!value) {
@@ -64,7 +65,7 @@ export async function createNotificationSafely(payload) {
   const { error } = await createNotification(payload)
 
   if (error) {
-    console.error('[Handiwave notification] insert failed:', error)
+    logger.error('[Handiwave notification] insert failed:', error)
     return
   }
 

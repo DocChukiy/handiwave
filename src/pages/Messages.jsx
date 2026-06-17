@@ -4,6 +4,7 @@ import { useAuth } from '../auth/useAuth.js'
 import EmptyState from '../components/EmptyState.jsx'
 import RoleNotice from '../components/RoleNotice.jsx'
 import SkeletonPreview from '../components/Skeletons.jsx'
+import logger from '../utils/logger.js'
 import {
   ensureConversationForBooking,
   getConversationsForUser,
@@ -161,7 +162,7 @@ function Messages() {
           conversation.id === activeConversationId
         ))?.unreadCount || 0
 
-        console.log('[Handiwave unread debug] unread count before opening:', {
+        logger.debug('[Handiwave unread debug] unread count before opening:', {
           conversationId: activeConversationId,
           unreadCount: unreadBeforeOpening,
         })
@@ -176,7 +177,7 @@ function Messages() {
           return
         }
 
-        console.log('[Handiwave unread debug] messages marked as read:', {
+        logger.debug('[Handiwave unread debug] messages marked as read:', {
           conversationId: activeConversationId,
           markedReadCount,
         })
@@ -192,7 +193,7 @@ function Messages() {
           return
         }
 
-        console.log('[Handiwave unread debug] message notifications marked read:', {
+        logger.debug('[Handiwave unread debug] message notifications marked read:', {
           conversationId: activeConversationId,
           notificationReadCount,
         })
@@ -215,7 +216,7 @@ function Messages() {
           conversation.id === activeConversationId
         ))?.unreadCount || 0
 
-        console.log('[Handiwave unread debug] unread count after opening:', {
+        logger.debug('[Handiwave unread debug] unread count after opening:', {
           conversationId: activeConversationId,
           unreadCount: unreadAfterOpening,
         })

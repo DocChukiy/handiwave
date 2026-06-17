@@ -2,6 +2,7 @@ import { getSupabaseClient } from '../lib/supabaseClient.js'
 import { getArtisanByProfileId } from './artisanService.js'
 import { ensureConversationForBooking } from './messageService.js'
 import { createNotificationSafely } from './notificationService.js'
+import logger from '../utils/logger.js'
 
 const bookingServiceRelation = 'bookings_service_id_fkey'
 const bookingArtisanRelation = 'bookings_artisan_id_fkey'
@@ -52,7 +53,7 @@ async function getArtisanProfileIdByArtisanId(artisanId) {
     .maybeSingle()
 
   if (error) {
-    console.error('[Handiwave notification] artisan profile lookup failed:', error)
+    logger.error('[Handiwave notification] artisan profile lookup failed:', error)
   }
 
   return data?.profile_id || ''
@@ -74,7 +75,7 @@ async function getBookingNotificationContext(bookingId) {
     .maybeSingle()
 
   if (error) {
-    console.error('[Handiwave notification] booking context lookup failed:', error)
+    logger.error('[Handiwave notification] booking context lookup failed:', error)
     return null
   }
 
@@ -180,7 +181,7 @@ async function signBookingAttachments(booking) {
       .createSignedUrl(attachment.filePath, 60 * 30)
 
     if (error) {
-      console.error('[Handiwave booking attachments] signed URL failed:', error)
+      logger.error('[Handiwave booking attachments] signed URL failed:', error)
       return attachment
     }
 
@@ -423,7 +424,7 @@ export async function respondToBookingReschedule({
     .eq('id', bookingId)
     .maybeSingle()
 
-  console.log('[Handiwave reschedule response] fresh booking before status validation:', freshBooking)
+  logger.debug('[Handiwave reschedule response] fresh booking before status validation:', freshBooking)
 
   if (freshBookingError) {
     return {
@@ -530,7 +531,7 @@ export async function updateBookingStatusForArtisan({
   currentStatus,
   nextStatus,
 }) {
-  console.log('[Handiwave artisan booking status update]', {
+  logger.debug('[Handiwave artisan booking status update]', {
     bookingId,
     currentStatus,
     nextStatus,
@@ -601,7 +602,7 @@ export async function updateBookingStatusForArtisan({
     .select('id, customer_id, status, completed_at')
     .maybeSingle()
 
-  console.log('[Handiwave artisan booking status update result]', {
+  logger.debug('[Handiwave artisan booking status update result]', {
     data,
     error,
   })
@@ -658,7 +659,7 @@ export async function updateBookingStatusForArtisan({
 export async function confirmBookingCompleteForCustomer({ bookingId, customerId }) {
   const supabase = getSupabaseClient()
 
-  console.log('[Handiwave customer completion confirm]', {
+  logger.debug('[Handiwave customer completion confirm]', {
     bookingId,
     customerId,
     nextStatus: 'customer_confirmed',
@@ -675,7 +676,7 @@ export async function confirmBookingCompleteForCustomer({ bookingId, customerId 
     .select(bookingSelect)
     .maybeSingle()
 
-  console.log('[Handiwave customer completion confirm result]', {
+  logger.debug('[Handiwave customer completion confirm result]', {
     data,
     error,
   })
@@ -710,7 +711,7 @@ export async function confirmBookingCompleteForCustomer({ bookingId, customerId 
 export async function reportBookingIssueForCustomer({ bookingId, customerId }) {
   const supabase = getSupabaseClient()
 
-  console.log('[Handiwave customer completion report]', {
+  logger.debug('[Handiwave customer completion report]', {
     bookingId,
     customerId,
     nextStatus: 'disputed',
@@ -727,7 +728,7 @@ export async function reportBookingIssueForCustomer({ bookingId, customerId }) {
     .select(bookingSelect)
     .maybeSingle()
 
-  console.log('[Handiwave customer completion report result]', {
+  logger.debug('[Handiwave customer completion report result]', {
     data,
     error,
   })
@@ -908,7 +909,7 @@ export async function createBooking({
     .maybeSingle()
 
   if (serviceError) {
-    console.error('[Handiwave booking debug] service lookup error:', serviceError)
+    logger.error('[Handiwave booking debug] service lookup error:', serviceError)
     return {
       data: null,
       error: serviceError,
@@ -956,7 +957,7 @@ export async function createBooking({
     state: state.trim(),
   }
 
-  console.log('[Handiwave booking debug] booking payload before insert:', bookingPayload)
+  logger.debug('[Handiwave booking debug] booking payload before insert:', bookingPayload)
 
   const { data: insertedBooking, error: insertError } = await supabase
     .from('bookings')
@@ -964,13 +965,13 @@ export async function createBooking({
     .select('*')
     .single()
 
-  console.log('[Handiwave booking debug] inserted booking returned from Supabase:', {
+  logger.debug('[Handiwave booking debug] inserted booking returned from Supabase:', {
     booking: insertedBooking,
     error: insertError,
   })
 
   if (insertError) {
-    console.error('[Handiwave booking debug] booking insert failed:', insertError)
+    logger.error('[Handiwave booking debug] booking insert failed:', insertError)
     return {
       data: null,
       error: insertError,
@@ -992,7 +993,7 @@ export async function createBooking({
   })
 
   if (attachmentError) {
-    console.error('[Handiwave booking attachments] upload failed:', attachmentError)
+    logger.error('[Handiwave booking attachments] upload failed:', attachmentError)
     return {
       data: null,
       error: attachmentError,
@@ -1008,7 +1009,7 @@ export async function createBooking({
   })
 
   if (conversationError) {
-    console.error('[Handiwave booking debug] conversation creation failed:', conversationError)
+    logger.error('[Handiwave booking debug] conversation creation failed:', conversationError)
     return {
       data: null,
       error: conversationError,
@@ -1018,7 +1019,7 @@ export async function createBooking({
   const { data: displayBooking, error: displayError } = await getBookingById(insertedBooking.id)
 
   if (displayError) {
-    console.error('[Handiwave booking debug] booking display fetch failed:', displayError)
+    logger.error('[Handiwave booking debug] booking display fetch failed:', displayError)
   }
 
   await createNotificationSafely({

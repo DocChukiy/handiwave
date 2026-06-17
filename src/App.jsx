@@ -13,31 +13,33 @@ import {
   X,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import AuthProvider from './auth/AuthProvider.jsx'
 import { useAuth } from './auth/useAuth.js'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
-import AdminDashboard from './pages/AdminDashboard.jsx'
-import ArtisanAnalytics from './pages/ArtisanAnalytics.jsx'
-import ArtisanAvailability from './pages/ArtisanAvailability.jsx'
-import ArtisanDashboard from './pages/ArtisanDashboard.jsx'
-import ArtisanJobs from './pages/ArtisanJobs.jsx'
-import ArtisanOnboarding from './pages/ArtisanOnboarding.jsx'
-import ArtisanProfile from './pages/ArtisanProfile.jsx'
-import ArtisanReels from './pages/ArtisanReels.jsx'
-import Artisans from './pages/Artisans.jsx'
-import Bookings from './pages/Bookings.jsx'
-import Disputes from './pages/Disputes.jsx'
-import Home from './pages/Home.jsx'
-import Login from './pages/Login.jsx'
-import Messages from './pages/Messages.jsx'
-import PaymentCallback from './pages/PaymentCallback.jsx'
-import Profile from './pages/Profile.jsx'
-import Reels from './pages/Reels.jsx'
-import Services from './pages/Services.jsx'
-import Signup from './pages/Signup.jsx'
-import Wallet from './pages/Wallet.jsx'
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard.jsx'))
+const ArtisanAnalytics = lazy(() => import('./pages/ArtisanAnalytics.jsx'))
+const ArtisanAvailability = lazy(() => import('./pages/ArtisanAvailability.jsx'))
+const ArtisanDashboard = lazy(() => import('./pages/ArtisanDashboard.jsx'))
+const ArtisanJobs = lazy(() => import('./pages/ArtisanJobs.jsx'))
+const ArtisanOnboarding = lazy(() => import('./pages/ArtisanOnboarding.jsx'))
+const ArtisanProfile = lazy(() => import('./pages/ArtisanProfile.jsx'))
+const ArtisanReels = lazy(() => import('./pages/ArtisanReels.jsx'))
+const Artisans = lazy(() => import('./pages/Artisans.jsx'))
+const Bookings = lazy(() => import('./pages/Bookings.jsx'))
+const Disputes = lazy(() => import('./pages/Disputes.jsx'))
+const Home = lazy(() => import('./pages/Home.jsx'))
+const Login = lazy(() => import('./pages/Login.jsx'))
+const Messages = lazy(() => import('./pages/Messages.jsx'))
+const PaymentCallback = lazy(() => import('./pages/PaymentCallback.jsx'))
+const Profile = lazy(() => import('./pages/Profile.jsx'))
+const Reels = lazy(() => import('./pages/Reels.jsx'))
+const Services = lazy(() => import('./pages/Services.jsx'))
+const Signup = lazy(() => import('./pages/Signup.jsx'))
+const Wallet = lazy(() => import('./pages/Wallet.jsx'))
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy.jsx'))
+const TermsOfService = lazy(() => import('./pages/TermsOfService.jsx'))
 import { getArtisanByProfileId } from './services/artisanService.js'
 import { getTotalUnreadMessagesForUser, touchProfileLastSeen } from './services/messageService.js'
 import {
@@ -47,6 +49,7 @@ import {
 } from './services/notificationService.js'
 import { getSupabaseClient } from './lib/supabaseClient.js'
 import { showToast } from './utils/toast.js'
+import logger from './utils/logger.js'
 import './App.css'
 
 const publicNavLinks = [
@@ -145,7 +148,13 @@ function AnimatedRoutes() {
         exit={{ opacity: 0, y: -10 }}
         transition={{ duration: 0.24, ease: 'easeOut' }}
       >
-        <Routes location={location}>
+        <Suspense fallback={(
+          <section className="auth-loading-state">
+            <span></span>
+            <p>Loading Handiwave...</p>
+          </section>
+        )}>
+          <Routes location={location}>
           <Route path="/" element={<RoleHome />} />
           <Route path="/services" element={<Services />} />
           <Route path="/artisans" element={<Artisans />} />
@@ -258,6 +267,8 @@ function AnimatedRoutes() {
           />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
           <Route
             path="/admin"
             element={(
@@ -267,6 +278,7 @@ function AnimatedRoutes() {
             )}
           />
         </Routes>
+      </Suspense>
       </motion.div>
     </AnimatePresence>
   )
@@ -339,7 +351,7 @@ function AppShell() {
       }
 
       if (error) {
-        console.error('[Handiwave nav] artisan setup check failed:', error)
+        logger.error('[Handiwave nav] artisan setup check failed:', error)
         setArtisanNeedsSetup(true)
         return
       }
@@ -365,7 +377,7 @@ function AppShell() {
       const { error } = await touchProfileLastSeen()
 
       if (error && isMounted) {
-        console.error('[Handiwave presence] last_seen update failed:', error)
+        logger.error('[Handiwave presence] last_seen update failed:', error)
       }
     }
 
@@ -399,19 +411,19 @@ function AppShell() {
       }
 
       if (unreadMessageResult.error) {
-        console.error('[Handiwave nav] unread message count failed:', unreadMessageResult.error)
+        logger.error('[Handiwave nav] unread message count failed:', unreadMessageResult.error)
       } else {
         setUnreadMessagesCount(unreadMessageResult.data)
       }
 
       if (notificationResult.error) {
-        console.error('[Handiwave nav] notification fetch failed:', notificationResult.error)
+        logger.error('[Handiwave nav] notification fetch failed:', notificationResult.error)
       } else {
         setNotifications(notificationResult.data)
       }
 
       if (unreadNotificationResult.error) {
-        console.error('[Handiwave nav] unread notification count failed:', unreadNotificationResult.error)
+        logger.error('[Handiwave nav] unread notification count failed:', unreadNotificationResult.error)
       } else {
         setUnreadNotificationsCount(unreadNotificationResult.data)
       }
@@ -766,15 +778,15 @@ function AppShell() {
                 confidently across Nigeria.
               </p>
               <div className="social-links" aria-label="Social links">
-                <a href="#" aria-label="Instagram">
+                <button type="button" className="social-link" disabled aria-label="Instagram (coming soon)">
                   <Camera size={18} />
-                </a>
-                <a href="#" aria-label="Twitter">
+                </button>
+                <button type="button" className="social-link" disabled aria-label="Twitter (coming soon)">
                   <MessageCircle size={18} />
-                </a>
-                <a href="#" aria-label="LinkedIn">
+                </button>
+                <button type="button" className="social-link" disabled aria-label="LinkedIn (coming soon)">
                   <Share2 size={18} />
-                </a>
+                </button>
               </div>
             </div>
 
@@ -816,8 +828,8 @@ function AppShell() {
           <div className="footer-bottom">
             <p>© {new Date().getFullYear()} Handiwave. All rights reserved.</p>
             <div>
-              <a href="#">Privacy Policy</a>
-              <a href="#">Terms of Service</a>
+              <NavLink to="/privacy">Privacy Policy</NavLink>
+              <NavLink to="/terms">Terms of Service</NavLink>
             </div>
           </div>
         </footer>

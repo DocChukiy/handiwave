@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
 import { getArtisanByProfileId } from '../services/artisanService.js'
 import { showToast } from '../utils/toast.js'
+import logger from '../utils/logger.js'
 
 const roles = [
   {
@@ -50,7 +51,7 @@ function Login() {
   const isLoginDisabled = Boolean(disabledReason)
 
   useEffect(() => {
-    console.log('[Handiwave login debug]', {
+    logger.debug('[Handiwave login debug]', {
       disabledReason: disabledReason || 'button enabled',
       email,
       isAuthLoading: isLoading,
@@ -63,7 +64,7 @@ function Login() {
     event.preventDefault()
     setFormError('')
 
-    console.log('[Handiwave login debug] submit clicked', {
+    logger.debug('[Handiwave login debug] submit clicked', {
       disabledReason: disabledReason || 'button enabled',
       email,
       isAuthLoading: isLoading,
@@ -96,7 +97,7 @@ function Login() {
 
       navigate(location.state?.from?.pathname || (user.role === 'admin' ? '/admin' : '/'))
     } catch (error) {
-      console.error('[Handiwave login debug] Supabase login error:', error)
+      logger.error('[Handiwave login debug] Supabase login error:', error)
       setFormError(error.message)
     } finally {
       setIsSubmitting(false)

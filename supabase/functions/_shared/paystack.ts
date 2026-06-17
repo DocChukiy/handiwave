@@ -12,10 +12,18 @@ export type PaystackInitializePayload = {
 }
 
 export function getPaystackSecretKey() {
-  const secretKey = Deno.env.get("PAYSTACK_SECRET_KEY")
+  const secretKey = Deno.env.get("PAYSTACK_SECRET_KEY")?.trim()
 
   if (!secretKey) {
     throw new Error("Missing PAYSTACK_SECRET_KEY function secret.")
+  }
+
+  if (secretKey.startsWith("pk_")) {
+    throw new Error("PAYSTACK_SECRET_KEY is set to a publishable key. Use a Paystack secret key that starts with sk_test_ or sk_live_.")
+  }
+
+  if (!secretKey.startsWith("sk_test_") && !secretKey.startsWith("sk_live_")) {
+    throw new Error("PAYSTACK_SECRET_KEY is invalid. It must start with sk_test_ or sk_live_.")
   }
 
   return secretKey

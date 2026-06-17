@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
 import { getArtisanByProfileId } from '../services/artisanService.js'
 import { showToast } from '../utils/toast.js'
+import logger from '../utils/logger.js'
 
 const signupTypes = [
   {
@@ -54,7 +55,7 @@ function Signup() {
   const isSignupDisabled = Boolean(disabledReason)
 
   useEffect(() => {
-    console.log('[Handiwave signup debug]', {
+    logger.debug('[Handiwave signup debug]', {
       accountType,
       disabledReason: disabledReason || 'button enabled',
       email,
@@ -67,7 +68,7 @@ function Signup() {
     event.preventDefault()
     setFormError('')
 
-    console.log('[Handiwave signup debug] submit clicked', {
+    logger.debug('[Handiwave signup debug] submit clicked', {
       accountType,
       disabledReason: disabledReason || 'button enabled',
       email,
@@ -112,7 +113,7 @@ function Signup() {
         showToast('Account created. Please confirm your email if required, then log in.')
       }
     } catch (error) {
-      console.error('[Handiwave signup debug] Supabase signup error:', error)
+      logger.error('[Handiwave signup debug] Supabase signup error:', error)
       setFormError(error.message)
     } finally {
       setIsSubmitting(false)

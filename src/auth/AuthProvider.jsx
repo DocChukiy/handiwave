@@ -8,6 +8,7 @@ import {
   signOut,
   signUpWithRole,
 } from '../services/authService.js'
+import logger from '../utils/logger.js'
 
 function AuthProvider({ children }) {
   const supabaseConfigured = isSupabaseConfigured()
@@ -20,14 +21,14 @@ function AuthProvider({ children }) {
 
   useEffect(() => {
     if (!supabaseConfigured) {
-      console.log('[Handiwave auth debug] loading state change:', false)
+        logger.debug('[Handiwave auth debug] loading state change:', false)
       return undefined
     }
 
     let isMounted = true
 
     async function hydrateAuth() {
-      console.log('[Handiwave auth debug] loading state change:', true)
+        logger.debug('[Handiwave auth debug] loading state change:', true)
 
       try {
         const { data, error } = await getCurrentSessionProfile({ profileRetries: 2 })
@@ -48,14 +49,14 @@ function AuthProvider({ children }) {
         setUser(data.profile)
       } catch (error) {
         if (isMounted) {
-          console.log('[Handiwave auth debug] auth error:', error)
+            logger.error('[Handiwave auth debug] auth error:', error)
           setAuthError(error.message)
           setSession(null)
           setUser(null)
         }
       } finally {
         if (isMounted) {
-          console.log('[Handiwave auth debug] loading state change:', false)
+            logger.debug('[Handiwave auth debug] loading state change:', false)
           setIsLoading(false)
         }
       }
@@ -66,20 +67,20 @@ function AuthProvider({ children }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      console.log('[Handiwave auth debug] auth state change:', event)
-      console.log('[Handiwave auth debug] auth user id:', nextSession?.user?.id || null)
-      console.log('[Handiwave auth debug] session:', nextSession)
+        logger.debug('[Handiwave auth debug] auth state change:', event)
+        logger.debug('[Handiwave auth debug] auth user id:', nextSession?.user?.id || null)
+        logger.debug('[Handiwave auth debug] session:', nextSession)
 
       setSession(nextSession)
 
       if (!nextSession?.user) {
         setUser(null)
-        console.log('[Handiwave auth debug] loading state change:', false)
+          logger.debug('[Handiwave auth debug] loading state change:', false)
         setIsLoading(false)
         return
       }
 
-      console.log('[Handiwave auth debug] loading state change:', true)
+        logger.debug('[Handiwave auth debug] loading state change:', true)
       setIsLoading(true)
 
       window.setTimeout(async () => {
@@ -97,10 +98,10 @@ function AuthProvider({ children }) {
             return
           }
 
-          console.log('[Handiwave auth debug] profile result:', {
-            error,
-            profile,
-          })
+            logger.debug('[Handiwave auth debug] profile result:', {
+              error,
+              profile,
+            })
 
           if (error) {
             setAuthError(error.message)
@@ -113,12 +114,12 @@ function AuthProvider({ children }) {
           setUser(profile)
         } catch (error) {
           if (isMounted) {
-            console.log('[Handiwave auth debug] auth error:', error)
+              logger.error('[Handiwave auth debug] auth error:', error)
             setAuthError(error.message)
           }
         } finally {
           if (isMounted) {
-            console.log('[Handiwave auth debug] loading state change:', false)
+              logger.debug('[Handiwave auth debug] loading state change:', false)
             setIsLoading(false)
           }
         }
@@ -134,7 +135,7 @@ function AuthProvider({ children }) {
   const auth = useMemo(() => {
     async function login({ email, password, role }) {
       setAuthError('')
-      console.log('[Handiwave auth debug] loading state change:', true)
+        logger.debug('[Handiwave auth debug] loading state change:', true)
       setIsLoading(true)
 
       try {
@@ -153,14 +154,14 @@ function AuthProvider({ children }) {
         setUser(data.user)
         return data.user
       } finally {
-        console.log('[Handiwave auth debug] loading state change:', false)
+          logger.debug('[Handiwave auth debug] loading state change:', false)
         setIsLoading(false)
       }
     }
 
     async function signup({ email, name, password, primarySkill, role }) {
       setAuthError('')
-      console.log('[Handiwave auth debug] loading state change:', true)
+        logger.debug('[Handiwave auth debug] loading state change:', true)
       setIsLoading(true)
 
       try {
@@ -185,7 +186,7 @@ function AuthProvider({ children }) {
         setUser(data.session ? data.user : null)
         return data
       } finally {
-        console.log('[Handiwave auth debug] loading state change:', false)
+          logger.debug('[Handiwave auth debug] loading state change:', false)
         setIsLoading(false)
       }
     }

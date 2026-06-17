@@ -18,6 +18,7 @@ import {
 import { initializeBookingPayment } from '../services/paymentService.js'
 import { cardVariants } from '../utils/animations.js'
 import { showToast } from '../utils/toast.js'
+import logger from '../utils/logger.js'
 
 function getErrorMessage(error) {
   return [
@@ -88,7 +89,7 @@ function CustomerActiveBookings({
           ['unpaid', 'failed'].includes(paymentStatus)
         )
 
-        console.log('[Handiwave Paystack button eligibility]', {
+        logger.debug('[Handiwave Paystack button eligibility]', {
           'booking.id': booking.id,
           estimated_price: booking.estimatedPrice,
           final_price: booking.finalPrice,
@@ -217,7 +218,7 @@ function Home() {
     setUpdatingBookingId(booking.id)
 
     try {
-      console.log('[Handiwave reschedule response] before update:', {
+      logger.debug('[Handiwave reschedule response] before update:', {
         bookingId: booking.id,
         decision,
         rawStatus: booking.rawStatus,

@@ -5,6 +5,24 @@ import { createSupabaseAdminClient, getAuthenticatedUser } from "../_shared/supa
 
 type VerifyPaymentBody = {
   reference?: string
+  trxref?: string
+}
+
+function getErrorMessage(error: unknown, fallback = "Unable to verify payment.") {
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+
+  if (typeof error === "object" && error && "message" in error) {
+    return String((error as { message?: unknown }).message || fallback)
+  }
+
+  return fallback
+}
+
+function errorResponse(debugCode: string, message: string, status = 500) {
+  console.error(debugCode, message)
+  return jsonResponse({ debugCode, error: message }, status)
 }
 
 async function createPaymentSuccessNotifications(
@@ -81,12 +99,13 @@ async function createPaymentSuccessNotifications(
 
 async function getReference(request: Request) {
   if (request.method === "GET") {
-    return new URL(request.url).searchParams.get("reference") || ""
+    const searchParams = new URL(request.url).searchParams
+    return searchParams.get("reference") || searchParams.get("trxref") || ""
   }
 
   const body = await request.json().catch(() => ({})) as VerifyPaymentBody
 
-  return body.reference || ""
+  return body.reference || body.trxref || ""
 }
 
 // Required function secrets:
@@ -94,24 +113,30 @@ async function getReference(request: Request) {
 // supabase secrets set SUPABASE_URL=https://your-project.supabase.co
 // supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 serve(async (request) => {
-  const corsResponse = handleCors(request)
-
-  if (corsResponse) {
-    return corsResponse
-  }
-
-  if (!["GET", "POST"].includes(request.method)) {
-    return methodNotAllowed()
-  }
-
   try {
+    console.log("VERIFY_START")
+
+    const corsResponse = handleCors(request)
+
+    if (corsResponse) {
+      return corsResponse
+    }
+
+    if (!["GET", "POST"].includes(request.method)) {
+      return methodNotAllowed()
+    }
+
     const supabase = createSupabaseAdminClient()
     const user = await getAuthenticatedUser(request, supabase)
+    console.log("AUTH_OK", { userId: user.id })
+
     const reference = await getReference(request)
 
     if (!reference) {
-      return jsonResponse({ error: "Payment reference is required." }, 400)
+      return errorResponse("MISSING_REFERENCE", "Payment reference is required.", 400)
     }
+
+    console.log("REFERENCE_RECEIVED", { reference })
 
     const { data: payment, error: paymentError } = await supabase
       .from("paystack_payment_transactions")
@@ -120,22 +145,46 @@ serve(async (request) => {
       .maybeSingle()
 
     if (paymentError) {
-      return jsonResponse({ error: paymentError.message }, 500)
+      return errorResponse("PAYMENT_FETCH_FAILED", paymentError.message, 500)
     }
 
     if (!payment) {
-      return jsonResponse({ error: "Payment transaction not found." }, 404)
+      return errorResponse("PAYMENT_NOT_FOUND", "Payment transaction not found for this Paystack reference.", 404)
     }
+
+    console.log("PAYMENT_FETCH_OK", {
+      bookingId: payment.booking_id,
+      customerId: payment.customer_id,
+      paymentId: payment.id,
+      providerReference: payment.provider_reference,
+      status: payment.status,
+    })
 
     if (payment.customer_id !== user.id) {
-      return jsonResponse({ error: "This payment does not belong to the current user." }, 403)
+      return errorResponse("PAYMENT_CUSTOMER_MISMATCH", "This payment does not belong to the current user.", 403)
     }
 
-    const paystackPayload = await verifyPaystackTransaction(reference)
+    let paystackPayload
+
+    try {
+      console.log("PAYSTACK_VERIFY_START", { reference })
+      paystackPayload = await verifyPaystackTransaction(reference)
+    } catch (paystackError) {
+      return errorResponse("PAYSTACK_VERIFY_FAILED", getErrorMessage(paystackError), 500)
+    }
+
     const paystackData = paystackPayload.data || {}
     const paystackStatus = paystackData.status
 
-    await supabase
+    console.log("PAYSTACK_VERIFY_OK", {
+      amount: paystackData.amount,
+      bookingId: payment.booking_id,
+      paystackStatus,
+      reference,
+      transactionId: paystackData.id,
+    })
+
+    const { error: paymentUpdateError } = await supabase
       .from("paystack_payment_transactions")
       .update({
         channel: paystackData.channel || null,
@@ -145,7 +194,13 @@ serve(async (request) => {
       })
       .eq("id", payment.id)
 
+    if (paymentUpdateError) {
+      return errorResponse("PAYMENT_UPDATE_FAILED", paymentUpdateError.message, 500)
+    }
+
     if (paystackStatus === "success") {
+      console.log("APPLY_ESCROW_START", { reference })
+
       const { data: bookingId, error: applyError } = await supabase.rpc(
         "apply_paystack_booking_payment_success",
         {
@@ -155,18 +210,24 @@ serve(async (request) => {
       )
 
       if (applyError) {
-        return jsonResponse({ error: applyError.message }, 500)
+        return errorResponse("APPLY_ESCROW_FAILED", applyError.message, 500)
       }
 
       if (bookingId) {
-        await supabase
+        const { error: bookingStatusError } = await supabase
           .from("bookings")
           .update({ status: "confirmed" })
           .eq("id", bookingId)
           .eq("payment_status", "held_in_escrow")
 
+        if (bookingStatusError) {
+          return errorResponse("BOOKING_CONFIRM_FAILED", bookingStatusError.message, 500)
+        }
+
         await createPaymentSuccessNotifications(supabase, bookingId)
       }
+
+      console.log("VERIFY_SUCCESS", { bookingId, reference })
 
       return jsonResponse({
         booking_id: bookingId,
@@ -175,6 +236,8 @@ serve(async (request) => {
         status: "success",
       })
     }
+
+    console.log("MARK_PAYMENT_FAILED_START", { paystackStatus, reference })
 
     const { data: bookingId, error: failError } = await supabase.rpc(
       "mark_paystack_booking_payment_failed",
@@ -185,10 +248,12 @@ serve(async (request) => {
     )
 
     if (failError) {
-      return jsonResponse({ error: failError.message }, 500)
+      return errorResponse("MARK_PAYMENT_FAILED_RPC_FAILED", failError.message, 500)
     }
 
     return jsonResponse({
+      debugCode: "PAYSTACK_PAYMENT_NOT_SUCCESSFUL",
+      error: paystackPayload.message || `Paystack status: ${paystackStatus || "failed"}`,
       booking_id: bookingId,
       message: paystackPayload.message || `Paystack status: ${paystackStatus || "failed"}`,
       payment_status: "failed",
@@ -196,6 +261,6 @@ serve(async (request) => {
       status: paystackStatus || "failed",
     }, 400)
   } catch (error) {
-    return jsonResponse({ error: error.message || "Unable to verify payment." }, 500)
+    return errorResponse("VERIFY_UNHANDLED_ERROR", getErrorMessage(error), 500)
   }
 })
