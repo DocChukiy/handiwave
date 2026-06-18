@@ -12,6 +12,9 @@
     "preview": "vite preview",
     "generate:well-known": "node scripts/generate-well-known.cjs"
   },
+  "files": [
+    "well-known"
+  ],
   "dependencies": {
     "@capacitor/app": "^8.1.0",
     "@capacitor/browser": "^8.0.3",

@@ -78,6 +78,31 @@ Notes:
 - Replace `your-domain.com`, `TEAMID`, and `YOUR_APP_SHA256_FINGERPRINT` with values from your production build and developer account.
 - After publishing the files and rebuilding the apps, test deep links by tapping HTTPS links pointing to your domain and verifying the OS opens the app without prompting.
 
+## Building a signed .ipa for AirDrop (Ad-Hoc)
+
+Follow these steps on a macOS machine with Xcode installed to create an Ad-Hoc signed `.ipa` you can AirDrop to devices provisioned in your provisioning profile.
+
+Prerequisites:
+- Apple Developer account and an Ad-Hoc provisioning profile (includes device UDIDs).
+- Signing certificate (.p12) imported into your macOS keychain.
+- Provisioning profile installed in `~/Library/MobileDevice/Provisioning Profiles/`.
+
+Quick steps:
+```bash
+# Build web assets and sync to iOS native project
+npm run build
+npx cap copy ios
+
+# Edit `scripts/exportOptions.plist.template` -> save as `scripts/exportOptions.plist` and set your Team ID and provisioning profile name
+chmod +x scripts/build-ipa.sh
+./scripts/build-ipa.sh
+```
+
+Notes:
+- The script uses `xcodebuild` to archive and export the app. You must update `scripts/exportOptions.plist` with your `teamID` and provisioning profile name.
+- Ensure the device UDIDs are included in the provisioning profile used for Ad-Hoc signing. Only devices in the profile can install the IPA via AirDrop.
+- If you prefer automated signing, consider using `fastlane` and `match`, which can manage certificates and profiles but requires access to your Apple developer account.
+
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
