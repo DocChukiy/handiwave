@@ -9,6 +9,7 @@ import {
 
 type InitializePaymentBody = {
   booking_id?: string
+  callback_url?: string
 }
 
 function getErrorMessage(error: unknown, fallback = "Unable to initialize payment.") {
@@ -124,15 +125,39 @@ serve(async (request) => {
 
     const reference = createPaymentReference(booking.id)
     const amountKobo = toKobo(amount)
+    const requestedCallbackUrl = body.callback_url?.toString().trim()
     const callbackUrl = Deno.env.get("PAYSTACK_CALLBACK_URL")
-    console.log("PAYSTACK_REQUEST_START", { amountKobo, bookingId: booking.id, reference })
+    console.log("PAYSTACK_REQUEST_START", { amountKobo, bookingId: booking.id, reference, requestedCallbackUrl })
 
+    if (requestedCallbackUrl && requestedCallbackUrl.length > 0) {
+      try {
+        const parsedCallback = new URL(requestedCallbackUrl)
+        if (parsedCallback.pathname !== '/payment/callback') {
+          return errorResponse(
+            'INVALID_CALLBACK_URL',
+            'The callback_url path must be /payment/callback.',
+            400,
+          )
+        }
+        if (parsedCallback.protocol !== 'https:' && parsedCallback.protocol !== 'handiwave:') {
+          return errorResponse(
+            'INVALID_CALLBACK_URL',
+            'The callback_url protocol must be https or handiwave.',
+            400,
+          )
+        }
+      } catch {
+        return errorResponse('INVALID_CALLBACK_URL', 'The callback_url must be a valid URL.', 400)
+      }
+    }
+
+    const effectiveCallbackUrl = requestedCallbackUrl || callbackUrl
     let paystackPayload
 
     try {
       paystackPayload = await initializePaystackTransaction({
         amount: amountKobo,
-        callback_url: callbackUrl || undefined,
+        callback_url: effectiveCallbackUrl || undefined,
         currency: "NGN",
         email,
         metadata: {

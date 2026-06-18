@@ -4,9 +4,9 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   ArtisanCard,
   ReelCard,
-import { openUrl as openInBrowser } from '../mobile/capacitor.js'
   ServiceCategoryCard,
 } from '../components/cards.jsx'
+import { openUrl as openInBrowser, getMobilePaymentCallbackUrl } from '../mobile/capacitor.js'
 import { useAuth } from '../auth/useAuth.js'
 import { featuredArtisans } from '../data/artisans.js'
 import { howItWorksSteps, trustedMarkets } from '../data/home.js'
@@ -264,7 +264,8 @@ function Home() {
     setPayingBookingId(booking.id)
 
     try {
-      const { data, error } = await initializeBookingPayment(booking.id)
+      const callbackUrl = await getMobilePaymentCallbackUrl()
+      const { data, error } = await initializeBookingPayment(booking.id, callbackUrl)
 
       if (error) {
         setBookingError(getErrorMessage(error))

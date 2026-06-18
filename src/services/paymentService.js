@@ -46,11 +46,12 @@ async function getFunctionError(error, data) {
   return functionError
 }
 
-export async function initializeBookingPayment(bookingId) {
+export async function initializeBookingPayment(bookingId, callbackUrl) {
   const supabase = getSupabaseClient()
   const { data, error } = await supabase.functions.invoke('initialize-payment', {
     body: {
       booking_id: bookingId,
+      callback_url: callbackUrl,
     },
   })
 

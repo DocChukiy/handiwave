@@ -8,6 +8,19 @@ export async function openUrl(url) {
   }
 }
 
+export async function getMobilePaymentCallbackUrl() {
+  try {
+    const { Capacitor } = await import('@capacitor/core')
+    if (Capacitor?.isNativePlatform?.()) {
+      return 'handiwave://payment/callback'
+    }
+  } catch (err) {
+    // ignore - not running in native
+  }
+
+  return undefined
+}
+
 export async function initDeepLinkListener() {
   try {
     const { App } = await import('@capacitor/app')

@@ -22,6 +22,7 @@ import { submitBookingReview, updateBookingReview } from '../services/reviewServ
 import { getSupabaseClient } from '../lib/supabaseClient.js'
 import { createDisputeFromBooking } from '../services/disputeService.js'
 import { initializeBookingPayment } from '../services/paymentService.js'
+import { getMobilePaymentCallbackUrl } from '../mobile/capacitor.js'
 import { showToast } from '../utils/toast.js'
 
 const initialForm = {
@@ -1421,7 +1422,8 @@ function Bookings() {
     setPayingBookingId(booking.id)
 
     try {
-      const { data, error: paymentError } = await initializeBookingPayment(booking.id)
+      const callbackUrl = await getMobilePaymentCallbackUrl()
+      const { data, error: paymentError } = await initializeBookingPayment(booking.id, callbackUrl)
 
       if (paymentError) {
         setError(getErrorMessage(paymentError))
