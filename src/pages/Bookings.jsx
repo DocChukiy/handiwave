@@ -1433,7 +1433,16 @@ function Bookings() {
         return
       }
 
-      window.location.assign(data.authorization_url)
+      try {
+        // Dynamically import to avoid loading Capacitor in web test env
+        const { openUrl } = await import('../mobile/capacitor.js')
+        const didOpen = await openUrl(data.authorization_url)
+        if (!didOpen) {
+          window.location.assign(data.authorization_url)
+        }
+      } catch (err) {
+        window.location.assign(data.authorization_url)
+      }
     } catch (paymentError) {
       setError(getErrorMessage(paymentError))
     } finally {

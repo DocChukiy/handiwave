@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   ArtisanCard,
   ReelCard,
+import { openUrl as openInBrowser } from '../mobile/capacitor.js'
   ServiceCategoryCard,
 } from '../components/cards.jsx'
 import { useAuth } from '../auth/useAuth.js'
@@ -275,7 +276,14 @@ function Home() {
         return
       }
 
-      window.location.assign(data.authorization_url)
+      try {
+        const didOpen = await openInBrowser(data.authorization_url)
+        if (!didOpen) {
+          window.location.assign(data.authorization_url)
+        }
+      } catch (err) {
+        window.location.assign(data.authorization_url)
+      }
     } catch (error) {
       setBookingError(getErrorMessage(error))
     } finally {
