@@ -95,7 +95,8 @@ function Login() {
         return
       }
 
-      navigate(location.state?.from?.pathname || (user.role === 'admin' ? '/admin' : '/'))
+      const redirectTarget = location.state?.from || (user.role === 'admin' ? '/admin' : '/')
+      navigate(redirectTarget)
     } catch (error) {
       logger.error('[Handiwave login debug] Supabase login error:', error)
       setFormError(error.message)
