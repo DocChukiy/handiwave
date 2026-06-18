@@ -27,6 +27,20 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="handiwave" />
             </intent-filter>
+            <!-- Support Android App Links (https) for production deep linking.
+                 Replace `your-domain.com` with your hosted domain and ensure you
+                 publish an assetlinks.json at
+                 https://your-domain.com/.well-known/assetlinks.json
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="your-domain.com"
+                    android:pathPrefix="/payment/callback" />
+            </intent-filter>
 
         </activity>
 

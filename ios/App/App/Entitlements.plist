@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Add your production domains here for Universal Links -->
+    <key>com.apple.developer.associated-domains</key>
+    <array>
+        <!-- Example: applinks:your-domain.com -->
+        <string>applinks:your-domain.com</string>
+    </array>
+</dict>
+</plist>
