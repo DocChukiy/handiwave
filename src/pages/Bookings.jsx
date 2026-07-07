@@ -22,7 +22,7 @@ import { submitBookingReview, updateBookingReview } from '../services/reviewServ
 import { getSupabaseClient } from '../lib/supabaseClient.js'
 import { createDisputeFromBooking } from '../services/disputeService.js'
 import { initializeBookingPayment } from '../services/paymentService.js'
-import { getMobilePaymentCallbackUrl } from '../mobile/capacitor.js'
+import { getMobilePaymentCallbackUrl, openUrl } from '../mobile/capacitor.js'
 import { showToast } from '../utils/toast.js'
 
 const initialForm = {
@@ -1136,12 +1136,6 @@ function Bookings() {
     }
   }, [form.artisanId, isCustomer])
 
-  useEffect(() => {
-    return () => {
-      imagePreviews.forEach((preview) => URL.revokeObjectURL(preview.url))
-    }
-  }, [imagePreviews])
-
   function updateForm(field, value) {
     setForm((currentForm) => ({
       ...currentForm,
@@ -1436,8 +1430,6 @@ function Bookings() {
       }
 
       try {
-        // Dynamically import to avoid loading Capacitor in web test env
-        const { openUrl } = await import('../mobile/capacitor.js')
         const didOpen = await openUrl(data.authorization_url)
         if (!didOpen) {
           window.location.assign(data.authorization_url)

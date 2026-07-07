@@ -130,24 +130,27 @@ serve(async (request) => {
     console.log("PAYSTACK_REQUEST_START", { amountKobo, bookingId: booking.id, reference, requestedCallbackUrl })
 
     if (requestedCallbackUrl && requestedCallbackUrl.length > 0) {
+      let parsedCallback: URL
+
       try {
-        const parsedCallback = new URL(requestedCallbackUrl)
-        if (parsedCallback.pathname !== '/payment/callback') {
-          return errorResponse(
-            'INVALID_CALLBACK_URL',
-            'The callback_url path must be /payment/callback.',
-            400,
-          )
-        }
-        if (parsedCallback.protocol !== 'https:' && parsedCallback.protocol !== 'handiwave:') {
-          return errorResponse(
-            'INVALID_CALLBACK_URL',
-            'The callback_url protocol must be https or handiwave.',
-            400,
-          )
-        }
+        parsedCallback = new URL(requestedCallbackUrl)
       } catch {
         return errorResponse('INVALID_CALLBACK_URL', 'The callback_url must be a valid URL.', 400)
+      }
+
+      const isHttpsCallback =
+        parsedCallback.protocol === 'https:' && parsedCallback.pathname === '/payment/callback'
+      const isMobileDeepLinkCallback =
+        parsedCallback.protocol === 'handiwave:' &&
+        parsedCallback.hostname === 'payment' &&
+        parsedCallback.pathname === '/callback'
+
+      if (!isHttpsCallback && !isMobileDeepLinkCallback) {
+        return errorResponse(
+          'INVALID_CALLBACK_URL',
+          'The callback_url must be https://.../payment/callback or handiwave://payment/callback.',
+          400,
+        )
       }
     }
 

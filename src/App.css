@@ -1700,6 +1700,20 @@
   transform: translateY(-2px);
 }
 
+.social-links button.social-link {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  color: #ffffff;
+  cursor: not-allowed;
+  display: flex;
+  height: 42px;
+  justify-content: center;
+  opacity: 0.6;
+  width: 42px;
+}
+
 .footer-column {
   display: grid;
   gap: 12px;

@@ -1,108 +1,231 @@
-# React + Vite
+# Handiwave
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Handiwave is a React + Vite marketplace app for booking artisans, managing quotes, protecting payments with Paystack escrow, and running the same web experience inside Capacitor iOS and Android wrappers.
 
-Currently, two official plugins are available:
+## Quick Start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Install dependencies:
 
-## React Compiler
+   ```bash
+   npm install
+   ```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+2. Create a local environment file:
 
-## Mobile App Support
+   ```bash
+   cp .env.example .env
+   ```
 
-Handiwave now includes Capacitor wrappers for iOS and Android. Native checkout uses the Capacitor Browser plugin and a custom URI callback scheme so Paystack can return users to the app after payment.
+3. Fill `.env` with your Supabase project values:
 
-- Mobile callback URI: `handiwave://payment/callback`
-- Web callback URL: your hosted web app URL, for example `https://your-app.com/payment/callback`
-- Mobile deep link listener is implemented in `src/mobile/capacitor.js`
-- The SPA route for Paystack verification is `src/pages/PaymentCallback.jsx` and the route is `/payment/callback`
+   ```bash
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
 
-### Build and sync mobile assets
+4. Start the web app:
 
-```bash
-npm install
-npm run build
-npx cap sync
-npx cap open ios
-npx cap open android
+   ```bash
+   npm run dev
+   ```
+
+5. Before handing off changes, run:
+
+   ```bash
+   npm test -- --run
+   npm run build
+   ```
+
+## Useful Commands
+
+| Task | Command |
+| --- | --- |
+| Start local web app | `npm run dev` |
+| Run tests once | `npm test -- --run` |
+| Run tests in watch mode | `npm run test:watch` |
+| Build production web assets | `npm run build` |
+| Preview production build | `npm run preview` |
+| Sync web build to native apps | `npx cap sync` |
+| Open iOS project | `npx cap open ios` |
+| Open Android project | `npx cap open android` |
+| Generate App Link files | `npm run generate:well-known -- --domain=your-domain.com --sha256=YOUR_SHA256 --team=YOUR_TEAM_ID` |
+
+## App Structure
+
+- `src/pages/` contains route-level screens such as home, bookings, wallet, messages, and payment callback.
+- `src/services/` contains Supabase-facing app services.
+- `src/mobile/capacitor.js` contains native browser and deep-link helpers.
+- `supabase/functions/` contains Paystack edge functions.
+- `supabase/*.sql` contains schema and migration helpers.
+- `android/` and `ios/` contain generated Capacitor native projects.
+- `well-known/` contains App Links / Universal Links templates and generated files.
+- `scripts/` contains mobile build and well-known file helpers.
+
+## Required Supabase Setup
+
+1. Create or open a Supabase project.
+2. Apply the database schema and migrations from `supabase/`.
+3. Seed default services if needed:
+
+   ```bash
+   supabase db execute --file supabase/seed_services.sql
+   ```
+
+4. Deploy edge functions:
+
+   ```bash
+   supabase functions deploy initialize-payment
+   supabase functions deploy verify-payment
+   supabase functions deploy paystack-webhook
+   ```
+
+5. Set function secrets:
+
+   ```bash
+   supabase secrets set PAYSTACK_SECRET_KEY=sk_test_xxx
+   supabase secrets set PAYSTACK_CALLBACK_URL=https://your-domain.com/payment/callback
+   supabase secrets set SUPABASE_URL=https://your-project.supabase.co
+   supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+   ```
+
+Use `sk_test_...` while testing. Switch to `sk_live_...` only after Paystack live mode and production callback URLs are ready.
+
+## Paystack Payment Flow
+
+The payment flow starts from accepted booking quotes.
+
+1. Customer accepts a quote.
+2. Customer taps **Pay with Paystack**.
+3. The app calls `initialize-payment`.
+4. Paystack opens in the browser.
+5. Paystack returns to `/payment/callback`.
+6. `src/pages/PaymentCallback.jsx` verifies the payment through `verify-payment`.
+7. Successful payments are marked as protected escrow.
+
+For web, Paystack should use:
+
+```text
+https://your-domain.com/payment/callback
 ```
 
-### Paystack configuration
+For native Capacitor builds, the app sends:
 
-For web, keep `PAYSTACK_CALLBACK_URL` set to your hosted web callback.
-For native Capacitor builds, the app passes `handiwave://payment/callback` during checkout when running in a mobile environment.
-
-## App Links & Universal Links setup (production)
-
-To support secure production deep linking (without relying on custom URI schemes), set up Android App Links and iOS Universal Links.
-
-- Android (App Links):
-	1. In `android/app/src/main/AndroidManifest.xml` add an `intent-filter` with `android:autoVerify="true"` for your HTTPS host and path prefix (example already added).
-	2. Host a `assetlinks.json` at `https://your-domain.com/.well-known/assetlinks.json` containing your app's SHA256 fingerprint and package name. Example format:
-
-```json
-[
-	{
-		"relation": ["delegate_permission/common.handle_all_urls"],
-		"target": {
-			"namespace": "android_app",
-			"package_name": "com.handiwave.app",
-			"sha256_cert_fingerprints": ["YOUR_APP_SHA256_FINGERPRINT"]
-		}
-	}
-]
+```text
+handiwave://payment/callback
 ```
 
-- iOS (Universal Links):
-	1. Add the Associated Domains capability in Xcode and include `applinks:your-domain.com` (a placeholder `Entitlements.plist` has been added at `ios/App/App/Entitlements.plist`).
-	2. Host an `apple-app-site-association` file at the root of your HTTPS domain (or under `/.well-known/`) with contents like:
+The deep-link listener in `src/mobile/capacitor.js` converts native callbacks such as:
 
-```json
-{
-	"applinks": {
-		"apps": [],
-		"details": [
-			{
-				"appID": "TEAMID.com.handiwave.app",
-				"paths": ["/payment/callback", "/payments/*"]
-			}
-		]
-	}
-}
+```text
+handiwave://payment/callback?reference=PAYSTACK_REFERENCE
 ```
 
-Notes:
-- Replace `your-domain.com`, `TEAMID`, and `YOUR_APP_SHA256_FINGERPRINT` with values from your production build and developer account.
-- After publishing the files and rebuilding the apps, test deep links by tapping HTTPS links pointing to your domain and verifying the OS opens the app without prompting.
+into the SPA route:
 
-## Building a signed .ipa for AirDrop (Ad-Hoc)
+```text
+/payment/callback?reference=PAYSTACK_REFERENCE
+```
 
-Follow these steps on a macOS machine with Xcode installed to create an Ad-Hoc signed `.ipa` you can AirDrop to devices provisioned in your provisioning profile.
+## Mobile App Setup
+
+Handiwave includes Capacitor wrappers for iOS and Android.
+
+1. Build the web app:
+
+   ```bash
+   npm run build
+   ```
+
+2. Sync native projects:
+
+   ```bash
+   npx cap sync
+   ```
+
+3. Open a native project:
+
+   ```bash
+   npx cap open ios
+   npx cap open android
+   ```
+
+4. Run on a simulator or real device from Xcode / Android Studio.
+
+Native deep-link registrations live in:
+
+- `android/app/src/main/AndroidManifest.xml`
+- `ios/App/App/Info.plist`
+
+## App Links and Universal Links
+
+Custom schemes are useful for testing, but production mobile links should use Android App Links and iOS Universal Links.
+
+1. Generate the well-known files:
+
+   ```bash
+   npm run generate:well-known -- --domain=your-domain.com --sha256=YOUR_SHA256 --team=YOUR_TEAM_ID
+   ```
+
+2. Upload the generated files to your production HTTPS domain:
+
+   ```text
+   https://your-domain.com/.well-known/assetlinks.json
+   https://your-domain.com/.well-known/apple-app-site-association
+   ```
+
+3. Update native placeholders:
+
+   - Replace `your-domain.com` in `android/app/src/main/AndroidManifest.xml`
+   - Replace the Associated Domains placeholder in `ios/App/App/Entitlements.plist`
+
+4. Rebuild and test on real devices by tapping an HTTPS payment callback link.
+
+## Building an iOS IPA for AirDrop
+
+Use this when you need an Ad-Hoc signed `.ipa` for real device testing.
 
 Prerequisites:
-- Apple Developer account and an Ad-Hoc provisioning profile (includes device UDIDs).
-- Signing certificate (.p12) imported into your macOS keychain.
-- Provisioning profile installed in `~/Library/MobileDevice/Provisioning Profiles/`.
 
-Quick steps:
-```bash
-# Build web assets and sync to iOS native project
-npm run build
-npx cap copy ios
+- Full Xcode installed, not only command line tools.
+- Apple Developer account.
+- Signing certificate installed in the macOS login keychain.
+- Ad-Hoc provisioning profile installed and containing the target device UDIDs.
 
-# Edit `scripts/exportOptions.plist.template` -> save as `scripts/exportOptions.plist` and set your Team ID and provisioning profile name
-chmod +x scripts/build-ipa.sh
-./scripts/build-ipa.sh
-```
+Steps:
 
-Notes:
-- The script uses `xcodebuild` to archive and export the app. You must update `scripts/exportOptions.plist` with your `teamID` and provisioning profile name.
-- Ensure the device UDIDs are included in the provisioning profile used for Ad-Hoc signing. Only devices in the profile can install the IPA via AirDrop.
-- If you prefer automated signing, consider using `fastlane` and `match`, which can manage certificates and profiles but requires access to your Apple developer account.
+1. Create export options:
 
-## Expanding the ESLint configuration
+   ```bash
+   cp scripts/exportOptions.plist.template scripts/exportOptions.plist
+   ```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+2. Fill `scripts/exportOptions.plist` with the Apple Team ID and provisioning profile name.
+
+3. Run the build:
+
+   ```bash
+   chmod +x scripts/build-ipa.sh
+   TEAM_ID=YOUR_TEAM_ID bash scripts/build-ipa.sh
+   ```
+
+4. Find the IPA at:
+
+   ```text
+   dist/handiwave.ipa
+   ```
+
+## Production Checklist
+
+- Confirm `.env` has the production Supabase URL and anon key.
+- Confirm Supabase function secrets are set for production.
+- Confirm Paystack uses the correct live secret key.
+- Deploy `initialize-payment`, `verify-payment`, and `paystack-webhook`.
+- Upload `assetlinks.json` and `apple-app-site-association`.
+- Rebuild and sync Capacitor native projects.
+- Test Paystack sandbox on real iOS and Android devices.
+- Test signed IPA install with a real provisioning profile.
+- Test the complete flow: quote accepted, checkout opened, callback received, escrow updated.
+
+## Handoff Notes
+
+See `HANDOFF.md` for the current mobile/payment handoff summary, pending production tasks, and first steps for a new developer.
