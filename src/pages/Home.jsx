@@ -282,7 +282,7 @@ function Home() {
         if (!didOpen) {
           window.location.assign(data.authorization_url)
         }
-      } catch (err) {
+      } catch {
         window.location.assign(data.authorization_url)
       }
     } catch (error) {

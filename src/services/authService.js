@@ -1,4 +1,5 @@
 import { getSupabaseClient } from '../lib/supabaseClient.js'
+import logger from '../utils/logger.js'
 import { getProfileById, mapProfile } from './profileService.js'
 
 const validRoles = ['customer', 'artisan', 'admin']

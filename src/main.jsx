@@ -10,7 +10,7 @@ import App from './App.jsx'
     if (module && typeof module.initDeepLinkListener === 'function') {
       module.initDeepLinkListener()
     }
-  } catch (err) {
+  } catch {
     // not running in Capacitor/native environment; ignore
   }
 })()

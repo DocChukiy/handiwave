@@ -11,7 +11,7 @@ export async function openUrl(url) {
     const { Browser } = await import('@capacitor/browser')
     await Browser.open({ url })
     return true
-  } catch (err) {
+  } catch {
     return false
   }
 }
@@ -23,7 +23,7 @@ export async function getMobilePaymentCallbackUrl() {
     if (platform === 'android' || platform === 'ios' || platform === 'electron') {
       return 'handiwave://payment/callback'
     }
-  } catch (err) {
+  } catch {
     // ignore - not running in native
   }
 
@@ -57,7 +57,7 @@ function routeToSpaPath(path) {
   try {
     window.history.replaceState(null, '', path)
     window.dispatchEvent(new PopStateEvent('popstate', { state: null }))
-  } catch (err) {
+  } catch {
     window.location.href = path
   }
 }
@@ -70,13 +70,13 @@ export async function initDeepLinkListener() {
       try {
         const spaPath = getSpaPathFromAppUrl(event.url)
         routeToSpaPath(spaPath)
-      } catch (e) {
+      } catch {
         // ignore parse errors
       }
     })
 
     return true
-  } catch (err) {
+  } catch {
     return false
   }
 }

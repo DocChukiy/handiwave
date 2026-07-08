@@ -10,23 +10,15 @@ const baseCategories = ['All']
 const baseLocations = ['All locations', 'Lagos', 'Abuja', 'Port Harcourt', 'Ibadan']
 
 function Services() {
+  const [searchParams] = useSearchParams()
   const [activeCategory, setActiveCategory] = useState('All')
   const [availableServices, setAvailableServices] = useState([])
   const [dataError, setDataError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '')
   const [locationFilter, setLocationFilter] = useState('All locations')
   const [minimumRating, setMinimumRating] = useState('0')
   const [maximumPrice, setMaximumPrice] = useState(30000)
-  const [searchParams] = useSearchParams()
-
-  useEffect(() => {
-    const query = searchParams.get('search') || ''
-
-    if (query !== searchTerm) {
-      setSearchTerm(query)
-    }
-  }, [searchParams])
 
   useEffect(() => {
     let isMounted = true
