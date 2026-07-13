@@ -665,15 +665,30 @@ export async function confirmBookingCompleteForCustomer({ bookingId, customerId 
     nextStatus: 'customer_confirmed',
   })
 
+  const { data: releasedBookingId, error: releaseError } = await supabase.rpc(
+    'release_booking_escrow_for_customer',
+    {
+      target_booking_id: bookingId,
+    },
+  )
+
+  if (releaseError) {
+    logger.debug('[Handiwave customer completion escrow release failed]', {
+      bookingId,
+      error: releaseError,
+    })
+
+    return {
+      data: null,
+      error: releaseError,
+    }
+  }
+
   const { data, error } = await supabase
     .from('bookings')
-    .update({
-      status: 'customer_confirmed',
-    })
-    .eq('id', bookingId)
-    .eq('customer_id', customerId)
-    .eq('status', 'artisan_completed')
     .select(bookingSelect)
+    .eq('id', releasedBookingId || bookingId)
+    .eq('customer_id', customerId)
     .maybeSingle()
 
   logger.debug('[Handiwave customer completion confirm result]', {

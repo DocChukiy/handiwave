@@ -14,6 +14,7 @@
     "mobile:sync": "npm run build && npx cap sync",
     "mobile:ios": "npx cap open ios",
     "mobile:android": "npx cap open android",
+    "payment:preflight": "node scripts/payment-preflight.cjs",
     "generate:well-known": "node scripts/generate-well-known.cjs"
   },
   "files": [

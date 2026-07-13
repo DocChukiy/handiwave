@@ -122,7 +122,7 @@ async function logWalletSnapshot(
 
   const { data: wallets, error: walletsError } = await supabase
     .from("wallets")
-    .select("id, profile_id, balance, escrow_balance, pending_earnings, released_earnings, total_credited, total_debited")
+    .select("id, profile_id, balance, escrow_balance, total_credited, total_debited")
     .in("profile_id", profileIds)
 
   if (walletsError) {
@@ -375,24 +375,11 @@ serve(async (request) => {
       reference,
     })
 
-    const { error: paymentUpdateError } = await supabase
-      .from("paystack_payment_transactions")
-      .update({
-        channel: paystackData.channel || null,
-        fees: Number(paystackData.fees || 0) / 100,
-        provider_payload: paystackPayload,
-        provider_transaction_id: paystackData.id ? String(paystackData.id) : null,
-      })
-      .eq("id", payment.id)
-
-    if (paymentUpdateError) {
-      return errorResponse("PAYMENT_UPDATE_FAILED", paymentUpdateError.message, 500)
-    }
-
-    console.log("PAYMENT_ROW_UPDATED", {
+    console.log("PAYMENT_ROW_READY_FOR_RPC", {
       paymentId: payment.id,
       providerReference: reference,
       providerTransactionId: paystackData.id ? String(paystackData.id) : null,
+      reason: "Payment row finalization happens inside the escrow RPC for transaction safety.",
     })
 
     await logBookingSnapshot(supabase, "BOOKING_BEFORE", payment.booking_id)

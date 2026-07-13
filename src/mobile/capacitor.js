@@ -16,7 +16,34 @@ export async function openUrl(url) {
   }
 }
 
+function getConfiguredPaymentCallbackUrl() {
+  const configuredUrl = import.meta.env?.VITE_PAYMENT_CALLBACK_URL?.trim()
+
+  if (!configuredUrl) {
+    return ''
+  }
+
+  try {
+    const parsed = new URL(configuredUrl)
+    const isHttpsCallback = parsed.protocol === 'https:' && parsed.pathname === '/payment/callback'
+    const isNativeCallback =
+      parsed.protocol === 'handiwave:' &&
+      parsed.hostname === 'payment' &&
+      parsed.pathname === '/callback'
+
+    return isHttpsCallback || isNativeCallback ? configuredUrl : ''
+  } catch {
+    return ''
+  }
+}
+
 export async function getMobilePaymentCallbackUrl() {
+  const configuredUrl = getConfiguredPaymentCallbackUrl()
+
+  if (configuredUrl) {
+    return configuredUrl
+  }
+
   try {
     const { Capacitor } = await import('@capacitor/core')
     const platform = Capacitor?.getPlatform?.()?.toLowerCase()
@@ -28,6 +55,15 @@ export async function getMobilePaymentCallbackUrl() {
   }
 
   return undefined
+}
+
+async function closeNativeBrowser() {
+  try {
+    const { Browser } = await import('@capacitor/browser')
+    await Browser.close()
+  } catch {
+    // Browser may not be open, or we may be running on web.
+  }
 }
 
 export function getSpaPathFromAppUrl(url) {
@@ -69,6 +105,7 @@ export async function initDeepLinkListener() {
     App.addListener('appUrlOpen', (event) => {
       try {
         const spaPath = getSpaPathFromAppUrl(event.url)
+        closeNativeBrowser()
         routeToSpaPath(spaPath)
       } catch {
         // ignore parse errors

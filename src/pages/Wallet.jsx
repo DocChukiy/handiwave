@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
 import EmptyState from '../components/EmptyState.jsx'
 import RoleNotice from '../components/RoleNotice.jsx'
@@ -186,9 +187,15 @@ function Wallet() {
           Paystack booking payments move into escrow first, then release after customer confirmation.
         </p>
         <div className="hero-actions">
-          <button className="primary-cta coming-soon-button" disabled type="button">
-            Top Up Wallet - Coming Soon
-          </button>
+          {isArtisan ? (
+            <a className={`primary-cta ${canWithdraw ? '' : 'coming-soon-button'}`} href="#wallet-withdrawal">
+              {canWithdraw ? 'Request Withdrawal' : 'No Available Balance Yet'}
+            </a>
+          ) : (
+            <Link className="primary-cta" to="/bookings">
+              View Paid Bookings
+            </Link>
+          )}
         </div>
       </section>
 
@@ -225,7 +232,7 @@ function Wallet() {
 
       <section className="wallet-layout">
         {isArtisan ? (
-          <form className="booking-form wallet-withdrawal-form" onSubmit={handleWithdrawalSubmit}>
+          <form className="booking-form wallet-withdrawal-form" id="wallet-withdrawal" onSubmit={handleWithdrawalSubmit}>
             <h2>Request withdrawal</h2>
             <p className="auth-hint">
               {canWithdraw
