@@ -2,6 +2,7 @@ import {
   Camera,
   Bell,
   ChevronDown,
+  Download,
   Mail,
   MapPin,
   Menu,
@@ -97,6 +98,10 @@ const serviceLinks = [
   'AC Repair',
   'Generator Repair',
 ]
+
+function isStandaloneDisplay() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone
+}
 
 function needsArtisanSetup(artisan) {
   if (!artisan) {
@@ -303,6 +308,10 @@ function AppShell() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [toast, setToast] = useState(null)
+  const [installPromptEvent, setInstallPromptEvent] = useState(null)
+  const [isInstallPromptDismissed, setIsInstallPromptDismissed] = useState(() => (
+    sessionStorage.getItem('handiwave-install-dismissed') === 'true'
+  ))
   const [awarenessRefreshTick, setAwarenessRefreshTick] = useState(0)
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0)
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0)
@@ -493,6 +502,28 @@ function AppShell() {
     return () => window.clearTimeout(toastTimer)
   }, [toast])
 
+  useEffect(() => {
+    function handleBeforeInstallPrompt(event) {
+      event.preventDefault()
+      setInstallPromptEvent(event)
+    }
+
+    function handleAppInstalled() {
+      setInstallPromptEvent(null)
+      setIsInstallPromptDismissed(true)
+      sessionStorage.setItem('handiwave-install-dismissed', 'true')
+      showToast('Handiwave added to your home screen.')
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    window.addEventListener('appinstalled', handleAppInstalled)
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+      window.removeEventListener('appinstalled', handleAppInstalled)
+    }
+  }, [])
+
   function toggleTheme() {
     setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'))
   }
@@ -505,6 +536,20 @@ function AppShell() {
     } catch (error) {
       showToast(error.message)
     }
+  }
+
+  async function handleInstallClick() {
+    if (!installPromptEvent) {
+      return
+    }
+
+    await installPromptEvent.prompt()
+    setInstallPromptEvent(null)
+  }
+
+  function dismissInstallPrompt() {
+    setIsInstallPromptDismissed(true)
+    sessionStorage.setItem('handiwave-install-dismissed', 'true')
   }
 
   async function handleNotificationClick(notification, event) {
@@ -764,6 +809,23 @@ function AppShell() {
         </header>
 
         <main className="page-content">
+          {installPromptEvent && !isInstallPromptDismissed && !isStandaloneDisplay() && (
+            <section className="install-app-banner" aria-label="Install Handiwave">
+              <div>
+                <strong>Install Handiwave</strong>
+                <span>Add it to your phone for faster access to bookings, chat, wallet, and escrow updates.</span>
+              </div>
+              <div className="install-app-actions">
+                <button className="install-app-button" type="button" onClick={handleInstallClick}>
+                  <Download size={17} />
+                  Install
+                </button>
+                <button className="install-dismiss-button" type="button" onClick={dismissInstallPrompt}>
+                  Later
+                </button>
+              </div>
+            </section>
+          )}
           <AnimatedRoutes />
         </main>
 

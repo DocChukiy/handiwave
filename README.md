@@ -126,6 +126,8 @@ into the SPA route:
 /payment/callback?reference=PAYSTACK_REFERENCE
 ```
 
+For the complete production setup checklist, see `PAYMENT_GO_LIVE.md`.
+
 ## Mobile App Setup
 
 Handiwave includes Capacitor wrappers for iOS and Android.
@@ -219,7 +221,10 @@ Steps:
 - Confirm `.env` has the production Supabase URL and anon key.
 - Confirm Supabase function secrets are set for production.
 - Confirm Paystack uses the correct live secret key.
+- Run `npm run payment:preflight`.
+- Apply `supabase/fix_paystack_escrow_commission_rpc.sql` in Supabase SQL Editor.
 - Deploy `initialize-payment`, `verify-payment`, and `paystack-webhook`.
+- Set Paystack webhook URL to `https://YOUR_PROJECT_REF.supabase.co/functions/v1/paystack-webhook`.
 - Upload `assetlinks.json` and `apple-app-site-association`.
 - Rebuild and sync Capacitor native projects.
 - Test Paystack sandbox on real iOS and Android devices.
@@ -229,3 +234,5 @@ Steps:
 ## Handoff Notes
 
 See `HANDOFF.md` for the current mobile/payment handoff summary, pending production tasks, and first steps for a new developer.
+
+See `WEBSITE_LAUNCH.md` for the website-first launch checklist and PWA rollout plan.

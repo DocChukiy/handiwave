@@ -1,0 +1,47 @@
+{
+  "name": "Handiwave",
+  "short_name": "Handiwave",
+  "description": "Book trusted artisans, pay through escrow, chat, and manage jobs across Nigeria.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "browser"],
+  "background_color": "#f8fafc",
+  "theme_color": "#064e3b",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "48x48",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Find Artisans",
+      "short_name": "Artisans",
+      "url": "/artisans",
+      "description": "Browse verified Handiwave artisans."
+    },
+    {
+      "name": "My Bookings",
+      "short_name": "Bookings",
+      "url": "/bookings",
+      "description": "Track quotes, payments, and job progress."
+    },
+    {
+      "name": "Wallet",
+      "short_name": "Wallet",
+      "url": "/wallet",
+      "description": "View escrow, payouts, and withdrawal activity."
+    }
+  ]
+}
