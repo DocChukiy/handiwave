@@ -346,6 +346,39 @@ function AppShell() {
   }, [theme])
 
   useEffect(() => {
+    function closeOpenMenus(event) {
+      if (event.target.closest('details')) {
+        return
+      }
+
+      document.querySelectorAll('.navbar details[open]').forEach((details) => {
+        details.removeAttribute('open')
+      })
+    }
+
+    function closeMenusOnScroll() {
+      document.querySelectorAll('.navbar details[open]').forEach((details) => {
+        details.removeAttribute('open')
+      })
+    }
+
+    document.addEventListener('click', closeOpenMenus)
+    window.addEventListener('scroll', closeMenusOnScroll, { passive: true })
+
+    return () => {
+      document.removeEventListener('click', closeOpenMenus)
+      window.removeEventListener('scroll', closeMenusOnScroll)
+    }
+  }, [])
+
+  useEffect(() => {
+    setIsMenuOpen(false)
+    document.querySelectorAll('.navbar details[open]').forEach((details) => {
+      details.removeAttribute('open')
+    })
+  }, [location.pathname])
+
+  useEffect(() => {
     let isMounted = true
 
     async function checkArtisanSetup() {
@@ -587,8 +620,9 @@ function AppShell() {
         <header className="navbar">
           <div className="navbar-inner">
             <NavLink className="logo" to="/" onClick={() => setIsMenuOpen(false)}>
-              Handiwave
-            </NavLink>
+  <img src="/Handiwave 1.svg" alt="Handiwave" className="logo-mark" />
+  Handiwave
+</NavLink>
 
             <button
               aria-expanded={isMenuOpen}
@@ -618,7 +652,7 @@ function AppShell() {
                 </NavLink>
               ))}
               {moreNavLinks.length > 0 && (
-                <details className={isMoreActive ? 'more-nav active' : 'more-nav'}>
+                <details className={isMoreActive ? 'more-nav active' : 'more-nav'} onMouseLeave={(event) => event.currentTarget.removeAttribute('open')}>
                   <summary className="nav-link">
                     More
                     <ChevronDown size={15} />
@@ -660,7 +694,7 @@ function AppShell() {
                 </div>
               )}
               {isAuthenticated && (
-                <details className="notification-nav">
+                <details className="notification-nav" onMouseLeave={(event) => event.currentTarget.removeAttribute('open')}>
                   <summary
                     aria-label="Notifications"
                     className="notification-trigger"
@@ -699,7 +733,7 @@ function AppShell() {
                 </details>
               )}
               {isAuthenticated && (
-                <details className="profile-nav">
+                <details className="profile-nav" onMouseLeave={(event) => event.currentTarget.removeAttribute('open')}>
                   <summary className="login-button">
                     Profile
                     <ChevronDown size={15} />
@@ -833,8 +867,9 @@ function AppShell() {
           <div className="footer-grid">
             <div className="footer-brand">
               <NavLink className="footer-logo" to="/">
-                Handiwave
-              </NavLink>
+  <img src="/Handiwave 1.svg" alt="Handiwave" className="logo-mark" />
+  Handiwave
+</NavLink>
               <p>
                 Book trusted artisans for home services quickly, safely, and
                 confidently across Nigeria.

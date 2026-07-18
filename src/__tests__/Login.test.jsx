@@ -65,7 +65,7 @@ describe('Login Page', () => {
     expect(screen.getByText(/log in to handiwave/i)).toBeInTheDocument()
   })
 
-  it('displays role selection options', () => {
+  it('displays customer and artisan roles without exposing admin by default', () => {
     render(
       <MemoryRouter>
         <Login />
@@ -73,6 +73,16 @@ describe('Login Page', () => {
     )
     expect(screen.getByText('Customer')).toBeInTheDocument()
     expect(screen.getByText('Artisan')).toBeInTheDocument()
+    expect(screen.queryByText('Admin')).not.toBeInTheDocument()
+  })
+
+  it('reveals the admin login option through the hidden admin trigger', () => {
+    render(
+      <MemoryRouter initialEntries={['/login?admin=1']}>
+        <Login />
+      </MemoryRouter>
+    )
+
     expect(screen.getByText('Admin')).toBeInTheDocument()
   })
 

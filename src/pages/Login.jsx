@@ -32,6 +32,15 @@ function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [password, setPassword] = useState('')
   const [selectedRole, setSelectedRole] = useState('customer')
+  const [showAdminRole, setShowAdminRole] = useState(() => {
+    if (typeof window === 'undefined') {
+      return false
+    }
+
+    const params = new URLSearchParams(window.location.search)
+
+    return params.get('admin') === '1' || params.get('admin') === 'true'
+  })
 
   const disabledReason = useMemo(() => {
     if (isSubmitting) {
@@ -50,6 +59,10 @@ function Login() {
   }, [email, isSubmitting, password])
   const isLoginDisabled = Boolean(disabledReason)
 
+  const visibleRoles = useMemo(() => (
+    showAdminRole ? roles : roles.filter((role) => role.value !== 'admin')
+  ), [showAdminRole])
+
   useEffect(() => {
     logger.debug('[Handiwave login debug]', {
       disabledReason: disabledReason || 'button enabled',
@@ -59,6 +72,32 @@ function Login() {
       passwordLength: password.length,
     })
   }, [disabledReason, email, isLoading, isSubmitting, password.length])
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const adminEnabled = params.get('admin') === '1' || params.get('admin') === 'true'
+
+    setShowAdminRole(adminEnabled)
+
+    if (!adminEnabled && selectedRole === 'admin') {
+      setSelectedRole('customer')
+    }
+  }, [location.search, selectedRole])
+
+  useEffect(() => {
+    function handleAdminToggle(event) {
+      if (event.key.toLowerCase() !== 'a' || !event.altKey || !(event.ctrlKey || event.metaKey)) {
+        return
+      }
+
+      event.preventDefault()
+      setShowAdminRole((currentValue) => !currentValue)
+    }
+
+    window.addEventListener('keydown', handleAdminToggle)
+
+    return () => window.removeEventListener('keydown', handleAdminToggle)
+  }, [])
 
   async function handleLogin(event) {
     event.preventDefault()
@@ -113,7 +152,7 @@ function Login() {
         <p>Log in with Supabase Auth and continue with the right Handiwave role.</p>
         <form className="auth-form" onSubmit={handleLogin}>
           <div className="role-selector" aria-label="Login role">
-            {roles.map((role) => (
+            {visibleRoles.map((role) => (
               <button
                 className={selectedRole === role.value ? 'active' : ''}
                 key={role.value}
