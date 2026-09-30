@@ -1,54 +1,15 @@
 export const serviceCategories = [
-  {
-    icon: '⚡',
-    title: 'Electrician',
-    description: 'Fix wiring, lighting, sockets, and power issues safely.',
-  },
-  {
-    icon: '🚰',
-    title: 'Plumber',
-    description: 'Repair leaks, taps, pipes, toilets, and water systems.',
-  },
-  {
-    icon: '🎨',
-    title: 'Painter',
-    description: 'Refresh homes and offices with neat interior painting.',
-  },
-  {
-    icon: '✨',
-    title: 'Cleaner',
-    description: 'Book reliable cleaning for homes, apartments, and offices.',
-  },
-  {
-    icon: '🪚',
-    title: 'Carpenter',
-    description: 'Get furniture repairs, fittings, shelves, and woodwork.',
-  },
-  {
-    icon: '❄️',
-    title: 'AC Repair',
-    description: 'Service, install, and repair air conditioners quickly.',
-  },
-  {
-    icon: '🔧',
-    title: 'Generator Repair',
-    description: 'Keep your generator running with trusted technicians.',
-  },
-  {
-    icon: '🔌',
-    title: 'Appliance Repair',
-    description: 'Repair fridges, washing machines, cookers, and more.',
-  },
-  {
-    icon: '🚗',
-    title: 'Mechanic',
-    description: 'Find mechanics for diagnostics, repairs, and servicing.',
-  },
-  {
-    icon: '💈',
-    title: 'Hair Stylist / Barber',
-    description: 'Book grooming, styling, cuts, braids, and beauty services.',
-  },
+  { icon: '🏠', title: 'Home Services', description: 'Plumbing, electrical, carpentry, AC, and general repairs.' },
+  { icon: '💄', title: 'Beauty & Personal Care', description: 'Hair stylists, barbers, makeup, and personal grooming.' },
+  { icon: '🚗', title: 'Automotive', description: 'Mechanics, car repairs, and vehicle maintenance.' },
+  { icon: '💻', title: 'Technology', description: 'Computer repair, phone repair, networking and IT support.' },
+  { icon: '🎉', title: 'Events', description: 'Catering, DJs, MCs, decorators and event support.' },
+  { icon: '🧹', title: 'Cleaning', description: 'Home and commercial cleaning, deep cleaning and move-outs.' },
+  { icon: '👗', title: 'Fashion', description: 'Tailors, designers, alterations and styling services.' },
+  { icon: '🎓', title: 'Education', description: 'Tutors, instructors, and educational support.' },
+  { icon: '🏥', title: 'Health & Wellness', description: 'Wellness services, therapists, and allied health professionals.' },
+  { icon: '🏢', title: 'Business Services', description: 'Professional services for businesses and commercial needs.' },
+  { icon: '➕', title: 'More Services', description: 'Explore additional service categories and specialists.' },
 ]
 
 export const services = [

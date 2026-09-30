@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
-import EmptyState from '../components/EmptyState.jsx'
 import RoleNotice from '../components/RoleNotice.jsx'
-import SkeletonPreview from '../components/Skeletons.jsx'
 import {
   confirmBookingCompleteForCustomer,
   createBooking,
@@ -24,6 +22,10 @@ import { createDisputeFromBooking } from '../services/disputeService.js'
 import { initializeBookingPayment } from '../services/paymentService.js'
 import { getMobilePaymentCallbackUrl, openUrl } from '../mobile/capacitor.js'
 import { showToast } from '../utils/toast.js'
+
+import BookingForm from '../components/bookings/BookingForm.jsx'
+import BookingHistory from '../components/bookings/BookingHistory.jsx'
+import BookingDisputeModal from '../components/bookings/BookingDisputeModal.jsx'
 
 const initialForm = {
   address: '',
@@ -66,7 +68,7 @@ const paymentStatusLabels = {
   unpaid: 'Unpaid',
 }
 
-function getErrorMessage(error) {
+export function getErrorMessage(error) {
   return [
     error.message,
     error.details,
@@ -75,7 +77,7 @@ function getErrorMessage(error) {
   ].filter(Boolean).join(' ')
 }
 
-function formatMoney(value, currency = 'NGN') {
+export function formatMoney(value, currency = 'NGN') {
   if (value === null || value === undefined || value === '') {
     return `${currency} 0`
   }
@@ -83,11 +85,11 @@ function formatMoney(value, currency = 'NGN') {
   return `${currency} ${Number(value || 0).toLocaleString()}`
 }
 
-function getBookingPrice(booking) {
+export function getBookingPrice(booking) {
   return booking.finalPrice || booking.quotedPrice || booking.estimatedPrice || booking.escrowAmount || 0
 }
 
-function getQuoteStatus(booking) {
+export function getQuoteStatus(booking) {
   if (['held_in_escrow', 'released', 'refunded'].includes(booking.paymentStatus)) {
     return 'paid'
   }
@@ -115,7 +117,7 @@ const quoteStatusLabels = {
   sent: 'Quote Sent',
 }
 
-function getDisplayPaymentStatus(booking) {
+export function getDisplayPaymentStatus(booking) {
   if (booking.paymentStatus === 'unpaid' && booking.paymentReference) {
     return 'pending'
   }
@@ -123,249 +125,7 @@ function getDisplayPaymentStatus(booking) {
   return booking.paymentStatus || 'unpaid'
 }
 
-function PaymentStatusBadge({ status }) {
-  return (
-    <span className={`payment-status-badge payment-${status || 'unpaid'}`}>
-      {paymentStatusLabels[status] || status?.replaceAll('_', ' ') || 'Unpaid'}
-    </span>
-  )
-}
-
-function QuoteStatusBadge({ status }) {
-  return (
-    <span className={`quote-status-badge quote-${status}`}>
-      {quoteStatusLabels[status]}
-    </span>
-  )
-}
-
-function CustomerQuotePanel({
-  booking,
-  isUpdating = false,
-  onQuoteResponse,
-}) {
-  const quoteStatus = getQuoteStatus(booking)
-
-  return (
-    <div className={`booking-quote-panel quote-${quoteStatus}`}>
-      <div className="booking-quote-heading">
-        <div>
-          <strong>{quoteStatusLabels[quoteStatus]}</strong>
-          <p>
-            {quoteStatus === 'awaiting' && 'Waiting for artisan quote.'}
-            {quoteStatus === 'sent' && 'Review the artisan quote before payment becomes available.'}
-            {quoteStatus === 'accepted' && 'Quote accepted. Payment required.'}
-            {quoteStatus === 'rejected' && 'Quote rejected. Waiting for a revised quote.'}
-            {quoteStatus === 'paid' && 'Payment is already protected in escrow or completed.'}
-          </p>
-        </div>
-        <QuoteStatusBadge status={quoteStatus} />
-      </div>
-
-      {booking.quoteSentAt && (
-        <div className="booking-quote-details">
-          <span>
-            <strong>{formatMoney(booking.quotedPrice)}</strong>
-            Quoted price
-          </span>
-          {booking.quoteNotes && (
-            <span>
-              <strong>Quote notes</strong>
-              {booking.quoteNotes}
-            </span>
-          )}
-        </div>
-      )}
-
-      {quoteStatus === 'sent' && (
-        <div className="booking-quote-actions">
-          <button
-            disabled={isUpdating}
-            type="button"
-            onClick={() => onQuoteResponse?.(booking, 'accept')}
-          >
-            {isUpdating ? 'Updating...' : 'Accept Quote'}
-          </button>
-          <button
-            disabled={isUpdating}
-            type="button"
-            onClick={() => onQuoteResponse?.(booking, 'reject')}
-          >
-            {isUpdating ? 'Updating...' : 'Reject Quote'}
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function CustomerEscrowPanel({ booking, currentUserId, isCustomer = false, isPaying = false, onPay }) {
-  const price = getBookingPrice(booking)
-  const displayPaymentStatus = getDisplayPaymentStatus(booking)
-  const normalizedPaymentStatus = booking.paymentStatus || 'unpaid'
-  const belongsToCustomer = booking.customerId === currentUserId
-  const quoteStatus = getQuoteStatus(booking)
-  const hasPrice = price > 0
-  const shouldShowPayButton = (
-    isCustomer &&
-    belongsToCustomer &&
-    quoteStatus === 'accepted' &&
-    ['unpaid', 'failed'].includes(normalizedPaymentStatus)
-  )
-  const escrowAmount = booking.escrowAmount || (
-    booking.paymentStatus === 'held_in_escrow' ? price : 0
-  )
-
-  logger.debug('[Handiwave Paystack button eligibility]', {
-    'booking.id': booking.id,
-    estimated_price: booking.estimatedPrice,
-    final_price: booking.finalPrice,
-    payment_status: booking.paymentStatus,
-    quote_accepted_at: booking.quoteAcceptedAt,
-    quoted_price: booking.quotedPrice,
-    shouldShowPayButton,
-  })
-
-  return (
-    <div className={shouldShowPayButton ? 'booking-payment-panel payment-action-panel' : 'booking-payment-panel'}>
-      {shouldShowPayButton && (
-        <div className="payment-action-heading">
-          <strong>Payment required</strong>
-          <span>Secure this booking through Paystack escrow.</span>
-        </div>
-      )}
-      <div className="booking-payment-row">
-        <span>
-          <strong>{formatMoney(price)}</strong>
-          {booking.finalPrice ? 'Final price' : booking.quotedPrice ? 'Quoted price' : 'Estimated price'}
-        </span>
-        <span>
-          <strong>{formatMoney(escrowAmount)}</strong>
-          Escrow protected
-        </span>
-        <span>
-          <PaymentStatusBadge status={displayPaymentStatus} />
-          Payment status
-        </span>
-      </div>
-      <p>
-        Escrow release after customer confirmation. Platform commission is deducted from the artisan payout after payment is confirmed.
-      </p>
-      {shouldShowPayButton ? (
-        <div className="payment-action-row">
-          <button
-            className="paystack-action-button"
-            disabled={isPaying || !hasPrice}
-            type="button"
-            onClick={() => onPay?.(booking)}
-          >
-            {isPaying ? 'Starting Paystack...' : 'Pay with Paystack'}
-          </button>
-          <strong>{formatMoney(price)}</strong>
-          {!hasPrice && (
-            <span>Price not set yet. Agree price with artisan before payment.</span>
-          )}
-        </div>
-      ) : (
-        <span className="payment-helper-note">
-          {quoteStatus === 'awaiting'
-            ? 'Waiting for artisan quote'
-            : quoteStatus === 'sent'
-            ? 'Accept or reject the artisan quote before payment.'
-            : quoteStatus === 'rejected'
-            ? 'Waiting for revised quote.'
-            : displayPaymentStatus === 'pending'
-            ? 'Payment started. Complete Paystack checkout or verify from the callback page.'
-            : paymentStatusLabels[displayPaymentStatus] || 'Payment status updated.'}
-        </span>
-      )}
-    </div>
-  )
-}
-
-function BookingAttachmentGallery({ attachments = [], label = 'Uploaded issue photos' }) {
-  const [selectedAttachment, setSelectedAttachment] = useState(null)
-
-  if (!attachments.length) {
-    return null
-  }
-
-  return (
-    <div className="booking-attachment-gallery">
-      <strong>{label}</strong>
-      <div className="booking-attachment-grid">
-        {attachments.map((attachment) => (
-          <button
-            key={attachment.id || attachment.filePath}
-            type="button"
-            onClick={() => setSelectedAttachment(attachment)}
-          >
-            {attachment.fileUrl ? (
-              <img alt={attachment.fileName} src={attachment.fileUrl} />
-            ) : (
-              <span>{attachment.fileName}</span>
-            )}
-          </button>
-        ))}
-      </div>
-      {selectedAttachment && (
-        <ImagePreviewModal
-          altText={selectedAttachment.fileName}
-          imageUrl={selectedAttachment.fileUrl}
-          title={selectedAttachment.fileName}
-          onClose={() => setSelectedAttachment(null)}
-        />
-      )}
-    </div>
-  )
-}
-
-function ImagePreviewModal({ altText, imageUrl, title, onClose }) {
-  return (
-    <div className="modal-backdrop image-preview-backdrop" role="presentation" onClick={onClose}>
-      <div className="image-preview-modal" role="dialog" aria-modal="true" aria-label={title} onClick={(event) => event.stopPropagation()}>
-        <div className="image-preview-header">
-          <strong>{title}</strong>
-          <button type="button" onClick={onClose}>Close</button>
-        </div>
-        {imageUrl ? (
-          <img alt={altText} src={imageUrl} />
-        ) : (
-          <p>Preview is unavailable for this attachment.</p>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function BookingImagePreviews({ files = [], previews = [], onRemove }) {
-  if (!files.length) {
-    return null
-  }
-
-  return (
-    <div className="booking-preview-panel">
-      <strong>Selected photos</strong>
-      <div className="booking-preview-grid">
-        {files.map((file, index) => (
-          <div className="booking-preview-card" key={`${file.name}-${file.size}-${index}`}>
-            {previews[index]?.url ? (
-              <img alt={file.name} src={previews[index].url} />
-            ) : (
-              <span>{file.name}</span>
-            )}
-            <button type="button" onClick={() => onRemove(index)}>
-              Remove
-            </button>
-            <small>{file.name}</small>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function getDateDayOfWeek(dateValue) {
+export function getDateDayOfWeek(dateValue) {
   if (!dateValue) {
     return null
   }
@@ -374,7 +134,7 @@ function getDateDayOfWeek(dateValue) {
   return new Date(year, month - 1, day).getDay()
 }
 
-function formatDateLabel(dateValue) {
+export function formatDateLabel(dateValue) {
   const [year, month, day] = dateValue.split('-').map(Number)
   return new Intl.DateTimeFormat('en-NG', {
     day: 'numeric',
@@ -383,7 +143,7 @@ function formatDateLabel(dateValue) {
   }).format(new Date(year, month - 1, day))
 }
 
-function getDateValueFromDate(date) {
+export function getDateValueFromDate(date) {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
@@ -391,23 +151,23 @@ function getDateValueFromDate(date) {
   return `${year}-${month}-${day}`
 }
 
-function timeToMinutes(time) {
+export function timeToMinutes(time) {
   const [hours, minutes] = time.split(':').map(Number)
   return (hours * 60) + minutes
 }
 
-function minutesToTime(totalMinutes) {
+export function minutesToTime(totalMinutes) {
   const hours = String(Math.floor(totalMinutes / 60)).padStart(2, '0')
   const minutes = String(totalMinutes % 60).padStart(2, '0')
 
   return `${hours}:${minutes}`
 }
 
-function timeIsInsideSlot(time, slot) {
+export function timeIsInsideSlot(time, slot) {
   return Boolean(time && slot.startTime <= time && slot.endTime > time)
 }
 
-function getGeneratedTimesForSlot(slot) {
+export function getGeneratedTimesForSlot(slot) {
   const startMinutes = timeToMinutes(slot.startTime)
   const endMinutes = timeToMinutes(slot.endTime)
   const times = []
@@ -423,7 +183,7 @@ function getGeneratedTimesForSlot(slot) {
   return times
 }
 
-function getUpcomingAvailableDates(availability, daysToShow = 45) {
+export function getUpcomingAvailableDates(availability, daysToShow = 45) {
   const activeDayNumbers = new Set(availability.slots.map((slot) => Number(slot.dayOfWeek)))
   const unavailableDateValues = new Set(
     availability.unavailableDates.map((date) => date.unavailableDate),
@@ -451,7 +211,7 @@ function getUpcomingAvailableDates(availability, daysToShow = 45) {
   return availableDates
 }
 
-function getAvailableTimesForDate({
+export function getAvailableTimesForDate({
   availability,
   date,
 }) {
@@ -474,7 +234,7 @@ function getAvailableTimesForDate({
     .filter((time) => !bookedTimes.has(time.value))
 }
 
-function getAvailabilityValidationMessage({
+export function getAvailabilityValidationMessage({
   availability,
   date,
   time,
@@ -517,314 +277,11 @@ function getAvailabilityValidationMessage({
   return ''
 }
 
-function CompletionReviewForm({
-  booking,
-  form,
-  isSubmitting,
-  mode = 'create',
-  onChange,
-  onSubmit,
-}) {
-  return (
-    <form className="booking-review-form" onSubmit={(event) => onSubmit(event, booking)}>
-      <div>
-        <strong>Leave a verified review</strong>
-        <p>Your feedback helps other customers choose trusted artisans.</p>
-      </div>
-      <label>
-        Rating
-        <select
-          disabled={isSubmitting}
-          value={form.rating}
-          onChange={(event) => onChange(booking.id, 'rating', event.target.value)}
-        >
-          <option value="5">5 stars - Excellent</option>
-          <option value="4">4 stars - Good</option>
-          <option value="3">3 stars - Okay</option>
-          <option value="2">2 stars - Poor</option>
-          <option value="1">1 star - Bad</option>
-        </select>
-      </label>
-      <label>
-        Review
-        <textarea
-          disabled={isSubmitting}
-          placeholder="Share what went well, timing, quality, and professionalism."
-          value={form.reviewText}
-          onChange={(event) => onChange(booking.id, 'reviewText', event.target.value)}
-        />
-      </label>
-      <button disabled={isSubmitting} type="submit">
-        {isSubmitting
-          ? mode === 'edit' ? 'Saving review...' : 'Submitting review...'
-          : mode === 'edit' ? 'Save Review' : 'Submit Review'}
-      </button>
-    </form>
-  )
-}
-
-function BookingHistorySection({
-  bookings,
-  emptyText,
-  onCompletionAction,
-  isLoading,
-  onReviewChange,
-  onReviewSubmit,
-  onRescheduleResponse,
-  participantLabel,
-  reviewForms = {},
-  showRescheduleActions = false,
-  editingReviewId,
-  onEditReviewStart,
-  updatingCompletionId,
-  title,
-  submittingReviewId,
-  updatingBookingId,
-  onReportIssue,
-  onPay,
-  onQuoteResponse,
-  payingBookingId,
-  updatingQuoteId,
-  user,
-}) {
-  const rescheduleRequestCount = bookings.filter((booking) => (
-    (booking.rawStatus || booking.status) === 'reschedule_requested'
-  )).length
-
-  return (
-    <div className="list-panel booking-history-panel">
-      <div className="booking-history-header">
-        <div>
-          <p className="section-kicker">History</p>
-          <h2>{title}</h2>
-        </div>
-      </div>
-
-      {!isLoading && showRescheduleActions && (
-        <div className="customer-reschedule-summary">
-          {rescheduleRequestCount > 0 ? (
-            <>
-              <span className="awaiting-response-badge">Awaiting Your Response</span>
-              <p>
-                {rescheduleRequestCount} booking{rescheduleRequestCount === 1 ? '' : 's'} need your schedule decision.
-              </p>
-            </>
-          ) : (
-            <EmptyState compact title="No reschedule requests">
-              Artisan time-change requests will appear here when they need your response.
-            </EmptyState>
-          )}
-        </div>
-      )}
-
-      {isLoading ? (
-        <SkeletonPreview count={3} label={`Loading ${title}`} type="service" />
-      ) : bookings.length > 0 ? (
-        bookings.map((booking) => {
-          const bookingStatus = booking.rawStatus || booking.status
-
-          if (showRescheduleActions) {
-            logger.debug('[Handiwave customer booking history render]', {
-              bookingId: booking.id,
-              displayStatus: booking.status,
-              rawStatus: booking.rawStatus,
-              review: booking.review,
-              reviewId: booking.reviewId,
-            })
-          }
-
-          return (
-            <article
-              className={
-                bookingStatus === 'reschedule_requested'
-                  ? 'list-row booking-row reschedule-booking-card'
-                  : 'list-row booking-row'
-              }
-              key={booking.id}
-            >
-              <div className="booking-card-content">
-                <div className="booking-card-top-row">
-                  <h3>{booking.service}</h3>
-                  <BookingStatusBadge status={bookingStatus} />
-                </div>
-                <div className="booking-card-meta-row">
-                  <span>{participantLabel(booking)}</span>
-                  <span>{booking.address}, {booking.city}, {booking.state}</span>
-                  <span>{booking.scheduledDate} at {booking.scheduledTime}</span>
-                </div>
-                {showRescheduleActions && (
-                  <CustomerQuotePanel
-                    booking={booking}
-                    isUpdating={updatingQuoteId === booking.id}
-                    onQuoteResponse={onQuoteResponse}
-                  />
-                )}
-                {showRescheduleActions && (
-                  <CustomerEscrowPanel
-                    booking={booking}
-                    currentUserId={user?.id}
-                    isCustomer={user?.role === 'customer'}
-                    isPaying={payingBookingId === booking.id}
-                    onPay={onPay}
-                  />
-                )}
-                {booking.notes && <p>{booking.notes}</p>}
-                <BookingAttachmentGallery attachments={booking.attachments} />
-                {showRescheduleActions && (
-                  <div className="booking-message-actions">
-                    <Link to={`/messages?booking=${booking.id}`}>
-                      Message Artisan
-                    </Link>
-                  </div>
-                )}
-                {showRescheduleActions && bookingStatus === 'completed' && (
-                  <div className="booking-compatibility-panel">
-                    <strong>Old completed status detected</strong>
-                    <p>
-                      This booking was completed before the new customer confirmation flow.
-                      New jobs should move from artisan completed to customer confirmed before reviews unlock.
-                    </p>
-                  </div>
-                )}
-                {showRescheduleActions && bookingStatus === 'artisan_completed' && (
-                  <div className="booking-completion-panel">
-                    <div>
-                      <span className="action-required-badge">Action Required</span>
-                      <strong>Artisan marked this job as completed.</strong>
-                      <p>Please confirm the work was completed safely before leaving a review.</p>
-                    </div>
-                    <div className="booking-completion-actions">
-                      <button
-                        disabled={updatingCompletionId === booking.id}
-                        type="button"
-                        onClick={() => onCompletionAction?.(booking, 'confirm')}
-                      >
-                        {updatingCompletionId === booking.id ? 'Confirming...' : 'Confirm Job Completed'}
-                      </button>
-                      <button
-                        disabled={updatingCompletionId === booking.id}
-                        type="button"
-                        onClick={() => onCompletionAction?.(booking, 'report')}
-                      >
-                        {updatingCompletionId === booking.id ? 'Reporting...' : 'Report Not Completed'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-                {showRescheduleActions && ['confirmed', 'in_progress', 'artisan_completed', 'customer_confirmed', 'completed'].includes(bookingStatus) && (
-                  <div className="booking-message-actions">
-                    <button
-                      className="dispute-open-button"
-                      type="button"
-                      onClick={() => onReportIssue?.(booking)}
-                    >
-                      Report Issue
-                    </button>
-                  </div>
-                )}
-                {showRescheduleActions && ['customer_confirmed', 'completed'].includes(bookingStatus) && (
-                  booking.review ? (
-                    <div className="booking-review-summary">
-                      {editingReviewId === booking.id ? (
-                        <CompletionReviewForm
-                          booking={booking}
-                          form={reviewForms[booking.id] || {
-                            rating: String(booking.review.rating || 5),
-                            reviewText: booking.review.review_text || '',
-                          }}
-                          isSubmitting={submittingReviewId === booking.id}
-                          mode="edit"
-                          onChange={onReviewChange}
-                          onSubmit={onReviewSubmit}
-                        />
-                      ) : (
-                        <>
-                          <div>
-                            <strong>Review submitted</strong>
-                            <p>{booking.review.review_text || 'No written comment added.'}</p>
-                          </div>
-                          <div className="booking-review-actions">
-                            <span>{booking.review.rating} stars</span>
-                            <button
-                              type="button"
-                              onClick={() => onEditReviewStart?.(booking)}
-                            >
-                              Edit Review
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ) : (
-                    <CompletionReviewForm
-                      booking={booking}
-                      form={reviewForms[booking.id] || { rating: '5', reviewText: '' }}
-                      isSubmitting={submittingReviewId === booking.id}
-                      onChange={onReviewChange}
-                      onSubmit={onReviewSubmit}
-                    />
-                  )
-                )}
-                {bookingStatus === 'reschedule_requested' && (
-                  <div className="booking-reschedule-note">
-                    <div className="booking-reschedule-heading">
-                      <strong>Artisan proposed a new time</strong>
-                      <span className="awaiting-response-badge">Awaiting Your Response</span>
-                    </div>
-                    <div className="reschedule-time-grid">
-                      <span>
-                        <strong>Original date/time</strong>
-                        {booking.scheduledDate} at {booking.scheduledTime}
-                      </span>
-                      <span>
-                        <strong>Proposed date/time</strong>
-                        {booking.proposedDate || 'Date pending'} at {booking.proposedTime || 'Time pending'}
-                      </span>
-                    </div>
-                    {booking.rescheduleNote && (
-                      <p className="reschedule-artisan-note">{booking.rescheduleNote}</p>
-                    )}
-                    {showRescheduleActions && (
-                      <div className="booking-reschedule-actions">
-                        <button
-                          disabled={updatingBookingId === booking.id}
-                          type="button"
-                          onClick={() => onRescheduleResponse?.(booking, 'accept')}
-                        >
-                          {updatingBookingId === booking.id ? 'Updating...' : 'Accept New Time'}
-                        </button>
-                        <button
-                          disabled={updatingBookingId === booking.id}
-                          type="button"
-                          onClick={() => onRescheduleResponse?.(booking, 'reject')}
-                        >
-                          {updatingBookingId === booking.id ? 'Updating...' : 'Reject New Time'}
-                        </button>
-                      </div>
-                    )}
-                    {booking.rescheduleRequestedAt && (
-                      <p>Requested: {new Date(booking.rescheduleRequestedAt).toLocaleString()}</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </article>
-          )
-        })
-      ) : (
-        <EmptyState compact title="No bookings yet">
-          {emptyText}
-        </EmptyState>
-      )}
-    </div>
-  )
-}
-
-function getArtisanName(artisan) {
+export function getArtisanName(artisan) {
   return artisan.profile?.full_name || artisan.business_name || 'Handiwave artisan'
 }
 
-function getBookingArtisanTrust(artisan) {
+export function getBookingArtisanTrust(artisan) {
   const rating = Number(artisan?.average_rating) || 0
   const reviewCount = artisan?.review_count || 0
   const completedJobs = artisan?.completed_jobs || 0
@@ -839,63 +296,6 @@ function getBookingArtisanTrust(artisan) {
     rating,
     reviewCount,
   }
-}
-
-function BookingArtisanTrustCard({ artisan }) {
-  if (!artisan) {
-    return null
-  }
-
-  const trust = getBookingArtisanTrust(artisan)
-
-  return (
-    <div className="booking-artisan-trust-card">
-      <div className="booking-artisan-trust-header">
-        <div>
-          <strong>{getArtisanName(artisan)}</strong>
-          <span>{trust.primaryService} in {artisan.city}, {artisan.state}</span>
-        </div>
-        {trust.isVerified && <span className="trust-badge verified">Verified Artisan</span>}
-      </div>
-
-      <div className="booking-artisan-trust-grid">
-        <span>
-          <strong>{trust.reviewCount > 0 ? trust.rating.toFixed(1) : 'New'}</strong>
-          {trust.reviewCount > 0 ? `${trust.reviewCount} review${trust.reviewCount === 1 ? '' : 's'}` : 'No reviews yet'}
-        </span>
-        <span>
-          <strong>{trust.completedJobs}</strong>
-          Completed jobs
-        </span>
-        <span>
-          <strong>{trust.isTopRated ? 'Yes' : 'Building'}</strong>
-          Top rated
-        </span>
-      </div>
-
-      <div className="trust-badge-row compact">
-        {trust.isTopRated && <span className="trust-badge top-rated">Top Rated</span>}
-        <span className="trust-badge fast">Fast Responder</span>
-        {trust.completedJobs >= 10 && (
-          <span className="trust-badge jobs">
-            {trust.completedJobs >= 100
-              ? '100+ Jobs Completed'
-              : trust.completedJobs >= 50
-              ? '50+ Jobs Completed'
-              : '10+ Jobs Completed'}
-          </span>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function BookingStatusBadge({ status }) {
-  return (
-    <span className={`booking-status status-${status}`}>
-      {statusLabels[status] || status.replaceAll('_', ' ')}
-    </span>
-  )
 }
 
 function Bookings() {
@@ -1099,7 +499,7 @@ function Bookings() {
       setAvailabilityError('')
       setIsLoadingAvailability(true)
 
-              try {
+      try {
         const { data, error: loadAvailabilityError } =
           await getCustomerBookingAvailability(form.artisanId)
 
@@ -1550,8 +950,8 @@ function Bookings() {
   }
 
   return (
-    <div className="starter-page">
-      <section className="page-hero compact">
+    <div className="hw-booking-page">
+      <section className="hw-booking-header">
         <p className="section-kicker">Bookings</p>
         <h1>{isCustomer ? 'Book a trusted artisan' : 'Manage real bookings'}</h1>
         <p>
@@ -1561,18 +961,27 @@ function Bookings() {
         </p>
       </section>
 
-      <section className="summary-grid">
-        <div><strong>{summary.upcomingCount}</strong><span>Upcoming</span></div>
-        <div><strong>{summary.completedCount}</strong><span>Completed</span></div>
-        <div><strong>{summary.cancelledCount}</strong><span>Cancelled</span></div>
-      </section>
+      <div className="hw-booking-summary">
+        <div className="hw-booking-summary-item">
+          <strong>{summary.upcomingCount}</strong>
+          <span>Upcoming</span>
+        </div>
+        <div className="hw-booking-summary-item">
+          <strong>{summary.completedCount}</strong>
+          <span>Completed</span>
+        </div>
+        <div className="hw-booking-summary-item">
+          <strong>{summary.cancelledCount}</strong>
+          <span>Cancelled</span>
+        </div>
+      </div>
 
       <RoleNotice />
 
-      {error && <p className="auth-error page-error">{error}</p>}
+      {error && <p className="hw-booking-error">{error}</p>}
 
       {lastCreatedBooking && (
-        <section className="booking-success-panel">
+        <div className="hw-booking-success-panel">
           <div>
             <span>Booking request created</span>
             <h2>{lastCreatedBooking.service}</h2>
@@ -1593,239 +1002,43 @@ function Bookings() {
               {payingBookingId === lastCreatedBooking.id ? 'Starting Paystack...' : 'Pay with Paystack'}
             </button>
           ) : (
-            <span className="payment-helper-note">Waiting for artisan quote</span>
+            <span className="hw-booking-helper-note">Waiting for artisan quote</span>
           )}
-        </section>
+        </div>
       )}
 
-      <section className="booking-layout">
+      <div className="hw-booking-layout">
         {isCustomer && (
-          <form className="booking-form" onSubmit={handleSubmit}>
-            <h2>Service details</h2>
-            <label>
-              Preferred artisan
-              <select
-                disabled={isLoading || isSaving}
-                value={form.artisanId}
-                onChange={(event) => handleArtisanChange(event.target.value)}
-              >
-                <option value="">Select an artisan</option>
-                {options.artisans.map((artisan) => (
-                  <option key={artisan.id} value={artisan.id}>
-                    {getArtisanName(artisan)} • {artisan.city}, {artisan.state}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Service type
-              <select
-                disabled={isLoading || isSaving}
-                value={form.serviceId}
-                onChange={(event) => updateForm('serviceId', event.target.value)}
-              >
-                <option value="">Select a service</option>
-                {options.services.map((service) => (
-                  <option key={service.id} value={service.id}>
-                    {service.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {selectedArtisan && selectedService && (
-              <p className="price-note">
-                {getArtisanName(selectedArtisan)} usually handles {selectedService.name}
-                {selectedArtisan.starting_price
-                  ? ` from NGN ${Number(selectedArtisan.starting_price).toLocaleString()}.`
-                  : '.'}
-              </p>
-            )}
-            <BookingArtisanTrustCard artisan={selectedArtisan} />
-            {selectedArtisan && (
-              <div className="booking-availability-panel">
-                <strong>Available slots</strong>
-                <p>
-                  Pick a date that matches this artisan&apos;s weekly schedule. Handiwave also checks blocked dates and existing bookings before submission.
-                </p>
-                {isLoadingAvailability ? (
-                  <p>Loading artisan availability...</p>
-                ) : availabilityError ? (
-                  <p>{availabilityError}</p>
-                ) : availableDayLabels.length > 0 ? (
-                  <>
-                    <div className="availability-chip-row">
-                      {availableDayLabels.map((day) => (
-                        <span key={day}>{day}</span>
-                      ))}
-                    </div>
-                    {availability.unavailableDates.length > 0 && (
-                      <p>
-                        Blocked dates: {availability.unavailableDates
-                          .slice(0, 3)
-                          .map((date) => date.unavailableDate)
-                          .join(', ')}
-                        {availability.unavailableDates.length > 3 ? '...' : ''}
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <p>This artisan has not added bookable availability yet.</p>
-                    <Link className="secondary-cta compact-cta" to="/messages">
-                      Message Artisan
-                    </Link>
-                  </>
-                )}
-              </div>
-            )}
-            <label>
-              Address
-              <input
-                disabled={isSaving}
-                placeholder="House 12, Admiralty Way"
-                value={form.address}
-                onChange={(event) => updateForm('address', event.target.value)}
-              />
-            </label>
-            <div className="form-split">
-              <label>
-                City
-                <input
-                  disabled={isSaving}
-                  placeholder="Lekki"
-                  value={form.city}
-                  onChange={(event) => updateForm('city', event.target.value)}
-                />
-              </label>
-              <label>
-                State
-                <input
-                  disabled={isSaving}
-                  placeholder="Lagos"
-                  value={form.state}
-                  onChange={(event) => updateForm('state', event.target.value)}
-                />
-              </label>
-            </div>
-            <div className="form-split">
-              <label>
-                Date
-                <select
-                  disabled={
-                    isSaving ||
-                    isLoadingAvailability ||
-                    availableBookingDates.length === 0
-                  }
-                  value={form.scheduledDate}
-                  onChange={(event) => handleDateChange(event.target.value)}
-                >
-                  <option value="">Select available date</option>
-                  {availableBookingDates.map((date) => (
-                    <option key={date.value} value={date.value}>
-                      {date.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Time
-                <select
-                  disabled={
-                    isSaving ||
-                    isLoadingAvailability ||
-                    !form.scheduledDate ||
-                    isSelectedDateUnavailable ||
-                    availableTimesForSelectedDate.length === 0
-                  }
-                  value={form.scheduledTime}
-                  onChange={(event) => updateForm('scheduledTime', event.target.value)}
-                >
-                  <option value="">Select available time</option>
-                  {availableTimesForSelectedDate.map((time) => (
-                    <option key={`${time.slotId}-${time.value}`} value={time.value}>
-                      {time.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            {selectedArtisan && !isLoadingAvailability && availableBookingDates.length === 0 && (
-              <div className="booking-empty-slot-panel">
-                <p>No available slots for this date. Try another date or message artisan.</p>
-                <Link className="secondary-cta compact-cta" to="/messages">
-                  Message Artisan
-                </Link>
-              </div>
-            )}
-            {form.scheduledDate && slotsForSelectedDate.length === 0 && (
-              <p className="auth-hint">
-                No available slots for this date. Try another date or message artisan.
-              </p>
-            )}
-            {isSelectedDateUnavailable && (
-              <p className="auth-error">
-                This artisan is unavailable on the selected date.
-              </p>
-            )}
-            {form.scheduledDate && slotsForSelectedDate.length > 0 && availableTimesForSelectedDate.length === 0 && !isSelectedDateUnavailable && (
-              <div className="booking-empty-slot-panel">
-                <p>No available slots for this date. Try another date or message artisan.</p>
-                <Link className="secondary-cta compact-cta" to="/messages">
-                  Message Artisan
-                </Link>
-              </div>
-            )}
-            {availabilityValidationMessage && (
-              <p className="auth-error">{availabilityValidationMessage}</p>
-            )}
-            <label>
-              Notes
-              <textarea
-                disabled={isSaving}
-                placeholder="Describe the issue or service needed"
-                value={form.notes}
-                onChange={(event) => updateForm('notes', event.target.value)}
-              />
-            </label>
-            <label>
-              Issue photos
-              <input
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                disabled={isSaving}
-                key={attachmentInputKey}
-                multiple
-                type="file"
-                onChange={(event) => handleAttachmentChange(event.target.files)}
-              />
-              <span className="auth-hint">
-                Upload photos of the issue so the artisan can estimate properly.
-              </span>
-            </label>
-            {form.attachmentFiles.length > 0 && (
-              <BookingImagePreviews
-                files={form.attachmentFiles}
-                previews={imagePreviews}
-                onRemove={handleRemoveAttachment}
-              />
-            )}
-            {uploadProgress && (
-              <div className="booking-upload-progress">
-                <strong>Uploading photos</strong>
-                <span>
-                  {uploadProgress.current} of {uploadProgress.total}
-                  {uploadProgress.fileName ? ` • ${uploadProgress.fileName}` : ''}
-                </span>
-                <progress max={uploadProgress.total} value={uploadProgress.current} />
-              </div>
-            )}
-            <button disabled={isLoading || isSaving} type="submit">
-              {isSaving ? 'Sending request...' : 'Send Booking Request'}
-            </button>
-          </form>
+          <BookingForm
+            form={form}
+            updateForm={updateForm}
+            handleSubmit={handleSubmit}
+            handleArtisanChange={handleArtisanChange}
+            handleDateChange={handleDateChange}
+            handleAttachmentChange={handleAttachmentChange}
+            handleRemoveAttachment={handleRemoveAttachment}
+            options={options}
+            selectedArtisan={selectedArtisan}
+            selectedService={selectedService}
+            availability={availability}
+            availabilityError={availabilityError}
+            availableDayLabels={availableDayLabels}
+            availableBookingDates={availableBookingDates}
+            availableTimesForSelectedDate={availableTimesForSelectedDate}
+            dateDayOfWeek={dateDayOfWeek}
+            slotsForSelectedDate={slotsForSelectedDate}
+            isSelectedDateUnavailable={isSelectedDateUnavailable}
+            isLoadingAvailability={isLoadingAvailability}
+            isLoading={isLoading}
+            isSaving={isSaving}
+            imagePreviews={imagePreviews}
+            uploadProgress={uploadProgress}
+            attachmentInputKey={attachmentInputKey}
+          />
         )}
 
         {isCustomer ? (
-          <BookingHistorySection
+          <BookingHistory
             bookings={bookings}
             emptyText="Your confirmed service requests will appear here after Supabase creates the booking row."
             editingReviewId={editingReviewId}
@@ -1841,7 +1054,7 @@ function Bookings() {
             participantLabel={(booking) => booking.artisan}
             payingBookingId={payingBookingId}
             reviewForms={reviewForms}
-            showRescheduleActions
+            showActions
             submittingReviewId={submittingReviewId}
             title="Customer booking history"
             updatingBookingId={updatingBookingId}
@@ -1850,7 +1063,7 @@ function Bookings() {
             user={user}
           />
         ) : (
-          <BookingHistorySection
+          <BookingHistory
             bookings={bookings}
             emptyText="Customer bookings assigned to your artisan profile will appear here."
             isLoading={isLoading}
@@ -1860,81 +1073,17 @@ function Bookings() {
             user={user}
           />
         )}
-      </section>
+      </div>
 
-      {disputeBooking && (
-        <div className="modal-backdrop" role="presentation">
-          <form className="reschedule-modal dispute-report-modal" onSubmit={handleDisputeSubmit}>
-            <div>
-              <p className="section-kicker">Report issue</p>
-              <h2>{disputeBooking.service}</h2>
-              <p>Share what happened so Handiwave support can review the booking fairly.</p>
-            </div>
-            <label>
-              Reason
-              <select
-                required
-                value={disputeForm.reason}
-                onChange={(event) => updateDisputeForm('reason', event.target.value)}
-              >
-                <option value="">Choose a reason</option>
-                <option value="Job was not completed">Job was not completed</option>
-                <option value="Poor quality work">Poor quality work</option>
-                <option value="Artisan did not arrive">Artisan did not arrive</option>
-                <option value="Payment or refund issue">Payment or refund issue</option>
-                <option value="Safety concern">Safety concern</option>
-              </select>
-            </label>
-            <label>
-              Description
-              <textarea
-                required
-                placeholder="Describe the issue clearly."
-                value={disputeForm.description}
-                onChange={(event) => updateDisputeForm('description', event.target.value)}
-              />
-            </label>
-            <label>
-              Requested resolution
-              <input
-                placeholder="Refund, rework, support review..."
-                value={disputeForm.requestedResolution}
-                onChange={(event) => updateDisputeForm('requestedResolution', event.target.value)}
-              />
-            </label>
-            <label>
-              Optional refund amount
-              <input
-                min="0"
-                placeholder="25000"
-                type="number"
-                value={disputeForm.refundAmount}
-                onChange={(event) => updateDisputeForm('refundAmount', event.target.value)}
-              />
-            </label>
-            <label>
-              Evidence
-              <input
-                type="file"
-                onChange={(event) => updateDisputeForm('evidenceFile', event.target.files?.[0] || null)}
-              />
-            </label>
-            <div className="modal-actions">
-              <button
-                className="secondary-cta"
-                disabled={isSubmittingDispute}
-                type="button"
-                onClick={() => setDisputeBooking(null)}
-              >
-                Cancel
-              </button>
-              <button className="primary-cta" disabled={isSubmittingDispute} type="submit">
-                {isSubmittingDispute ? 'Submitting...' : 'Open Dispute'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      <BookingDisputeModal
+        isOpen={disputeBooking !== null}
+        booking={disputeBooking}
+        disputeForm={disputeForm}
+        isSubmitting={isSubmittingDispute}
+        onClose={() => setDisputeBooking(null)}
+        onSubmit={handleDisputeSubmit}
+        updateDisputeForm={updateDisputeForm}
+      />
     </div>
   )
 }

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-labelledby="title">
+  <title id="title">Handiwave</title>
+  <defs>
+    <linearGradient id="green" x1="6" y1="4" x2="42" y2="44" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22c55e"/>
+      <stop offset="1" stop-color="#15803d"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#green)" d="M8 4h8a4 4 0 0 1 4 4v9.2l4 3.2 4-3.2V8a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v32a4 4 0 0 1-4 4h-8a4 4 0 0 1-4-4v-8.8l-4 3.2-4-3.2V40a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4Z"/>
+  <path fill="#fff" d="m24 20.3 7.2 5.7-7.2 5.7-7.2-5.7 7.2-5.7Z"/>
+  <circle cx="24" cy="26" r="1.8" fill="#14532d"/>
+</svg>

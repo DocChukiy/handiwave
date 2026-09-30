@@ -1,0 +1,385 @@
+/**
+ * Handiwave Layout Styles
+ * 
+ * This file contains layout utilities and component layouts.
+ * These classes follow the design tokens defined in tokens.css.
+ * 
+ * Usage:
+ *   import './styles/layout.css';
+ * 
+ * Layout naming convention:
+ *   hw-container-* (containers)
+ *   hw-grid-* (grids)
+ *   hw-flex-* (flexbox utilities)
+ *   hw-stack-* (vertical stacks)
+ */
+
+/* ============================================
+   CONTAINERS
+   ============================================ */
+
+/* Centered page container */
+.hw-container {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: var(--hw-container-max);
+  padding-left: var(--hw-page-padding);
+  padding-right: var(--hw-page-padding);
+  width: 100%;
+}
+
+/* Narrow container for forms, auth pages */
+.hw-container-narrow {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: var(--hw-container-narrow);
+  padding-left: var(--hw-page-padding);
+  padding-right: var(--hw-page-padding);
+  width: 100%;
+}
+
+/* ============================================
+   PAGE LAYOUT
+   ============================================ */
+
+/* Main page wrapper */
+.hw-page {
+  min-height: 100vh;
+  padding-bottom: calc(var(--hw-space-16) + 4rem); /* Space for mobile nav */
+  padding-left: var(--hw-page-padding);
+  padding-right: var(--hw-page-padding);
+  padding-top: var(--hw-space-8);
+}
+
+@media (min-width: 640px) {
+  .hw-page {
+    padding-bottom: var(--hw-space-16);
+    padding-top: var(--hw-space-10);
+  }
+}
+
+/* Page content area */
+.hw-page-content {
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: var(--hw-page-margin-top);
+  max-width: var(--hw-page-max-width);
+}
+
+/* ============================================
+   GRID SYSTEM
+   ============================================ */
+
+/* Auto-fit grid with minimum column width */
+.hw-grid-auto {
+  display: grid;
+  gap: var(--hw-card-gap);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+}
+
+/* Two column grid */
+.hw-grid-2 {
+  display: grid;
+  gap: var(--hw-card-gap);
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* Three column grid */
+.hw-grid-3 {
+  display: grid;
+  gap: var(--hw-card-gap);
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Four column grid */
+.hw-grid-4 {
+  display: grid;
+  gap: var(--hw-card-gap);
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* Responsive grids - collapse to single column on mobile */
+@media (max-width: 640px) {
+  .hw-grid-2,
+  .hw-grid-3,
+  .hw-grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1024px) {
+  .hw-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ============================================
+   STACK LAYOUTS (Vertical)
+   ============================================ */
+
+/* Stack with small gap */
+.hw-stack-sm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hw-space-3);
+}
+
+/* Stack with medium gap */
+.hw-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hw-space-4);
+}
+
+/* Stack with large gap */
+.hw-stack-lg {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hw-space-6);
+}
+
+/* Stack with extra large gap */
+.hw-stack-xl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hw-space-8);
+}
+
+/* ============================================
+   ROW LAYOUTS (Horizontal)
+   ============================================ */
+
+/* Row with small gap */
+.hw-row-sm {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hw-space-2);
+}
+
+/* Row with medium gap */
+.hw-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hw-space-4);
+}
+
+/* Row with large gap */
+.hw-row-lg {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hw-space-6);
+}
+
+/* Row that wraps on smaller screens */
+.hw-row-responsive {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hw-space-4);
+}
+
+/* ============================================
+   FLEX UTILITIES
+   ============================================ */
+
+/* Flex center */
+.hw-flex-center {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+/* Flex between */
+.hw-flex-between {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Flex end */
+.hw-flex-end {
+  align-items: center;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Flex start */
+.hw-flex-start {
+  align-items: center;
+  display: flex;
+  justify-content: flex-start;
+}
+
+/* Flex column */
+.hw-flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Flex grow */
+.hw-flex-grow {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ============================================
+   TEXT UTILITIES
+   ============================================ */
+
+/* Text alignment */
+.hw-text-left {
+  text-align: left;
+}
+
+.hw-text-center {
+  text-align: center;
+}
+
+.hw-text-right {
+  text-align: right;
+}
+
+/* Text colors */
+.hw-text-primary {
+  color: var(--hw-text-primary);
+}
+
+.hw-text-secondary {
+  color: var(--hw-text-secondary);
+}
+
+.hw-text-muted {
+  color: var(--hw-text-muted);
+}
+
+.hw-text-success {
+  color: var(--hw-success);
+}
+
+.hw-text-warning {
+  color: var(--hw-warning);
+}
+
+.hw-text-error {
+  color: var(--hw-error);
+}
+
+/* ============================================
+   SPACING UTILITIES
+   ============================================ */
+
+/* Margin top */
+.hw-mt-auto {
+  margin-top: auto;
+}
+
+.hw-mt-0 {
+  margin-top: 0;
+}
+
+.hw-mt-2 {
+  margin-top: var(--hw-space-2);
+}
+
+.hw-mt-4 {
+  margin-top: var(--hw-space-4);
+}
+
+.hw-mt-6 {
+  margin-top: var(--hw-space-6);
+}
+
+.hw-mt-8 {
+  margin-top: var(--hw-space-8);
+}
+
+/* Margin bottom */
+.hw-mb-0 {
+  margin-bottom: 0;
+}
+
+.hw-mb-2 {
+  margin-bottom: var(--hw-space-2);
+}
+
+.hw-mb-4 {
+  margin-bottom: var(--hw-space-4);
+}
+
+.hw-mb-6 {
+  margin-bottom: var(--hw-space-6);
+}
+
+/* Margin auto */
+.hw-mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ============================================
+   WIDTH UTILITIES
+   ============================================ */
+
+.hw-w-full {
+  width: 100%;
+}
+
+.hw-w-auto {
+  width: auto;
+}
+
+/* ============================================
+   VISIBILITY
+   ============================================ */
+
+.hw-hidden {
+  display: none;
+}
+
+.hw-visible {
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .hw-show-mobile {
+    display: block;
+  }
+  
+  .hw-hide-mobile {
+    display: none;
+  }
+}
+
+@media (min-width: 641px) {
+  .hw-show-desktop {
+    display: block;
+  }
+  
+  .hw-hide-desktop {
+    display: none;
+  }
+}
+
+/* ============================================
+   OVERFLOW
+   ============================================ */
+
+.hw-overflow-auto {
+  overflow: auto;
+}
+
+.hw-overflow-hidden {
+  overflow: hidden;
+}
+
+.hw-overflow-x-auto {
+  overflow-x: auto;
+}
+
+.hw-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

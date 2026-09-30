@@ -1,0 +1,285 @@
+/**
+ * Handiwave Design Tokens
+ * 
+ * This file contains all the design tokens (CSS custom properties) for the Handiwave
+ * design system. These tokens provide a consistent foundation for colors, spacing,
+ * typography, and visual properties.
+ * 
+ * Usage:
+ *   import './styles/tokens.css';
+ * 
+ * Reference tokens in CSS:
+ *   .my-component {
+ *     color: var(--hw-primary);
+ *     padding: var(--hw-space-4);
+ *   }
+ */
+
+/* ============================================
+   COLOR TOKENS
+   ============================================ */
+
+:root {
+  /* Primary - Handiwave Green */
+  --hw-primary: #16a34a;
+  --hw-primary-hover: #15803d;
+  --hw-primary-active: #14532d;
+  
+  /* Primary Dark */
+  --hw-primary-dark: #064e3b;
+  --hw-primary-dark-text: #052e16;
+  
+  /* Primary Light / Tint */
+  --hw-primary-light: #dcfce7;
+  --hw-primary-lighter: #f0fdf4;
+  --hw-primary-tint: #ecfdf5;
+  
+  /* Background */
+  --hw-bg: #f8fafc;
+  --hw-bg-page: #ffffff;
+  
+  /* Surface / Card */
+  --hw-surface: #ffffff;
+  --hw-surface-hover: #f8fafc;
+  
+  /* Text */
+  --hw-text-primary: #0f172a;
+  --hw-text-secondary: #334155;
+  --hw-text-muted: #64748b;
+  --hw-text-placeholder: #94a3b8;
+  
+  /* Border */
+  --hw-border: rgba(220, 239, 228, 0.9);
+  --hw-border-strong: rgba(14, 165, 89, 0.16);
+  --hw-border-subtle: rgba(226, 232, 240, 0.8);
+  
+  /* Semantic Colors */
+  --hw-success: #16a34a;
+  --hw-success-light: #dcfce7;
+  --hw-success-text: #047857;
+  
+  --hw-warning: #f59e0b;
+  --hw-warning-light: #fef3c7;
+  --hw-warning-text: #b45309;
+  
+  --hw-error: #ef4444;
+  --hw-error-light: #fee2e2;
+  --hw-error-text: #dc2626;
+  
+  --hw-info: #3b82f6;
+  --hw-info-light: #dbeafe;
+  --hw-info-text: #1d4ed8;
+  
+  /* Neutral Badge */
+  --hw-neutral: #6b7280;
+  --hw-neutral-light: #f3f4f6;
+  --hw-neutral-text: #374151;
+  
+  /* Verified Badge */
+  --hw-verified: #16a34a;
+  --hw-verified-light: #dcfce7;
+  --hw-verified-text: #047857;
+  
+  /* Overlay */
+  --hw-overlay: rgba(15, 23, 42, 0.52);
+  
+  /* Selection */
+  --hw-selection-bg: #bbf7d0;
+  --hw-selection-text: #052e23;
+}
+
+/* ============================================
+   SPACING TOKENS
+   ============================================ */
+
+:root {
+  --hw-space-1: 4px;
+  --hw-space-2: 8px;
+  --hw-space-3: 12px;
+  --hw-space-4: 16px;
+  --hw-space-5: 20px;
+  --hw-space-6: 24px;
+  --hw-space-8: 32px;
+  --hw-space-10: 40px;
+  --hw-space-12: 48px;
+  --hw-space-16: 64px;
+  
+  /* Semantic spacing */
+  --hw-page-padding: clamp(16px, 2.5vw, 32px);
+  --hw-section-gap: clamp(32px, 5vw, 64px);
+  --hw-card-gap: clamp(16px, 2.5vw, 24px);
+}
+
+/* ============================================
+   BORDER RADIUS TOKENS
+   ============================================ */
+
+:root {
+  --hw-radius-sm: 8px;
+  --hw-radius-md: 12px;
+  --hw-radius-lg: 16px;
+  --hw-radius-xl: 20px;
+  --hw-radius-2xl: 24px;
+  --hw-radius-pill: 999px;
+}
+
+/* ============================================
+   SHADOW TOKENS
+   ============================================ */
+
+:root {
+  --hw-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --hw-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  --hw-shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --hw-shadow-lg: 0 16px 48px rgba(15, 23, 42, 0.1);
+  --hw-shadow-xl: 0 24px 64px rgba(15, 23, 42, 0.12);
+  
+  /* Interactive shadow (for buttons, inputs) */
+  --hw-shadow-interactive: 0 4px 16px rgba(5, 150, 105, 0.15);
+  --hw-shadow-interactive-hover: 0 8px 24px rgba(5, 150, 105, 0.2);
+}
+
+/* ============================================
+   TYPOGRAPHY TOKENS
+   ============================================ */
+
+:root {
+  /* Font Family */
+  --hw-font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  
+  /* Font Sizes */
+  --hw-text-xs: 0.75rem;    /* 12px */
+  --hw-text-sm: 0.875rem;   /* 14px */
+  --hw-text-base: 1rem;      /* 16px */
+  --hw-text-lg: 1.125rem;   /* 18px */
+  --hw-text-xl: 1.25rem;   /* 20px */
+  --hw-text-2xl: 1.5rem;   /* 24px */
+  --hw-text-3xl: 1.875rem;  /* 30px */
+  --hw-text-4xl: 2.25rem;  /* 36px */
+  --hw-text-5xl: 3rem;     /* 48px */
+  
+  /* Font Weights */
+  --hw-font-normal: 400;
+  --hw-font-medium: 500;
+  --hw-font-semibold: 600;
+  --hw-font-bold: 700;
+  --hw-font-extrabold: 800;
+  
+  /* Line Heights */
+  --hw-leading-tight: 1.1;
+  --hw-leading-snug: 1.25;
+  --hw-leading-normal: 1.5;
+  --hw-leading-relaxed: 1.625;
+  
+  /* Letter Spacing */
+  --hw-tracking-tight: -0.02em;
+  --hw-tracking-normal: 0;
+  --hw-tracking-wide: 0.02em;
+  --hw-tracking-wider: 0.05em;
+}
+
+/* ============================================
+   LAYOUT TOKENS
+   ============================================ */
+
+:root {
+  /* Container */
+  --hw-container-max: 1200px;
+  --hw-container-narrow: 720px;
+  
+  /* Page */
+  --hw-page-max-width: 1200px;
+  --hw-page-margin-top: clamp(48px, 7vw, 84px);
+}
+
+/* ============================================
+   TRANSITION TOKENS
+   ============================================ */
+
+:root {
+  --hw-transition-fast: 150ms ease;
+  --hw-transition: 200ms ease;
+  --hw-transition-slow: 300ms ease;
+  --hw-transition-colors: background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease, color 200ms ease;
+}
+
+/* ============================================
+   Z-INDEX TOKENS
+   ============================================ */
+
+:root {
+  --hw-z-dropdown: 30;
+  --hw-z-sticky: 40;
+  --hw-z-fixed: 50;
+  --hw-z-modal-backdrop: 60;
+  --hw-z-modal: 70;
+  --hw-z-toast: 80;
+}
+
+/* ============================================
+   DARK MODE TOKENS
+   ============================================ */
+
+:root[data-theme='dark'] {
+  /* Background */
+  --hw-bg: #0f172a;
+  --hw-bg-page: #020617;
+  
+  /* Surface / Card */
+  --hw-surface: #1e293b;
+  --hw-surface-hover: #334155;
+  
+  /* Text */
+  --hw-text-primary: #f8fafc;
+  --hw-text-secondary: #cbd5e1;
+  --hw-text-muted: #94a3b8;
+  --hw-text-placeholder: #64748b;
+  
+  /* Border */
+  --hw-border: rgba(51, 65, 85, 0.6);
+  --hw-border-strong: rgba(52, 211, 153, 0.2);
+  --hw-border-subtle: rgba(148, 163, 184, 0.2);
+  
+  /* Success */
+  --hw-success-light: rgba(16, 185, 129, 0.15);
+  --hw-success-text: #86efac;
+  
+  /* Warning */
+  --hw-warning-light: rgba(245, 158, 11, 0.15);
+  --hw-warning-text: #fbbf24;
+  
+  /* Error */
+  --hw-error-light: rgba(239, 68, 68, 0.15);
+  --hw-error-text: #fca5a5;
+  
+  /* Info */
+  --hw-info-light: rgba(59, 130, 246, 0.15);
+  --hw-info-text: #93c5fd;
+  
+  /* Neutral */
+  --hw-neutral: #9ca3af;
+  --hw-neutral-light: rgba(107, 114, 128, 0.2);
+  --hw-neutral-text: #d1d5db;
+  
+  /* Verified */
+  --hw-verified-light: rgba(16, 185, 129, 0.15);
+  --hw-verified-text: #86efac;
+  
+  /* Shadow */
+  --hw-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --hw-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --hw-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.3);
+  --hw-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.35);
+  --hw-shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.4);
+  
+  /* Interactive shadow */
+  --hw-shadow-interactive: 0 4px 16px rgba(16, 185, 129, 0.2);
+  --hw-shadow-interactive-hover: 0 8px 24px rgba(16, 185, 129, 0.25);
+  
+  /* Selection */
+  --hw-selection-bg: #34d399;
+  --hw-selection-text: #02130c;
+  
+  /* Overlay */
+  --hw-overlay: rgba(2, 6, 23, 0.72);
+}

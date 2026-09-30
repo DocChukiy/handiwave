@@ -1,0 +1,588 @@
+/**
+ * Handiwave Services Page Styles
+ * 
+ * Category-first service discovery design.
+ * Uses the hw-* design system tokens.
+ */
+
+/* ============================================
+   PAGE CONTAINER
+   ============================================ */
+
+.hw-services-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hw-section-gap);
+  padding-bottom: var(--hw-space-12);
+}
+
+/* ============================================
+   SECTION 1: SMART CONTEXT HEADER
+   ============================================ */
+
+.hw-services-header {
+  padding: var(--hw-space-4) 0;
+}
+
+.hw-services-header h1 {
+  color: var(--hw-text-primary);
+  font-size: var(--hw-text-2xl);
+  font-weight: var(--hw-font-bold);
+  line-height: var(--hw-leading-tight);
+  margin: 0;
+}
+
+.hw-services-header p {
+  color: var(--hw-text-muted);
+  font-size: var(--hw-text-base);
+  margin: var(--hw-space-2) 0 0;
+}
+
+/* ============================================
+   SECTION 2: CATEGORY NAVIGATION
+   ============================================ */
+
+.hw-category-nav {
+  padding: var(--hw-space-2) 0;
+}
+
+.hw-category-scroll {
+  display: flex;
+  gap: var(--hw-space-2);
+  overflow-x: auto;
+  padding: var(--hw-space-1) 0;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.hw-category-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.hw-category-chip {
+  align-items: center;
+  background: var(--hw-surface);
+  border: 1px solid var(--hw-border);
+  border-radius: var(--hw-radius-pill);
+  color: var(--hw-text-secondary);
+  cursor: pointer;
+  display: flex;
+  gap: var(--hw-space-2);
+  flex-shrink: 0;
+  font-family: var(--hw-font);
+  font-size: var(--hw-text-sm);
+  font-weight: var(--hw-font-medium);
+  padding: var(--hw-space-2) var(--hw-space-4);
+  scroll-snap-align: start;
+  transition: all var(--hw-transition);
+}
+
+.hw-category-chip:hover {
+  border-color: var(--hw-primary);
+  color: var(--hw-primary);
+}
+
+.hw-category-chip.active {
+  background: var(--hw-primary);
+  border-color: var(--hw-primary);
+  color: #ffffff;
+}
+
+.hw-category-chip svg {
+  flex-shrink: 0;
+}
+
+/* Desktop: responsive grid layout */
+@media (min-width: 768px) {
+  .hw-category-scroll {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: var(--hw-space-3);
+    overflow-x: visible;
+  }
+  
+  .hw-category-chip {
+    flex-direction: column;
+    padding: var(--hw-space-4) var(--hw-space-3);
+    text-align: center;
+    border-radius: var(--hw-radius-lg);
+  }
+}
+
+/* ============================================
+   SECTION 3: SEARCH
+   ============================================ */
+
+.hw-services-search-section {
+  padding: var(--hw-space-2) 0;
+}
+
+.hw-services-search-form {
+  width: 100%;
+}
+
+.hw-search-input-wrapper {
+  align-items: center;
+  background: var(--hw-surface);
+  border: 1px solid var(--hw-border);
+  border-radius: var(--hw-radius-lg);
+  display: flex;
+  flex: 1;
+  padding-left: var(--hw-space-4);
+  transition: border-color var(--hw-transition), box-shadow var(--hw-transition);
+}
+
+.hw-search-input-wrapper:focus-within {
+  border-color: var(--hw-primary);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+.hw-search-icon {
+  color: var(--hw-text-muted);
+  flex-shrink: 0;
+}
+
+.hw-search-input {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  flex: 1;
+  font-family: var(--hw-font);
+  font-size: var(--hw-text-base);
+  padding: var(--hw-space-3) var(--hw-space-3) var(--hw-space-3) var(--hw-space-3);
+}
+
+.hw-search-input:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+.hw-search-input::placeholder {
+  color: var(--hw-text-placeholder);
+}
+
+.hw-search-clear {
+  align-items: center;
+  background: transparent;
+  border: none;
+  color: var(--hw-text-muted);
+  cursor: pointer;
+  display: flex;
+  padding: var(--hw-space-2) var(--hw-space-3);
+  transition: color var(--hw-transition);
+}
+
+.hw-search-clear:hover {
+  color: var(--hw-text-primary);
+}
+
+/* ============================================
+   SECTION 4: POPULAR SERVICES
+   ============================================ */
+
+.hw-popular-services {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hw-space-4);
+}
+
+.hw-popular-scroll {
+  display: flex;
+  gap: var(--hw-space-3);
+  overflow-x: auto;
+  padding: var(--hw-space-1) 0;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.hw-popular-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.hw-popular-card {
+  flex-shrink: 0;
+  scroll-snap-align: start;
+}
+
+.hw-popular-card a {
+  align-items: center;
+  background: var(--hw-surface);
+  border: 1px solid var(--hw-border);
+  border-radius: var(--hw-radius-lg);
+  display: flex;
+  gap: var(--hw-space-3);
+  padding: var(--hw-space-3) var(--hw-space-4);
+  text-decoration: none;
+  transition: border-color var(--hw-transition), box-shadow var(--hw-transition);
+  min-width: 180px;
+}
+
+.hw-popular-card a:hover {
+  border-color: var(--hw-primary);
+  box-shadow: var(--hw-shadow-md);
+}
+
+.hw-popular-icon {
+  font-size: var(--hw-text-2xl);
+  flex-shrink: 0;
+}
+
+.hw-popular-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hw-space-1);
+}
+
+.hw-popular-info strong {
+  color: var(--hw-text-primary);
+  font-size: var(--hw-text-sm);
+  font-weight: var(--hw-font-semibold);
+}
+
+.hw-popular-info span {
+  color: var(--hw-primary);
+  font-size: var(--hw-text-xs);
+  font-weight: var(--hw-font-medium);
+}
+
+/* ============================================
+   SECTION 5 & 6: FILTERS
+   ============================================ */
+
+.hw-filter-toggle {
+  align-items: center;
+  display: flex;
+  gap: var(--hw-space-4);
+  justify-content: space-between;
+  padding: var(--hw-space-2) 0;
+}
+
+.hw-results-count {
+  color: var(--hw-text-muted);
+  font-size: var(--hw-text-sm);
+}
+
+.hw-filter-badge {
+  margin-left: var(--hw-space-2);
+}
+
+.hw-filter-panel {
+  background: var(--hw-surface);
+  border: 1px solid var(--hw-border);
+  border-radius: var(--hw-radius-lg);
+  display: none;
+  flex-direction: column;
+  gap: var(--hw-space-4);
+  padding: var(--hw-space-4);
+}
+
+.hw-filter-panel.show {
+  display: flex;
+}
+
+@media (min-width: 768px) {
+  .hw-filter-panel {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+  
+  .hw-filter-toggle {
+    display: none;
+  }
+}
+
+.hw-filter-grid {
+  display: grid;
+  gap: var(--hw-space-4);
+  flex: 1;
+}
+
+@media (min-width: 768px) {
+  .hw-filter-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.hw-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hw-space-2);
+}
+
+.hw-filter-group label {
+  color: var(--hw-text-secondary);
+  font-size: var(--hw-text-sm);
+  font-weight: var(--hw-font-medium);
+}
+
+.hw-filter-range {
+  min-width: 100%;
+}
+
+.hw-range-input {
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--hw-border);
+  border-radius: var(--hw-radius-pill);
+  height: 6px;
+  width: 100%;
+}
+
+.hw-range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--hw-primary);
+  border-radius: 50%;
+  cursor: pointer;
+  height: 20px;
+  width: 20px;
+}
+
+.hw-range-input::-moz-range-thumb {
+  background: var(--hw-primary);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  height: 20px;
+  width: 20px;
+}
+
+.hw-range-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--hw-space-1);
+}
+
+.hw-range-labels span {
+  color: var(--hw-text-muted);
+  font-size: var(--hw-text-xs);
+}
+
+.hw-filter-actions {
+  align-items: center;
+  display: flex;
+  gap: var(--hw-space-3);
+  padding-top: var(--hw-space-2);
+}
+
+@media (min-width: 768px) {
+  .hw-filter-actions {
+    justify-content: flex-end;
+  }
+}
+
+/* ============================================
+   SECTION 7: SERVICE DISCOVERY GRID
+   ============================================ */
+
+.hw-services-grid-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hw-space-4);
+}
+
+.hw-services-grid {
+  display: grid;
+  gap: var(--hw-space-4);
+  grid-template-columns: repeat(1, 1fr);
+}
+
+@media (min-width: 640px) {
+  .hw-services-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .hw-services-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ============================================
+   SECTION 8: CATEGORY FILTER CHIPS
+   ============================================ */
+
+.hw-category-filters-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hw-space-4);
+}
+
+.hw-category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hw-space-2);
+}
+
+.hw-chip {
+  background: var(--hw-surface);
+  border: 1px solid var(--hw-border);
+  border-radius: var(--hw-radius-pill);
+  color: var(--hw-text-secondary);
+  cursor: pointer;
+  font-family: var(--hw-font);
+  font-size: var(--hw-text-sm);
+  font-weight: var(--hw-font-medium);
+  padding: var(--hw-space-2) var(--hw-space-4);
+  transition: all var(--hw-transition);
+}
+
+.hw-chip:hover {
+  border-color: var(--hw-primary);
+  color: var(--hw-primary);
+}
+
+.hw-chip.active {
+  background: var(--hw-primary);
+  border-color: var(--hw-primary);
+  color: #ffffff;
+}
+
+/* ============================================
+   ERROR CARD
+   ============================================ */
+
+.hw-error-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hw-space-4);
+  padding: var(--hw-space-6);
+  text-align: center;
+}
+
+.hw-error {
+  color: var(--hw-error-text);
+  font-size: var(--hw-text-sm);
+  margin: 0;
+}
+
+/* ============================================
+   CTA SECTION
+   ============================================ */
+
+.hw-services-cta {
+  padding: var(--hw-space-4) 0;
+}
+
+.hw-cta-card {
+  padding: var(--hw-space-8);
+}
+
+.hw-cta-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--hw-space-3);
+  text-align: center;
+}
+
+.hw-cta-content h3 {
+  color: var(--hw-text-primary);
+  font-size: var(--hw-text-xl);
+  font-weight: var(--hw-font-bold);
+  margin: 0;
+}
+
+.hw-cta-content p {
+  color: var(--hw-text-muted);
+  font-size: var(--hw-text-base);
+  margin: 0;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+.hw-section-header {
+  margin-bottom: var(--hw-space-2);
+}
+
+.hw-section-header h2 {
+  color: var(--hw-text-primary);
+  font-size: var(--hw-text-lg);
+  font-weight: var(--hw-font-bold);
+  margin: 0;
+}
+
+.hw-flex-between {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.hw-hide-mobile {
+  display: none;
+}
+
+.hw-hide-desktop {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .hw-hide-mobile {
+    display: flex;
+  }
+  
+  .hw-hide-desktop {
+    display: inline-flex;
+  }
+}
+
+/* ============================================
+   DARK MODE ADJUSTMENTS
+   ============================================ */
+
+:root[data-theme='dark'] .hw-category-chip.active,
+:root[data-theme='dark'] .hw-chip.active {
+  background: var(--hw-primary);
+}
+
+:root[data-theme='dark'] .hw-category-chip:hover,
+:root[data-theme='dark'] .hw-chip:hover {
+  border-color: var(--hw-success-light);
+  color: var(--hw-success-light);
+}
+
+:root[data-theme='dark'] .hw-search-input-wrapper:focus-within {
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
+}
+
+:root[data-theme='dark'] .hw-popular-card a:hover {
+  box-shadow: var(--hw-shadow-lg);
+}
+
+:root[data-theme='dark'] .hw-range-input {
+  background: var(--hw-border);
+}
+
+/* ============================================
+   EXISTING CLASS OVERRIDES (for compatibility)
+   ============================================ */
+
+/* Ensure ServiceCard looks good with new layout */
+.services-grid {
+  display: grid;
+  gap: var(--hw-space-4);
+}
+
+@media (min-width: 640px) {
+  .services-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .services-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Empty state styling */
+.services-empty-state {
+  grid-column: 1 / -1;
+}

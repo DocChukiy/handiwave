@@ -1,24 +1,25 @@
-import {
-  Camera,
-  Bell,
-  ChevronDown,
-  Download,
-  Mail,
-  MapPin,
-  Menu,
-  MessageCircle,
-  Moon,
-  Phone,
-  Share2,
-  Sun,
-  X,
-} from 'lucide-react'
+import { Download } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Suspense, lazy, useEffect, useState } from 'react'
-import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import AuthProvider from './auth/AuthProvider.jsx'
 import { useAuth } from './auth/useAuth.js'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
+import Navbar from './components/layout/Navbar.jsx'
+import MobileBottomNav from './components/layout/MobileBottomNav.jsx'
+import Footer from './components/layout/Footer.jsx'
+import { getTotalUnreadMessagesForUser, touchProfileLastSeen } from './services/messageService.js'
+import {
+  getNotificationsForUser,
+  getUnreadNotificationsCount,
+  markNotificationRead,
+} from './services/notificationService.js'
+import { getSupabaseClient } from './lib/supabaseClient.js'
+import { getArtisanByProfileId } from './services/artisanService.js'
+import { showToast } from './utils/toast.js'
+import logger from './utils/logger.js'
+import './App.css'
+
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard.jsx'))
 const ArtisanAnalytics = lazy(() => import('./pages/ArtisanAnalytics.jsx'))
 const ArtisanAvailability = lazy(() => import('./pages/ArtisanAvailability.jsx'))
@@ -41,48 +42,6 @@ const Signup = lazy(() => import('./pages/Signup.jsx'))
 const Wallet = lazy(() => import('./pages/Wallet.jsx'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy.jsx'))
 const TermsOfService = lazy(() => import('./pages/TermsOfService.jsx'))
-import { getArtisanByProfileId } from './services/artisanService.js'
-import { getTotalUnreadMessagesForUser, touchProfileLastSeen } from './services/messageService.js'
-import {
-  getNotificationsForUser,
-  getUnreadNotificationsCount,
-  markNotificationRead,
-} from './services/notificationService.js'
-import { getSupabaseClient } from './lib/supabaseClient.js'
-import { showToast } from './utils/toast.js'
-import logger from './utils/logger.js'
-import './App.css'
-
-const publicNavLinks = [
-  { path: '/', label: 'Home' },
-  { path: '/services', label: 'Services' },
-  { path: '/artisans', label: 'Artisans' },
-  { path: '/reels', label: 'Reels' },
-]
-
-const customerNavLinks = [
-  { path: '/', label: 'Home' },
-  { path: '/services', label: 'Services' },
-  { path: '/artisans', label: 'Artisans' },
-  { path: '/bookings', label: 'Bookings' },
-  { path: '/reels', label: 'Reels' },
-  { path: '/messages', label: 'Messages' },
-  { path: '/wallet', label: 'Wallet' },
-  { path: '/profile', label: 'Profile' },
-]
-
-const artisanNavLinks = [
-  { path: '/artisan-dashboard', label: 'Dashboard' },
-  { path: '/artisan-jobs', label: 'Jobs' },
-  { path: '/artisan-analytics', label: 'Analytics' },
-  { path: '/disputes', label: 'Disputes' },
-  { path: '/artisan-availability', label: 'Availability' },
-  { path: '/messages', label: 'Messages' },
-  { path: '/artisan-reels', label: 'My Reels' },
-  { path: '/wallet', label: 'Wallet' },
-  { path: '/artisan-reviews', label: 'Reviews' },
-  { path: '/profile', label: 'My Profile' },
-]
 
 const quickLinks = [
   { path: '/', label: 'Home' },
@@ -300,12 +259,10 @@ function AppShell() {
       return savedTheme
     }
 
-    return window.matchMedia('(prefers-color-scheme: dark)').matches
-      ? 'dark'
-      : 'light'
+    return 'light'
   })
   const [artisanNeedsSetup, setArtisanNeedsSetup] = useState(false)
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [toast, setToast] = useState(null)
   const [installPromptEvent, setInstallPromptEvent] = useState(null)
@@ -316,121 +273,14 @@ function AppShell() {
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0)
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0)
 
-  const isDarkMode = theme === 'dark'
-  const navLinks = user?.role === 'artisan'
-    ? artisanNavLinks
-    : user?.role === 'customer'
-      ? customerNavLinks
-      : publicNavLinks
-  const visibleNavLinks = isAuthenticated
-    ? navLinks.filter((link) => link.path !== '/profile')
-    : navLinks
-  const desktopPrimaryCount = isAuthenticated ? 5 : navLinks.length
-  const primaryNavLinks = visibleNavLinks.slice(0, desktopPrimaryCount)
-  const moreNavLinks = visibleNavLinks.slice(desktopPrimaryCount)
-  const isMoreActive = moreNavLinks.some((link) => location.pathname === link.path)
-  function renderNavLabel(link) {
-    const count = link.path === '/messages' ? unreadMessagesCount : 0
-
-    return (
-      <>
-        <span>{link.label}</span>
-        {count > 0 && <span className="nav-count-bubble">{count}</span>}
-      </>
-    )
-  }
-
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('handiwave-theme', theme)
   }, [theme])
 
   useEffect(() => {
-    function closeOpenMenus(event) {
-      if (event.target.closest('details')) {
-        return
-      }
-
-      document.querySelectorAll('.navbar details[open]').forEach((details) => {
-        details.removeAttribute('open')
-      })
-    }
-
-    function closeMenusOnScroll() {
-      document.querySelectorAll('.navbar details[open]').forEach((details) => {
-        details.removeAttribute('open')
-      })
-    }
-
-    document.addEventListener('click', closeOpenMenus)
-    window.addEventListener('scroll', closeMenusOnScroll, { passive: true })
-
-    return () => {
-      document.removeEventListener('click', closeOpenMenus)
-      window.removeEventListener('scroll', closeMenusOnScroll)
-    }
-  }, [])
-
-  useEffect(() => {
-    setIsMenuOpen(false)
-    document.querySelectorAll('.navbar details[open]').forEach((details) => {
-      details.removeAttribute('open')
-    })
+    setIsMobileMenuOpen(false)
   }, [location.pathname])
-
-  useEffect(() => {
-    let isMounted = true
-
-    async function checkArtisanSetup() {
-      if (user?.role !== 'artisan') {
-        return
-      }
-
-      const { data, error } = await getArtisanByProfileId(user.id)
-
-      if (!isMounted) {
-        return
-      }
-
-      if (error) {
-        logger.error('[Handiwave nav] artisan setup check failed:', error)
-        setArtisanNeedsSetup(true)
-        return
-      }
-
-      setArtisanNeedsSetup(needsArtisanSetup(data))
-    }
-
-    checkArtisanSetup()
-
-    return () => {
-      isMounted = false
-    }
-  }, [user?.id, user?.role])
-
-  useEffect(() => {
-    if (!isAuthenticated || !user?.id) {
-      return undefined
-    }
-
-    let isMounted = true
-
-    async function touchLastSeen() {
-      const { error } = await touchProfileLastSeen()
-
-      if (error && isMounted) {
-        logger.error('[Handiwave presence] last_seen update failed:', error)
-      }
-    }
-
-    touchLastSeen()
-    const presenceTimer = window.setInterval(touchLastSeen, 60000)
-
-    return () => {
-      isMounted = false
-      window.clearInterval(presenceTimer)
-    }
-  }, [isAuthenticated, user?.id])
 
   useEffect(() => {
     let isMounted = true
@@ -557,13 +407,62 @@ function AppShell() {
     }
   }, [])
 
-  function toggleTheme() {
-    setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'))
-  }
+  useEffect(() => {
+    let isMounted = true
+
+    async function checkArtisanSetup() {
+      if (user?.role !== 'artisan') {
+        return
+      }
+
+      const { data, error } = await getArtisanByProfileId(user.id)
+
+      if (!isMounted) {
+        return
+      }
+
+      if (error) {
+        logger.error('[Handiwave nav] artisan setup check failed:', error)
+        setArtisanNeedsSetup(true)
+        return
+      }
+
+      setArtisanNeedsSetup(needsArtisanSetup(data))
+    }
+
+    checkArtisanSetup()
+
+    return () => {
+      isMounted = false
+    }
+  }, [user?.id, user?.role])
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) {
+      return undefined
+    }
+
+    let isMounted = true
+
+    async function touchLastSeen() {
+      const { error } = await touchProfileLastSeen()
+
+      if (error && isMounted) {
+        logger.error('[Handiwave presence] last_seen update failed:', error)
+      }
+    }
+
+    touchLastSeen()
+    const presenceTimer = window.setInterval(touchLastSeen, 60000)
+
+    return () => {
+      isMounted = false
+      window.clearInterval(presenceTimer)
+    }
+  }, [isAuthenticated, user?.id])
 
   async function handleLogout() {
     try {
-      setIsMenuOpen(false)
       await logout()
       showToast('You have been logged out.')
     } catch (error) {
@@ -585,9 +484,7 @@ function AppShell() {
     sessionStorage.setItem('handiwave-install-dismissed', 'true')
   }
 
-  async function handleNotificationClick(notification, event) {
-    event.currentTarget.closest('details')?.removeAttribute('open')
-
+  async function handleNotificationClick(notification) {
     const { error } = await markNotificationRead(notification.id)
 
     if (error) {
@@ -612,360 +509,74 @@ function AppShell() {
 
     if (notification.data?.booking_id) {
       navigate(user?.role === 'artisan' ? '/artisan-jobs' : '/bookings')
+      return
     }
+
+    if (notification.data?.profile_id) {
+      navigate(`/artisan-profile/${notification.data.profile_id}`)
+      return
+    }
+
+    navigate('/')
   }
 
   return (
-      <div className="app">
-        <header className="navbar">
-          <div className="navbar-inner">
-            <NavLink className="logo" to="/" onClick={() => setIsMenuOpen(false)}>
-  <img src="/Handiwave 1.svg" alt="Handiwave" className="logo-mark" />
-  Handiwave
-</NavLink>
+    <div className="hw-app-shell">
+      <Navbar
+        artisanNeedsSetup={artisanNeedsSetup}
+        theme={theme}
+        notifications={notifications}
+        unreadMessagesCount={unreadMessagesCount}
+        unreadNotificationsCount={unreadNotificationsCount}
+        onNotificationClick={handleNotificationClick}
+        onToggleMobileMenu={() => setIsMobileMenuOpen((current) => !current)}
+        onCloseMobileMenu={() => setIsMobileMenuOpen(false)}
+        onToggleTheme={() => setTheme((currentTheme) => currentTheme === 'dark' ? 'light' : 'dark')}
+        isMobileMenuOpen={isMobileMenuOpen}
+        onLogout={handleLogout}
+      />
 
-            <button
-              aria-expanded={isMenuOpen}
-              aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-              className="menu-toggle"
-              type="button"
-              onClick={() => setIsMenuOpen((current) => !current)}
-            >
-              {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
-
-            <nav
-              className={isMenuOpen ? 'nav-links open' : 'nav-links'}
-              aria-label="Main navigation"
-            >
-              {primaryNavLinks.map((link) => (
-                <NavLink
-                  className={({ isActive }) =>
-                    isActive ? 'nav-link active' : 'nav-link'
-                  }
-                  end={link.path === '/'}
-                  key={link.path}
-                  onClick={() => setIsMenuOpen(false)}
-                  to={link.path}
-                >
-                  {renderNavLabel(link)}
-                </NavLink>
-              ))}
-              {moreNavLinks.length > 0 && (
-                <details className={isMoreActive ? 'more-nav active' : 'more-nav'} onMouseLeave={(event) => event.currentTarget.removeAttribute('open')}>
-                  <summary className="nav-link">
-                    More
-                    <ChevronDown size={15} />
-                  </summary>
-                  <div className="more-menu">
-                    {moreNavLinks.map((link) => (
-                      <NavLink
-                        className={({ isActive }) =>
-                          isActive ? 'more-menu-link active' : 'more-menu-link'
-                        }
-                        key={link.path}
-                        onClick={() => setIsMenuOpen(false)}
-                        to={link.path}
-                      >
-                        {renderNavLabel(link)}
-                      </NavLink>
-                    ))}
-                  </div>
-                </details>
-              )}
-              {moreNavLinks.map((link) => (
-                <NavLink
-                  className={({ isActive }) =>
-                    isActive ? 'nav-link mobile-only-nav-link active' : 'nav-link mobile-only-nav-link'
-                  }
-                  key={`mobile-${link.path}`}
-                  onClick={() => setIsMenuOpen(false)}
-                  to={link.path}
-                >
-                  {renderNavLabel(link)}
-                </NavLink>
-              ))}
-            </nav>
-
-            <div className="nav-actions">
-              {isAuthenticated && (
-                <div className="role-pill">
-                  <span>{user.role}</span>
-                </div>
-              )}
-              {isAuthenticated && (
-                <details className="notification-nav" onMouseLeave={(event) => event.currentTarget.removeAttribute('open')}>
-                  <summary
-                    aria-label="Notifications"
-                    className="notification-trigger"
-                  >
-                    <Bell size={18} />
-                    {unreadNotificationsCount > 0 && (
-                      <span className="notification-count-bubble">
-                        {unreadNotificationsCount}
-                      </span>
-                    )}
-                  </summary>
-                  <div className="notification-menu">
-                    <div className="notification-menu-header">
-                      <strong>Notifications</strong>
-                      <span>{unreadNotificationsCount} unread</span>
-                    </div>
-                    {notifications.length > 0 ? (
-                      notifications.map((notification) => (
-                        <button
-                          className={notification.isRead ? 'notification-item' : 'notification-item unread'}
-                          key={notification.id}
-                          type="button"
-                          onClick={(event) => handleNotificationClick(notification, event)}
-                        >
-                          <strong>{notification.title}</strong>
-                          {notification.body && <p>{notification.body}</p>}
-                          <span>{notification.time}</span>
-                        </button>
-                      ))
-                    ) : (
-                      <div className="notification-empty">
-                        No notifications yet.
-                      </div>
-                    )}
-                  </div>
-                </details>
-              )}
-              {isAuthenticated && (
-                <details className="profile-nav" onMouseLeave={(event) => event.currentTarget.removeAttribute('open')}>
-                  <summary className="login-button">
-                    Profile
-                    <ChevronDown size={15} />
-                  </summary>
-                  <div className="profile-menu">
-                    <div className="profile-menu-header">
-                      <span>Signed in as</span>
-                      <strong>{user.name}</strong>
-                    </div>
-                    <NavLink
-                      className="profile-menu-link"
-                      to="/profile"
-                      onClick={(event) => {
-                        event.currentTarget.closest('details')?.removeAttribute('open')
-                        setIsMenuOpen(false)
-                      }}
-                    >
-                      My Profile
-                    </NavLink>
-                    {user?.role === 'admin' && (
-                      <NavLink
-                        className="profile-menu-link"
-                        to="/admin"
-                        onClick={(event) => {
-                          event.currentTarget.closest('details')?.removeAttribute('open')
-                          setIsMenuOpen(false)
-                        }}
-                      >
-                        Admin
-                      </NavLink>
-                    )}
-                    {user?.role === 'artisan' && (
-                      <>
-                        <NavLink
-                          className="profile-menu-link"
-                          to="/artisan-availability"
-                          onClick={(event) => {
-                            event.currentTarget.closest('details')?.removeAttribute('open')
-                            setIsMenuOpen(false)
-                          }}
-                        >
-                          Manage Availability
-                        </NavLink>
-                        <NavLink
-                          className="profile-menu-link"
-                          to="/artisan-reels"
-                          onClick={(event) => {
-                            event.currentTarget.closest('details')?.removeAttribute('open')
-                            setIsMenuOpen(false)
-                          }}
-                        >
-                          Manage Reels
-                        </NavLink>
-                        <NavLink
-                          className="profile-menu-link"
-                          to="/artisan-analytics"
-                          onClick={(event) => {
-                            event.currentTarget.closest('details')?.removeAttribute('open')
-                            setIsMenuOpen(false)
-                          }}
-                        >
-                          Analytics
-                        </NavLink>
-                        {artisanNeedsSetup && (
-                          <NavLink
-                            className="profile-menu-link"
-                            to="/artisan-onboarding"
-                            onClick={(event) => {
-                              event.currentTarget.closest('details')?.removeAttribute('open')
-                              setIsMenuOpen(false)
-                            }}
-                          >
-                            Complete Setup
-                          </NavLink>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </details>
-              )}
-              <button
-                className="theme-toggle"
-                type="button"
-                onClick={toggleTheme}
-                aria-label={
-                  isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'
-                }
-              >
-                {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-              </button>
-              {isAuthenticated ? (
-                <button className="signup-button" type="button" onClick={handleLogout}>
-                  Logout
-                </button>
-              ) : (
-                <>
-                  <NavLink className="login-button" to="/login" onClick={() => setIsMenuOpen(false)}>
-                    Login
-                  </NavLink>
-                  <NavLink className="signup-button" to="/signup" onClick={() => setIsMenuOpen(false)}>
-                    Sign Up
-                  </NavLink>
-                </>
-              )}
-            </div>
-          </div>
-        </header>
-
-        <main className="page-content">
-          {installPromptEvent && !isInstallPromptDismissed && !isStandaloneDisplay() && (
-            <section className="install-app-banner" aria-label="Install Handiwave">
-              <div>
-                <strong>Install Handiwave</strong>
-                <span>Add it to your phone for faster access to bookings, chat, wallet, and escrow updates.</span>
-              </div>
-              <div className="install-app-actions">
-                <button className="install-app-button" type="button" onClick={handleInstallClick}>
-                  <Download size={17} />
-                  Install
-                </button>
-                <button className="install-dismiss-button" type="button" onClick={dismissInstallPrompt}>
-                  Later
-                </button>
-              </div>
-            </section>
-          )}
-          <AnimatedRoutes />
-        </main>
-
-        <footer className="footer">
-          <div className="footer-grid">
-            <div className="footer-brand">
-              <NavLink className="footer-logo" to="/">
-  <img src="/Handiwave 1.svg" alt="Handiwave" className="logo-mark" />
-  Handiwave
-</NavLink>
-              <p>
-                Book trusted artisans for home services quickly, safely, and
-                confidently across Nigeria.
-              </p>
-              <div className="social-links" aria-label="Social links">
-                <button type="button" className="social-link" disabled aria-label="Instagram (coming soon)">
-                  <Camera size={18} />
-                </button>
-                <button type="button" className="social-link" disabled aria-label="Twitter (coming soon)">
-                  <MessageCircle size={18} />
-                </button>
-                <button type="button" className="social-link" disabled aria-label="LinkedIn (coming soon)">
-                  <Share2 size={18} />
-                </button>
-              </div>
-            </div>
-
-            <div className="footer-column">
-              <h3>Quick Links</h3>
-              {quickLinks.map((link) => (
-                <NavLink key={link.path} to={link.path}>
-                  {link.label}
-                </NavLink>
-              ))}
-            </div>
-
-            <div className="footer-column">
-              <h3>Services</h3>
-              {serviceLinks.map((service) => (
-                <NavLink key={service} to="/services">
-                  {service}
-                </NavLink>
-              ))}
-            </div>
-
-            <div className="footer-column contact-column">
-              <h3>Contact</h3>
-              <span>
-                <Phone size={17} />
-                +234 800 123 4567
-              </span>
-              <span>
-                <Mail size={17} />
-                support@handiwave.com
-              </span>
-              <span>
-                <MapPin size={17} />
-                Lagos, Nigeria
-              </span>
-            </div>
-          </div>
-
-          <div className="footer-bottom">
-            <p>© {new Date().getFullYear()} Handiwave. All rights reserved.</p>
+      <main className="hw-app-main">
+        {installPromptEvent && !isInstallPromptDismissed && !isStandaloneDisplay() && (
+          <section className="hw-install-banner" aria-label="Install Handiwave">
             <div>
-              <NavLink to="/privacy">Privacy Policy</NavLink>
-              <NavLink to="/terms">Terms of Service</NavLink>
+              <strong>Install Handiwave</strong>
+              <span>Add it to your phone for faster access to bookings, chat, wallet, and escrow updates.</span>
             </div>
-          </div>
-        </footer>
-
-        <AnimatePresence>
-          {toast && (
-            <motion.div
-              className="toast"
-              role="status"
-              initial={{ opacity: 0, y: 20, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 16, scale: 0.96 }}
-              transition={{ duration: 0.22, ease: 'easeOut' }}
-            >
-              <span>Done</span>
-              <p>{toast}</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
-        {isAuthenticated && (
-          <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
-            <NavLink to={user?.role === 'artisan' ? '/artisan-dashboard' : '/'}>
-              {user?.role === 'artisan' ? 'Dashboard' : 'Home'}
-            </NavLink>
-            <NavLink to={user?.role === 'artisan' ? '/artisan-jobs' : '/services'}>
-              {user?.role === 'artisan' ? 'Jobs' : 'Services'}
-            </NavLink>
-            <NavLink to={user?.role === 'artisan' ? '/artisan-availability' : '/bookings'}>
-              {user?.role === 'artisan' ? 'Availability' : 'Bookings'}
-            </NavLink>
-            <NavLink to={user?.role === 'artisan' ? '/artisan-analytics' : '/reels'}>
-              {user?.role === 'artisan' ? 'Analytics' : 'Reels'}
-            </NavLink>
-            <NavLink to={user?.role === 'artisan' ? '/profile' : '/wallet'}>
-              {user?.role === 'artisan' ? 'Profile' : 'Wallet'}
-            </NavLink>
-          </nav>
+            <div className="hw-install-actions">
+              <button className="hw-install-button" type="button" onClick={handleInstallClick}>
+                <Download size={17} />
+                Install
+              </button>
+              <button className="hw-install-dismiss-button" type="button" onClick={dismissInstallPrompt}>
+                Later
+              </button>
+            </div>
+          </section>
         )}
-      </div>
+        <AnimatedRoutes />
+      </main>
+
+      <Footer />
+
+      <MobileBottomNav />
+
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            className="hw-toast"
+            role="status"
+            initial={{ opacity: 0, y: 20, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.96 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+          >
+            <span>Done</span>
+            <p>{toast}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   )
 }
 

@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
+    exclude: ['.kilo/**', 'node_modules/**', 'dist/**'],
     globals: true,
     setupFiles: 'src/setupTests.js',
   },

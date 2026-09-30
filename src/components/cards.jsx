@@ -4,6 +4,7 @@ import { cardVariants } from '../utils/animations.js'
 import Badge from './Badge.jsx'
 import Button from './Button.jsx'
 import Rating from './Rating.jsx'
+import Avatar from './ui/Avatar.jsx'
 
 function getJobMilestone(completedJobs = 0) {
   if (completedJobs >= 100) {
@@ -27,14 +28,14 @@ function TrustBadges({ artisan, compact = false }) {
   const rating = Number(artisan.rating) || 0
   const jobMilestone = getJobMilestone(completedJobs)
   const isTopRated = rating >= 4.5 && reviewCount >= 3
+  const isVerified = artisan.verified || artisan.verificationStatus === 'verified'
 
   return (
-    <div className={compact ? 'trust-badge-row compact' : 'trust-badge-row'}>
-      {(artisan.verified || artisan.verificationStatus === 'verified') && (
-        <span className="trust-badge verified">Verified Artisan</span>
+    <div className={`trust-badge-row ${compact ? 'compact' : ''}`}>
+      {isVerified && (
+        <span className="trust-badge verified">Verified Professional</span>
       )}
       {isTopRated && <span className="trust-badge top-rated">Top Rated</span>}
-      <span className="trust-badge fast">Fast Responder</span>
       {jobMilestone && <span className="trust-badge jobs">{jobMilestone}</span>}
     </div>
   )
@@ -78,13 +79,20 @@ export function ServiceCard({ service }) {
         <span>{service.locations[0]}</span>
       </div>
       <Button className="service-book-link" to="/artisans">
-        Find Artisan
+        Find Professionals
       </Button>
     </motion.article>
   )
 }
 
 export function ArtisanCard({ artisan, featured = false }) {
+  const isVerified = artisan.verified || artisan.verificationStatus === 'verified'
+  const isTopRated = artisan.topRated || (
+    Number(artisan.rating) >= 4.5 &&
+    Number(artisan.reviewCount || 0) >= 3
+  )
+  const hasAvailability = artisan.isAvailable !== false
+
   if (featured) {
     return (
       <motion.article
@@ -94,7 +102,12 @@ export function ArtisanCard({ artisan, featured = false }) {
         whileHover={{ y: -8 }}
       >
         <div className="profile-image-placeholder">
-          <span>{artisan.initials}</span>
+          <Avatar
+            name={artisan.name}
+            src={artisan.avatarUrl}
+            initials={artisan.initials}
+            size="lg"
+          />
         </div>
 
         <div className="artisan-card-header">
@@ -102,7 +115,7 @@ export function ArtisanCard({ artisan, featured = false }) {
             <h3>{artisan.name}</h3>
             <p>{artisan.featuredSkill}</p>
           </div>
-          {artisan.verified && <Badge>Verified</Badge>}
+          {isVerified && <Badge variant="verified">Verified</Badge>}
         </div>
 
         <TrustBadges artisan={artisan} compact />
@@ -131,34 +144,85 @@ export function ArtisanCard({ artisan, featured = false }) {
     )
   }
 
+  // Modern non-featured card
   return (
-    <article className="person-card">
-      <div className="person-avatar">{artisan.initials}</div>
-      <div className="artisan-badge-row">
-        {artisan.verified && <Badge>Verified</Badge>}
-        {artisan.topRated && <Badge className="top-rated-badge">Top Rated</Badge>}
-        <Badge className="save-badge">Save</Badge>
+    <motion.article
+      className="hw-professional-card"
+      variants={cardVariants}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+      whileHover={{ y: -4 }}
+    >
+      <div className="hw-professional-card-header">
+        <Avatar
+          name={artisan.name}
+          src={artisan.avatarUrl}
+          initials={artisan.initials}
+          size="lg"
+        />
+        <div className="hw-professional-badges">
+          {isVerified && <Badge variant="verified">Verified</Badge>}
+          {isTopRated && <Badge variant="success">Top Rated</Badge>}
+        </div>
       </div>
-      <h3>{artisan.name}</h3>
-      <p>
-        {artisan.skill} in {artisan.area}, {artisan.location}
-      </p>
-      <strong className="price-note">{artisan.price}</strong>
-      <TrustBadges artisan={artisan} />
-      <Rating jobs={artisan.jobs} reviewCount={artisan.reviewCount || 0} value={artisan.rating} />
-      <div className="trust-indicators">
-        <span>ID checked</span>
-        <span>Escrow safe</span>
+
+      <div className="hw-professional-info">
+        <h3>{artisan.name}</h3>
+        <p className="hw-professional-skill">{artisan.skill}</p>
+        <p className="hw-professional-location">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+          {artisan.fullLocation || `${artisan.area}, ${artisan.location}`}
+        </p>
       </div>
-      <div className="person-actions">
-        <Button className="service-book-link" to={`/artisan-profile/${artisan.id}`}>
+
+      <div className="hw-professional-stats">
+        <div className="hw-stat">
+          <span className="hw-stat-value">
+            <strong>{Number(artisan.rating || 0).toFixed(1)}</strong>
+            <span className="hw-star">★</span>
+          </span>
+          <span className="hw-stat-label">{artisan.reviewCount || 0} reviews</span>
+        </div>
+        <div className="hw-stat">
+          <span className="hw-stat-value">
+            <strong>{artisan.completedJobs || 0}</strong>
+          </span>
+          <span className="hw-stat-label">Jobs</span>
+        </div>
+        <div className="hw-availability-status">
+          {hasAvailability ? (
+            <Badge variant="success">
+              <span className="hw-available-dot"></span>
+              Available
+            </Badge>
+          ) : (
+            <Badge variant="neutral">Unavailable</Badge>
+          )}
+        </div>
+      </div>
+
+      <div className="hw-professional-price">
+        <span className="hw-price-label">From</span>
+        <span className="hw-price-value">{artisan.price || artisan.priceValue ? `NGN ${Number(artisan.priceValue || artisan.price?.replace(/[^0-9]/g, '') || 0).toLocaleString()}` : 'By quote'}</span>
+      </div>
+
+      <div className="hw-professional-actions">
+        <Link
+          to={`/artisan-profile/${artisan.id}`}
+          className="hw-btn hw-btn-secondary hw-btn-full"
+        >
           View Profile
-        </Button>
-        <Button className="secondary-mini-link" to="/bookings">
+        </Link>
+        <Link
+          to={`/bookings?artisan=${artisan.id}`}
+          className="hw-btn hw-btn-primary hw-btn-full"
+        >
           Book Now
-        </Button>
+        </Link>
       </div>
-    </article>
+    </motion.article>
   )
 }
 
@@ -245,8 +309,10 @@ export function ReelCard({ preview = false, reel, index = 0 }) {
 }
 
 export function RecentArtisanCard({ artisan }) {
+  const profilePath = artisan.id ? `/artisan-profile/${artisan.id}` : '/artisan-profile'
+
   return (
-    <Link className="recent-artisan-card" to="/artisan-profile">
+    <Link className="recent-artisan-card" to={profilePath}>
       <span>{artisan.initials}</span>
       <div>
         <strong>{artisan.name}</strong>

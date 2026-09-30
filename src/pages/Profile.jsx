@@ -6,6 +6,8 @@ import SkeletonPreview from '../components/Skeletons.jsx'
 import { getArtisanByProfileId } from '../services/artisanService.js'
 import { getAvailabilityForArtisanId } from '../services/availabilityService.js'
 import { getBookingsForUser } from '../services/bookingService.js'
+import CustomerProfile from '../components/profile/CustomerProfile.jsx'
+import ArtisanProfileView from '../components/profile/ArtisanProfileView.jsx'
 
 function formatMoney(value) {
   return value ? `NGN ${Number(value).toLocaleString()}` : 'By quote'
@@ -123,197 +125,22 @@ function Profile() {
   }
 
   if (isArtisan) {
-    const completion = completionForArtisan(artisan)
-    const activeSlots = availability.slots.filter((slot) => slot.isActive)
-    const nextSlot = getNextAvailabilitySlot(activeSlots)
-    const hasAvailability = activeSlots.length > 0
-
     return (
-      <div className="starter-page profile-page">
-        <section className="availability-profile-card availability-top-card">
-          <div>
-            <p className="section-kicker">Availability setup</p>
-            <h1>Manage Availability</h1>
-            <p>
-              Manage your weekly availability here. Set the days and times customers can book you,
-              and block dates when you are unavailable.
-            </p>
-          </div>
-          <div className="availability-summary-grid">
-            <article>
-              <strong>{hasAvailability ? 'Complete' : 'Needs setup'}</strong>
-              <span>Setup status</span>
-            </article>
-            <article>
-              <strong>{activeSlots.length}</strong>
-              <span>Active weekly slots</span>
-            </article>
-            <article>
-              <strong>{availability.unavailableDates.length}</strong>
-              <span>Unavailable dates</span>
-            </article>
-          </div>
-          <div className="profile-actions">
-            <Button className="primary-cta" to="/artisan-availability">
-              Manage Availability
-            </Button>
-            <Button className="secondary-cta" to="/artisan-availability">
-              Add Unavailable Date
-            </Button>
-          </div>
-        </section>
-
-        <section className="page-hero compact">
-          <p className="section-kicker">My Profile</p>
-          <h1>{artisan.businessName || artisan.fullName}</h1>
-          <p>Private artisan profile details, completion, verification, and performance.</p>
-        </section>
-
-        {error && <p className="auth-error">{error}</p>}
-
-        <section className="profile-dashboard-grid">
-          <article className="artisan-profile-panel">
-            <p className="section-kicker">Business details</p>
-            <div className="profile-detail-list">
-              <span><strong>Business name</strong>{artisan.businessName || 'Not set'}</span>
-              <span><strong>Bio</strong>{artisan.bio || 'Not set'}</span>
-              <span><strong>Primary service</strong>{artisan.skill}</span>
-              <span><strong>Service area</strong>{artisan.serviceArea || 'Not set'}</span>
-              <span><strong>City / State</strong>{artisan.fullLocation}</span>
-              <span><strong>Starting price</strong>{formatMoney(artisan.startingPrice)}</span>
-              <span><strong>Verification</strong>{artisan.verificationStatus}</span>
-            </div>
-            <div className="profile-actions">
-              <Button className="primary-cta" to="/artisan-onboarding">Edit Profile</Button>
-              <Button className="secondary-cta" to={`/artisan-profile/${artisan.id}`}>View Public Profile</Button>
-            </div>
-          </article>
-
-          <section className="dashboard-metric-grid">
-            <article><strong>{completion}%</strong><span>Profile completion</span></article>
-            <article><strong>{artisan.completedJobs}</strong><span>Completed jobs</span></article>
-            <article><strong>{artisan.rating.toFixed(1)}</strong><span>Average rating</span></article>
-            <article><strong>{summary.pending}</strong><span>Pending jobs</span></article>
-          </section>
-        </section>
-
-        <section className="availability-profile-card">
-          <div>
-            <p className="section-kicker">Availability</p>
-            <h2>{hasAvailability ? 'Customers can see your booking times' : 'Set your availability'}</h2>
-            <p>
-              {hasAvailability
-                ? 'Your weekly slots help customers pick a valid date and avoid schedule clashes before they submit a booking.'
-                : 'Set your availability so customers know when they can book you.'}
-            </p>
-          </div>
-
-          <div className="availability-summary-grid">
-            <article>
-              <strong>{hasAvailability ? 'Complete' : 'Needs setup'}</strong>
-              <span>Setup status</span>
-            </article>
-            <article>
-              <strong>{activeSlots.length}</strong>
-              <span>Active weekly slots</span>
-            </article>
-            <article>
-              <strong>{availability.unavailableDates.length}</strong>
-              <span>Unavailable dates</span>
-            </article>
-          </div>
-
-          {hasAvailability ? (
-            <div className="availability-mini-list">
-              {activeSlots.slice(0, 4).map((slot) => (
-                <span key={slot.id}>
-                  <strong>{slot.dayLabel}</strong>
-                  {slot.startTime} - {slot.endTime}
-                </span>
-              ))}
-              {nextSlot && (
-                <p>
-                  Next available pattern: {nextSlot.dayLabel}, {nextSlot.startTime} - {nextSlot.endTime}
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="availability-setup-callout">
-              <strong>Set your availability so customers know when they can book you.</strong>
-              <p>Add your weekly working hours and block dates when you are unavailable.</p>
-            </div>
-          )}
-
-          <div className="profile-actions">
-            <Button className="primary-cta" to="/artisan-availability">
-              {hasAvailability ? 'Edit Availability' : 'Set Availability'}
-            </Button>
-            <Button className="secondary-cta" to="/artisan-availability">
-              Add Unavailable Date
-            </Button>
-          </div>
-        </section>
-      </div>
+      <ArtisanProfileView
+        artisan={artisan}
+        availability={availability}
+        bookings={bookings}
+        summary={summary}
+      />
     )
   }
 
   return (
-    <div className="starter-page profile-page">
-      <section className="page-hero compact">
-        <p className="section-kicker">Customer profile</p>
-        <h1>{user.name}</h1>
-        <p>Manage your customer details, bookings, wallet, and saved artisans.</p>
-      </section>
-
-      {error && <p className="auth-error">{error}</p>}
-
-      <section className="profile-dashboard-grid">
-        <article className="artisan-profile-panel">
-          <p className="section-kicker">Personal details</p>
-          <div className="profile-detail-list">
-            <span><strong>Full name</strong>{user.name}</span>
-            <span><strong>Email</strong>{user.email}</span>
-            <span><strong>Phone</strong>{user.phone || 'Not set'}</span>
-            <span><strong>City / State</strong>{user.city || 'City not set'} / {user.state || 'State not set'}</span>
-          </div>
-          <Button className="primary-cta">Edit Profile</Button>
-        </article>
-
-        <section className="dashboard-metric-grid">
-          <article><strong>{summary.total}</strong><span>Total bookings</span></article>
-          <article><strong>{summary.completed}</strong><span>Completed bookings</span></article>
-          <article><strong>0</strong><span>Saved artisans</span></article>
-          <article><strong>NGN 0</strong><span>Wallet balance</span></article>
-        </section>
-      </section>
-
-      <section className="availability-profile-card">
-        <div>
-          <p className="section-kicker">Wallet</p>
-          <h2>Payments, escrow, and refunds</h2>
-          <p>
-            Real payments are not active yet. Wallet is prepared for future escrow/payment integration.
-          </p>
-        </div>
-        <div className="availability-summary-grid">
-          <article>
-            <strong>NGN 0</strong>
-            <span>Available balance</span>
-          </article>
-          <article>
-            <strong>NGN 0</strong>
-            <span>Escrow balance</span>
-          </article>
-          <article>
-            <strong>Coming Soon</strong>
-            <span>Top up wallet</span>
-          </article>
-        </div>
-        <div className="profile-actions">
-          <Button className="primary-cta" to="/wallet">Open Wallet</Button>
-        </div>
-      </section>
-    </div>
+    <CustomerProfile
+      user={user}
+      bookings={bookings}
+      summary={summary}
+    />
   )
 }
 

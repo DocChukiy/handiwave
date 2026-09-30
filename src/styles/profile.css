@@ -1,0 +1,477 @@
+/**
+ * Profile Page Styles
+ *
+ * Uses hw- prefix for all classes following the Handiwave design system.
+ * Leverages tokens from tokens.css for consistent theming.
+ */
+
+/* ============================================
+   PAGE LAYOUT
+   ============================================ */
+
+.hw-profile-page {
+  display: grid;
+  gap: var(--hw-space-8);
+}
+
+.hw-profile-grid {
+  display: grid;
+  gap: var(--hw-space-6);
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* ============================================
+   PROFILE HERO
+   ============================================ */
+
+.hw-profile-hero {
+  display: flex;
+  align-items: center;
+  gap: var(--hw-space-6);
+  background: var(--hw-surface);
+  border: 1px solid var(--hw-border);
+  border-radius: var(--hw-radius-xl);
+  box-shadow: var(--hw-shadow);
+  padding: var(--hw-space-8);
+}
+
+.hw-profile-hero-avatar {
+  flex-shrink: 0;
+}
+
+.hw-profile-hero-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.hw-profile-hero-content h1 {
+  color: var(--hw-text-primary);
+  font-size: var(--hw-text-3xl);
+  font-weight: var(--hw-font-extrabold);
+  line-height: var(--hw-leading-tight);
+  margin: var(--hw-space-2) 0 var(--hw-space-3);
+}
+
+.hw-profile-hero-content p {
+  color: var(--hw-text-secondary);
+  font-size: var(--hw-text-base);
+  line-height: var(--hw-leading-relaxed);
+  margin: 0;
+  max-width: 36rem;
+}
+
+.hw-profile-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hw-space-3);
+  margin-top: var(--hw-space-5);
+}
+
+/* ============================================
+   ACCOUNT INFO CARD
+   ============================================ */
+
+.hw-account-info-card {
+  background: var(--hw-surface);
+  border: 1px solid var(--hw-border);
+  border-radius: var(--hw-radius-xl);
+  box-shadow: var(--hw-shadow);
+  padding: var(--hw-space-6);
+}
+
+.hw-account-info-card .hw-section-kicker {
+  display: block;
+  font-size: var(--hw-text-xs);
+  font-weight: var(--hw-font-bold);
+  letter-spacing: var(--hw-tracking-wide);
+  text-transform: uppercase;
+  color: var(--hw-primary);
+  margin-bottom: var(--hw-space-4);
+}
+
+.hw-account-info-card h2 {
+  color: var(--hw-text-primary);
+  font-size: var(--hw-text-2xl);
+  font-weight: var(--hw-font-bold);
+  margin: 0 0 var(--hw-space-5);
+}
+
+.hw-account-detail-list {
+  display: grid;
+  gap: var(--hw-space-3);
+}
+
+.hw-account-detail-list span {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hw-space-1);
+  padding-bottom: var(--hw-space-3);
+  border-bottom: 1px solid var(--hw-border-subtle);
+}
+
+.hw-account-detail-list span:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.hw-account-detail-list strong {
+  color: var(--hw-text-primary);
+  font-size: var(--hw-text-sm);
+  font-weight: var(--hw-font-semibold);
+}
+
+.hw-account-detail-list span:not(strong) {
+  color: var(--hw-text-secondary);
+  font-size: var(--hw-text-base);
+}
+
+.hw-account-info-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hw-space-3);
+  margin-top: var(--hw-space-5);
+}
+
+/* ============================================
+   DASHBOARD METRIC GRID
+   ============================================ */
+
+.hw-dashboard-metric-grid {
+  display: grid;
+  gap: var(--hw-space-4);
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.hw-dashboard-metric {
+  background: var(--hw-surface);
+  border: 1px solid var(--hw-border);
+  border-radius: var(--hw-radius-lg);
+  box-shadow: var(--hw-shadow);
+  padding: var(--hw-space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--hw-space-2);
+}
+
+.hw-dashboard-metric strong {
+  color: var(--hw-primary);
+  font-size: var(--hw-text-3xl);
+  font-weight: var(--hw-font-extrabold);
+  line-height: var(--hw-leading-tight);
+}
+
+.hw-dashboard-metric span {
+  color: var(--hw-text-muted);
+  font-size: var(--hw-text-sm);
+  font-weight: var(--hw-font-medium);
+}
+
+/* ============================================
+   QUICK ACTIONS
+   ============================================ */
+
+.hw-quick-actions {
+  display: grid;
+  gap: var(--hw-space-3);
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.hw-quick-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--hw-space-2);
+  padding: var(--hw-space-5) var(--hw-space-4);
+  background: var(--hw-surface);
+  border: 1px solid var(--hw-border);
+  border-radius: var(--hw-radius-lg);
+  box-shadow: var(--hw-shadow);
+  text-decoration: none;
+  transition: box-shadow var(--hw-transition), transform var(--hw-transition-fast);
+}
+
+.hw-quick-action:hover {
+  box-shadow: var(--hw-shadow-md);
+  transform: translateY(-2px);
+}
+
+.hw-quick-action-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--hw-radius-md);
+  background: var(--hw-primary-lighter);
+  color: var(--hw-primary);
+}
+
+.hw-quick-action-label {
+  color: var(--hw-text-primary);
+  font-size: var(--hw-text-sm);
+  font-weight: var(--hw-font-semibold);
+  text-align: center;
+}
+
+/* ============================================
+   PROFILE SECTIONS
+   ============================================ */
+
+.hw-profile-section {
+  background: var(--hw-surface);
+  border: 1px solid var(--hw-border);
+  border-radius: var(--hw-radius-xl);
+  box-shadow: var(--hw-shadow);
+  padding: var(--hw-space-6);
+}
+
+.hw-profile-section-header {
+  margin-bottom: var(--hw-space-5);
+}
+
+.hw-profile-section-header h2 {
+  color: var(--hw-text-primary);
+  font-size: var(--hw-text-xl);
+  font-weight: var(--hw-font-bold);
+  margin: var(--hw-space-2) 0 var(--hw-space-3);
+}
+
+.hw-profile-section-header p {
+  color: var(--hw-text-secondary);
+  font-size: var(--hw-text-base);
+  line-height: var(--hw-leading-relaxed);
+  margin: 0;
+  max-width: 36rem;
+}
+
+/* ============================================
+   AVAILABILITY SUMMARY
+   ============================================ */
+
+.hw-availability-summary-grid {
+  display: grid;
+  gap: var(--hw-space-3);
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: var(--hw-space-5);
+}
+
+.hw-availability-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hw-space-1);
+  padding: var(--hw-space-4);
+  background: var(--hw-bg);
+  border: 1px solid var(--hw-border-subtle);
+  border-radius: var(--hw-radius-md);
+}
+
+.hw-availability-summary-item strong {
+  color: var(--hw-text-primary);
+  font-size: var(--hw-text-xl);
+  font-weight: var(--hw-font-bold);
+}
+
+.hw-availability-summary-item span {
+  color: var(--hw-text-muted);
+  font-size: var(--hw-text-xs);
+  font-weight: var(--hw-font-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--hw-tracking-wide);
+}
+
+.hw-availability-mini-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hw-space-2);
+  margin-bottom: var(--hw-space-4);
+}
+
+.hw-availability-mini-list span {
+  padding: var(--hw-space-2) var(--hw-space-3);
+  background: var(--hw-bg);
+  border: 1px solid var(--hw-border-subtle);
+  border-radius: var(--hw-radius-pill);
+  color: var(--hw-text-secondary);
+  font-size: var(--hw-text-sm);
+  font-weight: var(--hw-font-medium);
+}
+
+.hw-availability-setup-callout {
+  padding: var(--hw-space-4);
+  background: var(--hw-warning-light);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: var(--hw-radius-md);
+  color: var(--hw-warning-text);
+  font-size: var(--hw-text-sm);
+  line-height: var(--hw-leading-relaxed);
+}
+
+.hw-availability-setup-callout strong {
+  display: block;
+  margin-bottom: var(--hw-space-2);
+  color: var(--hw-warning-text);
+  font-weight: var(--hw-font-semibold);
+}
+
+.hw-availability-mini-list strong {
+  color: var(--hw-text-primary);
+  margin-right: var(--hw-space-1);
+}
+
+/* ============================================
+   WALLET SUMMARY
+   ============================================ */
+
+.hw-wallet-summary-grid {
+  display: grid;
+  gap: var(--hw-space-3);
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.hw-wallet-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hw-space-1);
+  padding: var(--hw-space-4);
+  background: var(--hw-bg);
+  border: 1px solid var(--hw-border-subtle);
+  border-radius: var(--hw-radius-md);
+}
+
+.hw-wallet-summary-item strong {
+  color: var(--hw-text-primary);
+  font-size: var(--hw-text-xl);
+  font-weight: var(--hw-font-bold);
+}
+
+.hw-wallet-summary-item span {
+  color: var(--hw-text-muted);
+  font-size: var(--hw-text-xs);
+  font-weight: var(--hw-font-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--hw-tracking-wide);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .hw-profile-hero {
+    flex-direction: column;
+    text-align: center;
+    padding: var(--hw-space-6);
+  }
+
+  .hw-profile-hero-content h1 {
+    font-size: var(--hw-text-2xl);
+  }
+
+  .hw-profile-hero-actions {
+    justify-content: center;
+  }
+
+  .hw-profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hw-dashboard-metric-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .hw-quick-actions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .hw-availability-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hw-wallet-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .hw-profile-hero {
+    padding: var(--hw-space-5);
+  }
+
+  .hw-profile-hero-content h1 {
+    font-size: var(--hw-text-xl);
+  }
+
+  .hw-dashboard-metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hw-quick-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .hw-account-info-actions {
+    flex-direction: column;
+  }
+
+  .hw-account-info-actions button,
+  .hw-account-info-actions a {
+    width: 100%;
+  }
+}
+
+/* ============================================
+   DARK MODE
+   ============================================ */
+
+:root[data-theme='dark'] .hw-profile-hero,
+:root[data-theme='dark'] .hw-account-info-card,
+:root[data-theme='dark'] .hw-profile-section,
+:root[data-theme='dark'] .hw-dashboard-metric,
+:root[data-theme='dark'] .hw-quick-action {
+  background: var(--hw-surface);
+  border-color: var(--hw-border);
+}
+
+:root[data-theme='dark'] .hw-account-detail-list strong,
+:root[data-theme='dark'] .hw-dashboard-metric strong,
+:root[data-theme='dark'] .hw-availability-summary-item strong,
+:root[data-theme='dark'] .hw-wallet-summary-item strong,
+:root[data-theme='dark'] .hw-profile-hero-content h1,
+:root[data-theme='dark'] .hw-profile-section-header h2 {
+  color: var(--hw-text-primary);
+}
+
+:root[data-theme='dark'] .hw-account-detail-list span:not(strong),
+:root[data-theme='dark'] .hw-profile-hero-content p,
+:root[data-theme='dark'] .hw-profile-section-header p {
+  color: var(--hw-text-secondary);
+}
+
+:root[data-theme='dark'] .hw-dashboard-metric span,
+:root[data-theme='dark'] .hw-availability-summary-item span,
+:root[data-theme='dark'] .hw-wallet-summary-item span,
+:root[data-theme='dark'] .hw-quick-action-label {
+  color: var(--hw-text-muted);
+}
+
+:root[data-theme='dark'] .hw-availability-summary-item,
+:root[data-theme='dark'] .hw-wallet-summary-item,
+:root[data-theme='dark'] .hw-availability-mini-list span {
+  background: var(--hw-bg);
+  border-color: var(--hw-border-subtle);
+}
+
+:root[data-theme='dark'] .hw-availability-setup-callout {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.25);
+  color: var(--hw-warning-text);
+}
+
+:root[data-theme='dark'] .hw-availability-setup-callout strong {
+  color: var(--hw-warning-text);
+}
+
+:root[data-theme='dark'] .hw-quick-action-icon {
+  background: rgba(22, 163, 74, 0.15);
+  color: var(--hw-success-text);
+}

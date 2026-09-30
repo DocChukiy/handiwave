@@ -2,10 +2,14 @@ import { motion } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
-import Button from '../components/Button.jsx'
 import EmptyState from '../components/EmptyState.jsx'
-import SectionHeader from '../components/SectionHeader.jsx'
 import SkeletonPreview from '../components/Skeletons.jsx'
+import PageShell from '../components/ui/PageShell.jsx'
+import Section from '../components/ui/Section.jsx'
+import Card from '../components/ui/Card.jsx'
+import Badge from '../components/ui/Badge.jsx'
+import Avatar from '../components/ui/Avatar.jsx'
+import Button from '../components/Button.jsx'
 import { ReviewCard } from '../components/cards.jsx'
 import { getAvailabilityForArtisanId } from '../services/availabilityService.js'
 import { getArtisanById, getArtisanByProfileId } from '../services/artisanService.js'
@@ -159,27 +163,31 @@ function ArtisanProfile() {
 
   if (isLoading) {
     return (
-      <div className="artisan-profile-page">
-        <SkeletonPreview count={3} label="Loading artisan profile" type="artisan" />
-      </div>
+      <PageShell>
+        <div className="hw-profile-page">
+          <SkeletonPreview count={3} label="Loading professional profile" type="artisan" />
+        </div>
+      </PageShell>
     )
   }
 
   if (!artisan) {
     return (
-      <div className="artisan-profile-page">
-        <EmptyState
-          action={(
-            <Button className="primary-cta" to="/artisan-onboarding">
-              Create Artisan Profile
-            </Button>
-          )}
-          title="No artisan profile yet"
-        >
-          Complete onboarding so customers can view your artisan profile.
-        </EmptyState>
-        {error && <p className="auth-error">{error}</p>}
-      </div>
+      <PageShell>
+        <div className="hw-profile-page">
+          <EmptyState
+            action={(
+              <Button className="primary-cta" to="/artisan-onboarding">
+                Create Professional Profile
+              </Button>
+            )}
+            title="No artisan profile yet"
+          >
+            Complete onboarding so customers can view your professional profile.
+          </EmptyState>
+          {error && <p className="auth-error">{error}</p>}
+        </div>
+      </PageShell>
     )
   }
 
@@ -189,274 +197,322 @@ function ArtisanProfile() {
   const isVerified = artisan.verificationStatus === 'verified' || artisan.verified
   const isTopRated = rating >= 4.5 && reviewCount >= 3
   const jobMilestone = getJobMilestone(completedJobs)
-  const trustReasons = [
-    isVerified ? 'Profile and service identity have been reviewed by Handiwave.' : '',
-    isTopRated ? 'Consistently high customer ratings on completed work.' : '',
-    completedJobs > 0 ? `${completedJobs} customer-confirmed job${completedJobs === 1 ? '' : 's'} completed.` : '',
-    reviewCount > 0 ? `${reviewCount} verified customer review${reviewCount === 1 ? '' : 's'} available.` : '',
-    'Payments are designed to stay escrow protected until customer confirmation.',
-  ].filter(Boolean)
 
   return (
-    <div className="artisan-profile-page">
-      {error && <p className="auth-error">{error}</p>}
-      {isFallback && (
-        <p className="auth-hint">
-          Showing starter profile data because Supabase did not return an artisan for this link.
-        </p>
-      )}
+    <PageShell>
+      <div className="hw-profile-page">
 
-      <motion.section
-        className="profile-hero-card"
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
-      >
-        <div className="profile-image-card">
-          <div className="large-profile-image">{artisan.initials}</div>
-          <div className="profile-badge-stack">
-            <span className="profile-verified-badge">
-              {artisan.verificationStatus.replaceAll('_', ' ')}
-            </span>
-            {isTopRated && <span className="top-rated-badge">Top Rated</span>}
-            {jobMilestone && <span className="trust-badge jobs">{jobMilestone}</span>}
+        {/* ============================================
+            PROFILE HERO
+            ============================================ */}
+        <motion.section
+          className="hw-profile-hero"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+        >
+          <div className="hw-profile-hero-main">
+            <div className="hw-profile-avatar-section">
+              <Avatar
+                name={artisan.fullName || artisan.name}
+                src={artisan.avatarUrl}
+                initials={artisan.initials}
+                size="xl"
+              />
+              <div className="hw-profile-badges">
+                {isVerified && <Badge variant="verified">Verified Professional</Badge>}
+                {isTopRated && <Badge variant="success">Top Rated</Badge>}
+                {jobMilestone && <Badge variant="neutral">{jobMilestone}</Badge>}
+              </div>
+            </div>
+
+            <div className="hw-profile-info">
+              <p className="hw-profile-kicker">{artisan.skill}</p>
+              <h1>{artisan.businessName || artisan.fullName || artisan.name}</h1>
+              <p className="hw-profile-bio">{artisan.bio || 'This professional is setting up their profile.'}</p>
+
+              <div className="hw-profile-location">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+                <span>{artisan.fullLocation || `${artisan.area}, ${artisan.location}`}</span>
+                {artisan.serviceArea && <span className="hw-service-area">• {artisan.serviceArea}</span>}
+              </div>
+
+              <div className="hw-profile-stats">
+                <div className="hw-stat-card">
+                  <strong>{rating.toFixed(1)}</strong>
+                  <span>Rating</span>
+                </div>
+                <div className="hw-stat-card">
+                  <strong>{reviewCount}</strong>
+                  <span>Reviews</span>
+                </div>
+                <div className="hw-stat-card">
+                  <strong>{completedJobs}</strong>
+                  <span>Jobs Done</span>
+                </div>
+                <div className="hw-stat-card">
+                  <strong>{artisan.yearsExperience || 0}</strong>
+                  <span>Years Exp.</span>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <div className="profile-summary">
-          <p className="section-kicker">{artisan.skill}</p>
-          <h1>{artisan.businessName || artisan.fullName}</h1>
-          <p>{artisan.bio || 'This artisan is setting up their profile.'}</p>
+          <div className="hw-profile-hero-actions">
+            <div className="hw-profile-cta">
+              {hasAvailability ? (
+                <Button className="hw-btn hw-btn-primary hw-btn-lg" to={`/bookings?artisan=${artisan.id}`}>
+                  Book this professional
+                </Button>
+              ) : (
+                <Button className="hw-btn hw-btn-secondary hw-btn-lg" to="/messages">
+                  Message Professional
+                </Button>
+              )}
+            </div>
 
-          <div className="profile-stats">
-            <span>
-              <strong>{rating.toFixed(1)}</strong>
-              Average rating
-            </span>
-            <span>
-              <strong>{reviewCount}</strong>
-              Reviews
-            </span>
-            <span>
-              <strong>{completedJobs}</strong>
-              Completed jobs
-            </span>
-            <span>
-              <strong>{artisan.yearsExperience} yrs</strong>
-              Experience
-            </span>
+            <div className="hw-profile-price">
+              <span className="hw-price-label">Starting from</span>
+              <strong className="hw-price-amount">{formatMoney(artisan.startingPrice)}</strong>
+            </div>
           </div>
+        </motion.section>
 
-          <div className="safety-strip">
-            <span>{artisan.fullLocation}</span>
-            <span>{artisan.serviceArea || 'Local availability'}</span>
-            <span>Escrow protected</span>
-          </div>
+        {/* ============================================
+            TRUST & VERIFICATION
+            ============================================ */}
+        <Section
+          title="Trust & verification"
+          description="Verified signals that help you make an informed decision."
+          kicker="Why trust this professional"
+          className="hw-trust-section"
+        >
+          <Card variant="outlined" className="hw-trust-card">
+            <div className="hw-trust-grid">
+              <div className="hw-trust-item">
+                <div className="hw-trust-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+                    <path d="m9 12 2 2 4-4"/>
+                  </svg>
+                </div>
+                <div>
+                  <strong>{isVerified ? 'Verified' : artisan.verificationStatus?.replaceAll('_', ' ') || 'Pending'}</strong>
+                  <p>Identity and service reviewed by Handiwave</p>
+                </div>
+              </div>
 
-          <div className="profile-actions">
+              <div className="hw-trust-item">
+                <div className="hw-trust-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                  </svg>
+                </div>
+                <div>
+                  <strong>{rating.toFixed(1)} / 5.0</strong>
+                  <p>{reviewCount} verified customer reviews</p>
+                </div>
+              </div>
+
+              <div className="hw-trust-item">
+                <div className="hw-trust-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                </div>
+                <div>
+                  <strong>{completedJobs} jobs completed</strong>
+                  <p>Customer-confirmed job completions</p>
+                </div>
+              </div>
+
+              <div className="hw-trust-item">
+                <div className="hw-trust-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="20" height="14" x="2" y="5" rx="2"/>
+                    <line x1="2" x2="22" y1="10" y2="10"/>
+                  </svg>
+                </div>
+                <div>
+                  <strong>Escrow protected</strong>
+                  <p>Payments held safely until job completion</p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </Section>
+
+        {/* ============================================
+            AVAILABILITY
+            ============================================ */}
+        <Section
+          title={hasAvailability ? 'Available this week' : 'No availability set yet'}
+          description={hasAvailability
+            ? 'Book one of these time slots when creating your request.'
+            : 'This professional has not added bookable slots yet. You can message them to ask about availability.'}
+          kicker="Booking availability"
+          className="hw-availability-section"
+        >
+          <Card variant="outlined" className="hw-availability-card">
             {hasAvailability ? (
-              <Button className="primary-cta" to={`/bookings?artisan=${artisan.id}`}>
-                Book Available Slot
-              </Button>
-            ) : (
-              <Button className="secondary-cta" to="/messages">
-                Message Artisan
-              </Button>
-            )}
-            {hasAvailability && (
-              <Button className="secondary-cta" to="/messages">
-                Chat
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <aside className="pricing-card">
-          <span>Starting price</span>
-          <strong>{formatMoney(artisan.startingPrice)}</strong>
-          <p>Final pricing depends on service type, location, and materials.</p>
-          <div className="profile-availability-preview">
-            <span>Availability</span>
-            {availabilityDays.length > 0 ? (
               <>
-                <span className="availability-status-note">Available this week</span>
-                <strong>{availabilityDays.slice(0, 3).join(', ')}</strong>
-                <p>
-                  {activeAvailabilitySlots.length} active slot{activeAvailabilitySlots.length === 1 ? '' : 's'}
-                  {availability.unavailableDates.length > 0
-                    ? ` • ${availability.unavailableDates.length} blocked date${availability.unavailableDates.length === 1 ? '' : 's'}`
-                    : ''}
-                </p>
+                <div className="hw-availability-days">
+                  {availabilityDays.slice(0, 5).map((day) => (
+                    <Badge key={day} variant="success">{day}</Badge>
+                  ))}
+                </div>
+                <div className="hw-availability-slots">
+                  {activeAvailabilitySlots.slice(0, 6).map((slot) => (
+                    <div key={slot.id} className="hw-slot">
+                      <strong>{slot.dayLabel}</strong>
+                      <span>{slot.startTime} - {slot.endTime}</span>
+                    </div>
+                  ))}
+                </div>
+                {availability.unavailableDates.length > 0 && (
+                  <p className="hw-unavailable-note">
+                    Unavailable: {availability.unavailableDates.slice(0, 3).map(d => d.unavailableDate).join(', ')}
+                    {availability.unavailableDates.length > 3 && '...'}
+                  </p>
+                )}
               </>
             ) : (
-              <>
-                <span className="availability-status-note muted">No availability set yet</span>
-                <p>Message this artisan or check again after they publish bookable hours.</p>
-              </>
+              <div className="hw-no-availability">
+                <p>Send a message to ask about availability.</p>
+                <Button className="hw-btn hw-btn-secondary" to="/messages">
+                  Message Professional
+                </Button>
+              </div>
             )}
-          </div>
-        </aside>
-      </motion.section>
+          </Card>
+        </Section>
 
-      <section className="trust-summary-section">
-        <div className="trust-summary-header">
-          <div>
-            <p className="section-kicker">Trust and reputation</p>
-            <h2>Why customers trust this artisan</h2>
-            <p>
-              These signals are based on verification status, completed work, customer reviews, and platform safety features.
-            </p>
-          </div>
-          <div className="trust-badge-row">
-            {isVerified && <span className="trust-badge verified">Verified Artisan</span>}
-            {isTopRated && <span className="trust-badge top-rated">Top Rated</span>}
-            <span className="trust-badge fast">Fast Responder</span>
-            {jobMilestone && <span className="trust-badge jobs">{jobMilestone}</span>}
-          </div>
-        </div>
+        {/* ============================================
+            ABOUT & SKILLS
+            ============================================ */}
+        <section className="hw-profile-content-grid">
+          <Card variant="outlined" className="hw-about-card">
+            <h3>About</h3>
+            <p className="hw-about-text">{artisan.bio || 'This professional is setting up their profile.'}</p>
+            <div className="hw-member-since">
+              <span>Member since {formatMemberSince(artisan.createdAt)}</span>
+            </div>
+          </Card>
 
-        <div className="trust-summary-grid">
-          <article>
-            <span>Verification</span>
-            <strong>{isVerified ? 'Verified' : artisan.verificationStatus.replaceAll('_', ' ')}</strong>
-          </article>
-          <article>
-            <span>Average rating</span>
-            <strong>{reviewCount > 0 ? rating.toFixed(1) : 'No ratings yet'}</strong>
-          </article>
-          <article>
-            <span>Review count</span>
-            <strong>{reviewCount}</strong>
-          </article>
-          <article>
-            <span>Completed jobs</span>
-            <strong>{completedJobs}</strong>
-          </article>
-          <article>
-            <span>Member since</span>
-            <strong>{formatMemberSince(artisan.createdAt)}</strong>
-          </article>
-          <article>
-            <span>Response time</span>
-            <strong>Fast responder</strong>
-          </article>
-        </div>
+          <Card variant="outlined" className="hw-skills-card">
+            <h3>Skills & Services</h3>
+            <div className="hw-skills-list">
+              {skills.filter(Boolean).map((skill) => (
+                <Badge key={skill} variant="neutral">{skill}</Badge>
+              ))}
+            </div>
+          </Card>
+        </section>
 
-        <div className="trust-reasons-grid">
-          {trustReasons.map((reason) => (
-            <article key={reason}>
-              <span aria-hidden="true">OK</span>
-              <p>{reason}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="public-availability-card">
-        <div>
-          <p className="section-kicker">Booking availability</p>
-          <h2>{hasAvailability ? 'Available this week' : 'No availability set yet'}</h2>
-          <p>
-            {hasAvailability
-              ? 'Choose one of these active weekly windows when creating your booking. Blocked dates are checked before submission.'
-              : 'This artisan has not added bookable slots yet. You can message them to ask for availability.'}
-          </p>
-        </div>
-        {hasAvailability ? (
-          <div className="availability-mini-list">
-            {activeAvailabilitySlots.slice(0, 6).map((slot) => (
-              <span key={slot.id}>
-                <strong>{slot.dayLabel}</strong>
-                {slot.startTime} - {slot.endTime}
-              </span>
+        {/* ============================================
+            PORTFOLIO
+            ============================================ */}
+        <Section
+          title="Recent work"
+          description="Sample projects and completed work."
+          kicker="Portfolio"
+          className="hw-portfolio-section"
+        >
+          <div className="hw-portfolio-grid">
+            {profilePortfolio.map((item) => (
+              <motion.article
+                key={item.title}
+                className="hw-portfolio-card"
+                whileHover={{ y: -4 }}
+              >
+                <div className="hw-portfolio-image">
+                  <Avatar
+                    name={artisan.fullName || artisan.name}
+                    src={artisan.avatarUrl}
+                    initials={artisan.initials}
+                    size="lg"
+                  />
+                </div>
+                <h4>{item.title}</h4>
+                <p>{item.detail}</p>
+              </motion.article>
             ))}
-            {availability.unavailableDates.length > 0 && (
-              <p>
-                Unavailable dates: {availability.unavailableDates
-                  .slice(0, 3)
-                  .map((date) => date.unavailableDate)
-                  .join(', ')}
-                {availability.unavailableDates.length > 3 ? '...' : ''}
-              </p>
-            )}
           </div>
-        ) : (
-          <div className="availability-setup-callout">
-            <strong>No published slots</strong>
-            <p>Booking will be easier once this artisan sets weekly availability.</p>
-          </div>
-        )}
-        <div className="profile-actions">
-          {hasAvailability ? (
-            <Button className="primary-cta" to={`/bookings?artisan=${artisan.id}`}>
-              Book Available Slot
-            </Button>
+        </Section>
+
+        {/* ============================================
+            REVIEWS
+            ============================================ */}
+        <Section
+          title="Customer reviews"
+          description="Verified reviews from completed jobs."
+          kicker={`${rating.toFixed(1)} average • ${reviewCount} reviews`}
+          className="hw-reviews-section"
+        >
+          <Card variant="outlined" className="hw-reviews-summary">
+            <div className="hw-reviews-summary-content">
+              <div className="hw-reviews-rating">
+                <strong>{rating.toFixed(1)}</strong>
+                <span>★★★★★</span>
+              </div>
+              <p>Based on verified customer-confirmed bookings and reviews.</p>
+            </div>
+          </Card>
+
+          {profileReviews.length > 0 ? (
+            <div className="hw-reviews-grid">
+              {profileReviews.map((review) => (
+                <ReviewCard key={review.id || review.name} review={review} />
+              ))}
+            </div>
           ) : (
-            <Button className="secondary-cta" to="/messages">
-              Ask Artisan to Set Availability
-            </Button>
+            <EmptyState compact title="No reviews yet">
+              Verified customer reviews will appear after customers confirm completed jobs.
+            </EmptyState>
           )}
-        </div>
-      </section>
+        </Section>
 
-      <section className="profile-content-grid">
-        <motion.article className="profile-panel about-panel" initial={{ opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }}>
-          <p className="section-kicker">About</p>
-          <h2>{artisan.skill} support in {artisan.fullLocation}</h2>
-          <p>{artisan.bio || 'This artisan has not added a detailed bio yet.'}</p>
-        </motion.article>
+        {/* ============================================
+            BOOKING CTA
+            ============================================ */}
+        <section className="hw-profile-booking-cta">
+          <Card variant="elevated" className="hw-booking-cta-card">
+            <div className="hw-booking-cta-content">
+              <h3>Ready to book?</h3>
+              <p>Create a booking request and this professional will respond.</p>
+              <div className="hw-booking-cta-actions">
+                {hasAvailability ? (
+                  <Button className="hw-btn hw-btn-primary hw-btn-lg" to={`/bookings?artisan=${artisan.id}`}>
+                    Book Available Slot
+                  </Button>
+                ) : (
+                  <Button className="hw-btn hw-btn-primary hw-btn-lg" to="/messages">
+                    Send Message
+                  </Button>
+                )}
+                <Button className="hw-btn hw-btn-secondary hw-btn-lg" to="/services">
+                  Browse More Services
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </section>
 
-        <motion.article className="profile-panel skills-panel" initial={{ opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }}>
-          <p className="section-kicker">Skills</p>
-          <div className="skills-list">
-            {skills.filter(Boolean).map((skill) => (
-              <span key={skill}>{skill}</span>
-            ))}
-          </div>
-        </motion.article>
-      </section>
-
-      <section className="portfolio-section">
-        <SectionHeader count="Sample projects" kicker="Portfolio" title="Recent work" />
-        <div className="portfolio-grid">
-          {profilePortfolio.map((item) => (
-            <motion.article className="portfolio-card" key={item.title} whileHover={{ y: -8, scale: 1.01 }}>
-              <div className="portfolio-image-placeholder">{artisan.initials}</div>
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
-            </motion.article>
-          ))}
-        </div>
-      </section>
-
-      <section className="reviews-section">
-        <SectionHeader
-          count={`${rating.toFixed(1)} average • ${reviewCount} reviews`}
-          kicker="Customer reviews"
-          title="Recent reviews"
-        />
-
-        <div className="rating-summary-card">
-          <div>
-            <strong>{artisan.rating.toFixed(1)}</strong>
-            <span>★★★★★</span>
-          </div>
-          <p>Based on verified customer-confirmed bookings and reviews.</p>
-        </div>
-
-        {profileReviews.length > 0 ? (
-          <div className="reviews-grid">
-            {profileReviews.map((review) => (
-              <ReviewCard key={review.id || review.name} review={review} />
-            ))}
-          </div>
-        ) : (
-          <EmptyState compact title="No reviews yet">
-            Verified customer reviews will appear after customers confirm completed jobs.
-          </EmptyState>
+        {error && <p className="auth-error">{error}</p>}
+        {isFallback && (
+          <p className="auth-hint">
+            Showing starter profile data because Supabase did not return an artisan for this link.
+          </p>
         )}
-      </section>
-    </div>
+
+      </div>
+    </PageShell>
   )
 }
 

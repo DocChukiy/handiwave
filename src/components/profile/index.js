@@ -1,0 +1,6 @@
+export { default as ProfileHero } from './ProfileHero.jsx'
+export { default as AccountInfoCard } from './AccountInfoCard.jsx'
+export { default as DashboardMetric } from './DashboardMetric.jsx'
+export { default as QuickActions } from './QuickActions.jsx'
+export { default as CustomerProfile } from './CustomerProfile.jsx'
+export { default as ArtisanProfileView } from './ArtisanProfileView.jsx'
