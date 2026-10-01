@@ -12,6 +12,10 @@ These steps require the business owner's identity, payment method, legal agreeme
 
 Choose an organization account if Handiwave is a registered company and the store should display the company name. Both stores require a D-U-N-S number for organization enrollment. Otherwise, an individual account displays the account owner's legal name.
 
+## Current Mac limitation
+
+This Mac runs macOS Monterey 12.7.6. Current Xcode releases require a newer macOS version, so this machine can prepare and publish Android builds but cannot produce a current App Store build. Complete iOS signing and upload on a supported newer Mac or a trusted hosted macOS build service after Apple enrollment.
+
 ## Android signing
 
 Release signing reads `android/keystore.properties`, which is intentionally ignored by Git. It may also read these environment variables in CI:
