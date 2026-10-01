@@ -15,15 +15,21 @@ function parseArgs() {
 const opts = parseArgs()
 const domain = opts.domain || process.env.DOMAIN
 const packageName = opts.package || process.env.PACKAGE_NAME || 'com.handiwave.app'
-const sha256 = opts.sha256 || process.env.APK_SHA256 || 'REPLACE_WITH_YOUR_APP_SHA256_FINGERPRINT'
-const team = opts.team || process.env.APPLE_TEAM_ID || 'TEAMID'
+const sha256 = opts.sha256 || process.env.APK_SHA256
+const team = opts.team || process.env.APPLE_TEAM_ID
 
 if (!domain) {
   console.error('Error: provide --domain=your-domain.com or set DOMAIN env var')
   process.exit(1)
 }
 
-const outDir = path.join(process.cwd(), 'well-known')
+if (!sha256 || !team) {
+  console.error('Error: provide a real Android SHA-256 fingerprint and Apple Team ID')
+  console.error('Example: npm run generate:well-known -- --domain=handiwave.com.ng --sha256=AA:BB:... --team=ABCDE12345')
+  process.exit(1)
+}
+
+const outDir = path.join(process.cwd(), 'public', '.well-known')
 fs.mkdirSync(outDir, { recursive: true })
 
 const assetlinks = [

@@ -13,6 +13,12 @@ dist-ssr
 *.local
 .env
 
+# Mobile release signing (never commit these)
+android/keystore.properties
+android/keystores/
+*.jks
+*.keystore
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
