@@ -205,10 +205,12 @@ export async function signInWithRole({ email, password, role = 'customer' }) {
 }
 
 export async function signUpWithRole({
+  consent,
   email,
   name,
   password,
   primarySkill = '',
+  recruitmentAttribution = {},
   role = 'customer',
 }) {
   const supabase = getSupabaseClient()
@@ -219,6 +221,8 @@ export async function signUpWithRole({
       data: {
         name,
         primary_skill: primarySkill,
+        professional_consent: consent || null,
+        recruitment_attribution: recruitmentAttribution,
         role,
       },
     },

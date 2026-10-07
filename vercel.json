@@ -1,4 +1,11 @@
 {
+  "redirects": [
+    {
+      "source": "/go/kaduna",
+      "destination": "/join-professionals?ref=kaduna-flyer&utm_source=field_flyer&utm_medium=qr&utm_campaign=kaduna_founding_professionals&utm_content=general_flyer",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",

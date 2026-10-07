@@ -11,6 +11,7 @@ import './styles/navigation.css'
 import './styles/bookings.css'
 import './styles/profile.css'
 import './styles/legacy-pages.css'
+import './styles/join-professionals.css'
 import App from './App.jsx'
 
 // Initialize Capacitor deep-link listener if running in native

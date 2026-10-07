@@ -238,6 +238,26 @@
   line-height: 1;
 }
 
+.professional-consent {
+  align-items: flex-start;
+  background: var(--hw-surface-hover);
+  border: 1px solid var(--hw-border);
+  border-radius: var(--hw-radius-lg);
+  display: flex !important;
+  font-size: 0.82rem;
+  font-weight: 600 !important;
+  gap: var(--hw-space-3) !important;
+  line-height: 1.55;
+  padding: var(--hw-space-4);
+}
+
+.professional-consent input {
+  flex: 0 0 auto;
+  height: 18px;
+  margin-top: 2px;
+  width: 18px;
+}
+
 .role-selector button.active,
 .admin-tabs button.active {
   background: var(--hw-primary);

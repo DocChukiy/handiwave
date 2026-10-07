@@ -159,17 +159,19 @@ function AuthProvider({ children }) {
       }
     }
 
-    async function signup({ email, name, password, primarySkill, role }) {
+    async function signup({ consent, email, name, password, primarySkill, recruitmentAttribution, role }) {
       setAuthError('')
         logger.debug('[Handiwave auth debug] loading state change:', true)
       setIsLoading(true)
 
       try {
         const { data, error } = await signUpWithRole({
+          consent,
           email,
           name,
           password,
           primarySkill,
+          recruitmentAttribution,
           role,
         })
 

@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
 import { getArtisanByProfileId } from '../services/artisanService.js'
 import { showToast } from '../utils/toast.js'
 import logger from '../utils/logger.js'
+import {
+  getRecruitmentAttribution,
+  rememberRecruitmentAttribution,
+} from '../utils/recruitmentTracking.js'
+
+const professionalConsentVersion = 'kaduna-pilot-v1-2026-10-07'
 
 const signupTypes = [
   {
@@ -20,8 +26,12 @@ const signupTypes = [
 
 function Signup() {
   const { authError, signup } = useAuth()
+  const location = useLocation()
   const navigate = useNavigate()
-  const [accountType, setAccountType] = useState('customer')
+  const [searchParams] = useSearchParams()
+  const isProfessionalApplication = searchParams.get('role') === 'artisan'
+  const [accountType, setAccountType] = useState(isProfessionalApplication ? 'artisan' : 'customer')
+  const [consentAccepted, setConsentAccepted] = useState(false)
   const [email, setEmail] = useState('')
   const [formError, setFormError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -50,9 +60,17 @@ function Signup() {
       return 'primary skill is missing'
     }
 
+    if (accountType === 'artisan' && !consentAccepted) {
+      return 'professional application consent is required'
+    }
+
     return ''
-  }, [accountType, email, isSubmitting, name, password, primarySkill])
+  }, [accountType, consentAccepted, email, isSubmitting, name, password, primarySkill])
   const isSignupDisabled = Boolean(disabledReason)
+
+  useEffect(() => {
+    rememberRecruitmentAttribution(location.search)
+  }, [location.search])
 
   useEffect(() => {
     logger.debug('[Handiwave signup debug]', {
@@ -85,10 +103,17 @@ function Signup() {
 
     try {
       const { session, user } = await signup({
+        consent: accountType === 'artisan'
+          ? {
+              acceptedAt: new Date().toISOString(),
+              version: professionalConsentVersion,
+            }
+          : null,
         email,
         name,
         password,
         primarySkill,
+        recruitmentAttribution: getRecruitmentAttribution(),
         role: accountType,
       })
 
@@ -123,28 +148,52 @@ function Signup() {
   return (
     <div className="auth-page">
       <section className="auth-card">
-        <p className="section-kicker">Join Handiwave</p>
-        <h1>Create your account</h1>
-        <p>Start as a customer or apply as an artisan with Supabase Auth.</p>
+        <p className="section-kicker">{isProfessionalApplication ? 'Kaduna professional application' : 'Join Handiwave'}</p>
+        <h1>{isProfessionalApplication ? 'Create your professional account' : 'Create your account'}</h1>
+        <p>
+          {isProfessionalApplication
+            ? 'Registration is free. After signup, complete your profile and verification with the Handiwave team.'
+            : 'Start as a customer or apply as a professional.'}
+        </p>
         <form className="auth-form" onSubmit={handleSignup}>
-          <div className="role-selector two-column" aria-label="Signup account type">
-            {signupTypes.map((type) => (
-              <button
-                className={accountType === type.value ? 'active' : ''}
-                key={type.value}
-                type="button"
-                onClick={() => setAccountType(type.value)}
-              >
-                <strong>{type.label} signup</strong>
-                <span>{type.description}</span>
-              </button>
-            ))}
-          </div>
+          {!isProfessionalApplication && (
+            <div className="role-selector two-column" aria-label="Signup account type">
+              {signupTypes.map((type) => (
+                <button
+                  className={accountType === type.value ? 'active' : ''}
+                  key={type.value}
+                  type="button"
+                  onClick={() => setAccountType(type.value)}
+                >
+                  <strong>{type.label} signup</strong>
+                  <span>{type.description}</span>
+                </button>
+              ))}
+            </div>
+          )}
           <label>Full name<input placeholder="Enter your name" value={name} onChange={(event) => setName(event.target.value)} /></label>
           <label>Email address<input type="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
           <label>Password<input type="password" placeholder="Create a password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
           {accountType === 'artisan' && (
-            <label>Primary skill<input placeholder="Electrician, cleaner, barber..." value={primarySkill} onChange={(event) => setPrimarySkill(event.target.value)} /></label>
+            <>
+              <label>Primary skill<input placeholder="Electrician, plumber, AC technician..." value={primarySkill} onChange={(event) => setPrimarySkill(event.target.value)} /></label>
+              <label className="professional-consent">
+                <input
+                  checked={consentAccepted}
+                  onChange={(event) => setConsentAccepted(event.target.checked)}
+                  type="checkbox"
+                />
+                <span>
+                  I confirm that my application information is accurate. I consent to Handiwave
+                  collecting and using my contact details, identity documents, location, work samples,
+                  references, and verification records to assess my application, create and manage my
+                  professional profile, prevent fraud, and contact me about the pilot and service
+                  opportunities. I understand that verification does not guarantee jobs and may be
+                  withdrawn if information is false. I agree to the <Link to="/terms">Terms</Link> and
+                  {' '}<Link to="/privacy">Privacy Policy</Link>.
+                </span>
+              </label>
+            </>
           )}
           {(formError || authError) && (
             <p className="auth-error">{formError || authError}</p>

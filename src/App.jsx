@@ -33,6 +33,12 @@ const Bookings = lazy(() => import('./pages/Bookings.jsx'))
 const Disputes = lazy(() => import('./pages/Disputes.jsx'))
 const Home = lazy(() => import('./pages/Home.jsx'))
 const Login = lazy(() => import('./pages/Login.jsx'))
+const JoinProfessionals = lazy(() => import('./pages/JoinProfessionals.jsx'))
+const KadunaProfessionalRedirect = lazy(() =>
+  import('./pages/JoinProfessionals.jsx').then((module) => ({
+    default: module.KadunaProfessionalRedirect,
+  })),
+)
 const Messages = lazy(() => import('./pages/Messages.jsx'))
 const PaymentCallback = lazy(() => import('./pages/PaymentCallback.jsx'))
 const Profile = lazy(() => import('./pages/Profile.jsx'))
@@ -230,6 +236,8 @@ function AnimatedRoutes() {
             )}
           />
           <Route path="/login" element={<Login />} />
+          <Route path="/join-professionals" element={<JoinProfessionals />} />
+          <Route path="/go/kaduna" element={<KadunaProfessionalRedirect />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
