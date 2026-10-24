@@ -14,31 +14,33 @@ function ProfileDropdown({ onClose, onLogout }) {
       </div>
 
       <div className="hw-profile-dropdown-links">
-        <NavLink
-          className="hw-profile-dropdown-link"
-          to="/profile"
-          onClick={onClose}
-          role="menuitem"
-        >
-          My Profile
-        </NavLink>
-
-        <NavLink className="hw-profile-dropdown-link" to="/messages" onClick={onClose} role="menuitem">
-          Messages
-        </NavLink>
-        <NavLink className="hw-profile-dropdown-link" to="/wallet" onClick={onClose} role="menuitem">
-          Wallet
-        </NavLink>
-
-        {isAdmin && (
-          <NavLink
-            className="hw-profile-dropdown-link"
-            to="/admin"
-            onClick={onClose}
-            role="menuitem"
-          >
-            Admin Dashboard
-          </NavLink>
+        {isAdmin ? (
+          <>
+            <NavLink className="hw-profile-dropdown-link" to="/admin" onClick={onClose} role="menuitem">
+              Operations Overview
+            </NavLink>
+            <NavLink className="hw-profile-dropdown-link" to="/admin/professionals" onClick={onClose} role="menuitem">
+              Professional Applications
+            </NavLink>
+            <NavLink className="hw-profile-dropdown-link" to="/messages" onClick={onClose} role="menuitem">
+              Messages
+            </NavLink>
+            <NavLink className="hw-profile-dropdown-link" to="/admin/finance" onClick={onClose} role="menuitem">
+              Platform Finance
+            </NavLink>
+          </>
+        ) : (
+          <>
+            <NavLink className="hw-profile-dropdown-link" to="/profile" onClick={onClose} role="menuitem">
+              My Profile
+            </NavLink>
+            <NavLink className="hw-profile-dropdown-link" to="/messages" onClick={onClose} role="menuitem">
+              Messages
+            </NavLink>
+            <NavLink className="hw-profile-dropdown-link" to="/wallet" onClick={onClose} role="menuitem">
+              Wallet
+            </NavLink>
+          </>
         )}
 
         {isArtisan && (

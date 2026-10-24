@@ -32,22 +32,33 @@
   max-width: 760px;
 }
 
-.pilot-area-callout {
+.pilot-area-callout,
+.national-interest-callout {
   align-items: flex-start;
   background: #fff;
   border: 1px solid rgba(22, 163, 74, 0.22);
   border-radius: var(--hw-radius-lg);
   display: flex;
   gap: var(--hw-space-3);
-  margin: var(--hw-space-6) 0;
+  margin: var(--hw-space-4) 0;
   max-width: 680px;
   padding: var(--hw-space-4);
 }
 
-.pilot-area-callout svg { color: var(--hw-primary); flex: 0 0 auto; margin-top: 2px; }
-.pilot-area-callout div { display: grid; gap: 3px; }
+.national-interest-callout {
+  background: #052e23;
+  border-color: #052e23;
+}
+
+.pilot-area-callout svg,
+.national-interest-callout svg { color: var(--hw-primary); flex: 0 0 auto; margin-top: 2px; }
+.national-interest-callout svg { color: #86efac; }
+.pilot-area-callout div,
+.national-interest-callout div { display: grid; gap: 3px; }
 .pilot-area-callout strong { color: var(--hw-text-primary); }
 .pilot-area-callout span { color: var(--hw-text-secondary); }
+.national-interest-callout strong { color: #fff; }
+.national-interest-callout span { color: #bbf7d0; }
 
 .professional-join-actions {
   display: flex;

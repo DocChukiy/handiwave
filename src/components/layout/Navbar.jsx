@@ -37,12 +37,12 @@ function Navbar({
       ]
     : user?.role === 'admin'
       ? [
-          { path: '/', label: 'Home' },
-          { path: '/services', label: 'Services' },
-          { path: '/artisans', label: 'Professionals' },
-          { path: '/admin', label: 'Admin' },
+          { path: '/admin', label: 'Overview' },
+          { path: '/admin/professionals', label: 'Professionals' },
+          { path: '/admin/bookings', label: 'Operations' },
           { path: '/messages', label: 'Messages' },
-          { path: '/wallet', label: 'Wallet' },
+          { path: '/admin/finance', label: 'Finance' },
+          { path: '/disputes', label: 'Disputes' },
         ]
       : [
           { path: '/', label: 'Home' },
@@ -81,7 +81,7 @@ function Navbar({
               className={({ isActive }) =>
                 `hw-nav-link ${isActive ? 'active' : ''}`
               }
-              end={link.path === '/'}
+              end={link.path === '/' || link.path === '/admin'}
               onClick={onCloseMobileMenu}
               to={link.path}
             >

@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Handiwave Professional Campaign Flyer</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; }
+      body { background: #d9f7e4; display: grid; place-items: center; }
+      .flyer {
+        background: #f8fffa;
+        color: #071525;
+        font-family: Arial, Helvetica, sans-serif;
+        height: 1350px;
+        overflow: hidden;
+        position: relative;
+        width: 1080px;
+      }
+      .green-rail { background: #16a34a; bottom: 0; left: 0; position: absolute; top: 0; width: 14px; }
+      .visual {
+        background-color: #e8f8ee;
+        background-image: url('./handiwave-professional-campaign-source.jpg');
+        background-position: -675px -42px;
+        background-repeat: no-repeat;
+        background-size: 1150px 1725px;
+        height: 855px;
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 450px;
+      }
+      .visual::before {
+        background: #16a34a;
+        content: '';
+        height: 18px;
+        left: 0;
+        position: absolute;
+        right: 0;
+        top: 0;
+      }
+      .visual-caption {
+        align-content: center;
+        background: #16a34a;
+        bottom: 0;
+        color: #fff;
+        display: grid;
+        height: 176px;
+        left: 0;
+        padding: 28px;
+        position: absolute;
+        right: 0;
+      }
+      .visual-caption small { display: block; font-size: 13px; font-weight: 900; letter-spacing: 1.5px; margin-bottom: 5px; text-transform: uppercase; }
+      .visual-caption strong { display: block; font-size: 25px; line-height: 1.08; }
+      .content {
+        min-height: 855px;
+        padding: 47px 40px 40px 62px;
+        position: relative;
+        width: 630px;
+      }
+      .brand { align-items: center; display: flex; gap: 14px; }
+      .brand img { height: 55px; width: 55px; }
+      .brand strong { font-size: 38px; font-weight: 900; letter-spacing: -1.5px; }
+      .brand strong span { color: #16a34a; }
+      .campaign-label {
+        align-items: center;
+        color: #15803d;
+        display: flex;
+        font-size: 15px;
+        font-weight: 900;
+        gap: 10px;
+        letter-spacing: 1.4px;
+        margin: 45px 0 18px;
+        text-transform: uppercase;
+      }
+      .campaign-label::before { background: #16a34a; content: ''; height: 4px; width: 42px; }
+      h1 {
+        font-size: 69px;
+        letter-spacing: -3.8px;
+        line-height: .95;
+        margin: 0;
+      }
+      h1 span { color: #16a34a; display: block; }
+      .lead { color: #334155; font-size: 21px; font-weight: 600; line-height: 1.47; margin: 27px 0 0; max-width: 530px; }
+      .reasons { display: grid; gap: 16px; margin-top: 32px; }
+      .reason { align-items: center; display: grid; gap: 13px; grid-template-columns: 34px 1fr; }
+      .reason b {
+        align-items: center;
+        background: #dcfce7;
+        border-radius: 999px;
+        color: #15803d;
+        display: flex;
+        font-size: 18px;
+        height: 34px;
+        justify-content: center;
+        width: 34px;
+      }
+      .reason span { color: #0f172a; font-size: 17px; font-weight: 800; }
+      .for-line {
+        border-left: 5px solid #16a34a;
+        color: #475569;
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 1.45;
+        margin-top: 34px;
+        padding-left: 15px;
+      }
+      .for-line strong { color: #052e23; display: block; font-size: 16px; margin-bottom: 4px; text-transform: uppercase; }
+      .action {
+        align-items: center;
+        background: #052e23;
+        bottom: 90px;
+        color: #fff;
+        display: grid;
+        gap: 30px;
+        grid-template-columns: 1fr 245px;
+        left: 14px;
+        min-height: 405px;
+        padding: 43px 54px 40px 58px;
+        position: absolute;
+        right: 0;
+      }
+      .action-kicker { color: #86efac; font-size: 15px; font-weight: 900; letter-spacing: 1.3px; margin: 0 0 13px; text-transform: uppercase; }
+      .action h2 { font-size: 45px; letter-spacing: -1.6px; line-height: 1.02; margin: 0 0 18px; max-width: 630px; }
+      .action-copy { color: #d1fae5; font-size: 19px; line-height: 1.45; margin: 0; max-width: 650px; }
+      .pilot-note { color: #fff; font-size: 15px; font-weight: 800; margin-top: 20px; }
+      .pilot-note span { color: #86efac; }
+      .qr-wrap { background: #fff; border-radius: 26px; color: #052e23; padding: 18px; text-align: center; }
+      .qr-wrap img { display: block; height: 184px; margin: 0 auto; width: 184px; }
+      .qr-wrap strong { display: block; font-size: 15px; margin-top: 8px; }
+      .qr-wrap small { color: #64748b; display: block; font-size: 11px; font-weight: 700; margin-top: 4px; }
+      .footer {
+        align-items: center;
+        bottom: 0;
+        display: flex;
+        height: 90px;
+        justify-content: space-between;
+        left: 14px;
+        padding: 0 54px 0 58px;
+        position: absolute;
+        right: 0;
+      }
+      .footer strong { color: #16a34a; font-size: 23px; }
+      .footer span { color: #475569; font-size: 12px; font-weight: 700; max-width: 400px; text-align: right; }
+      @media print {
+        @page { margin: 0; size: 1080px 1350px; }
+        body { background: transparent; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="flyer">
+      <div class="green-rail"></div>
+
+      <section class="content">
+        <div class="brand">
+          <img src="../public/handiwave-mark.svg" alt="" />
+          <strong>Handi<span>wave</span></strong>
+        </div>
+        <p class="campaign-label">Founding professional applications</p>
+        <h1>Good at what you do?<span>Let more people find you.</span></h1>
+        <p class="lead">Handiwave helps skilled professionals build trust, present their work properly, and become ready for suitable service opportunities.</p>
+
+        <div class="reasons">
+          <div class="reason"><b>✓</b><span>Create a professional profile that shows your value</span></div>
+          <div class="reason"><b>✓</b><span>Receive relevant requests when available near you</span></div>
+          <div class="reason"><b>✓</b><span>Send clear quotes and keep your job records organised</span></div>
+        </div>
+
+        <p class="for-line"><strong>Who should apply?</strong>Electricians, plumbers, AC technicians, solar and inverter installers, generator technicians, cleaners, carpenters, painters, handymen, and other skilled professionals.</p>
+      </section>
+
+      <aside class="visual" aria-label="Skilled Handiwave professional">
+        <div class="visual-caption">
+          <small>Build trust. Get discovered. Grow.</small>
+          <strong>Your work deserves to be seen.</strong>
+        </div>
+      </aside>
+
+      <section class="action">
+        <div>
+          <p class="action-kicker">Now launching in Kaduna and Abuja</p>
+          <h2>Join the first Handiwave professional network.</h2>
+          <p class="action-copy">Professionals in Kaduna and Abuja can apply for our first service opportunities. Skilled professionals elsewhere in Nigeria can register early as we expand.</p>
+          <p class="pilot-note"><span>Free registration.</span> Verification is required before activation. Jobs are not guaranteed.</p>
+        </div>
+        <div class="qr-wrap">
+          <img src="./professionals-national-early-access-qr.svg" alt="QR code to join Handiwave professionals" />
+          <strong>SCAN TO APPLY FREE</strong>
+          <small>handiwave.com.ng</small>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <strong>handiwave.com.ng/join-professionals</strong>
+        <span>Trusted professionals. Clear service. A growing network built for Nigeria.</span>
+      </footer>
+    </main>
+  </body>
+</html>

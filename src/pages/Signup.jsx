@@ -9,7 +9,7 @@ import {
   rememberRecruitmentAttribution,
 } from '../utils/recruitmentTracking.js'
 
-const professionalConsentVersion = 'kaduna-pilot-v1-2026-10-07'
+const professionalConsentVersion = 'kaduna-abuja-pilot-v1-2026-10-13'
 
 const signupTypes = [
   {
@@ -148,11 +148,11 @@ function Signup() {
   return (
     <div className="auth-page">
       <section className="auth-card">
-        <p className="section-kicker">{isProfessionalApplication ? 'Kaduna professional application' : 'Join Handiwave'}</p>
+        <p className="section-kicker">{isProfessionalApplication ? 'Professional application' : 'Join Handiwave'}</p>
         <h1>{isProfessionalApplication ? 'Create your professional account' : 'Create your account'}</h1>
         <p>
           {isProfessionalApplication
-            ? 'Registration is free. After signup, complete your profile and verification with the Handiwave team.'
+            ? 'Registration is free. Kaduna and Abuja are our first pilot cities, and professionals elsewhere can register early interest as we expand.'
             : 'Start as a customer or apply as a professional.'}
         </p>
         <form className="auth-form" onSubmit={handleSignup}>

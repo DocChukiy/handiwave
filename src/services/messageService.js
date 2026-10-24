@@ -85,6 +85,13 @@ function formatPresence(lastSeen) {
 }
 
 function getOtherPerson(conversation, user) {
+  if (user?.role === 'admin') {
+    const customerName = conversation.customer?.full_name || conversation.customer?.email || 'Customer'
+    const artisanName = conversation.artisan?.profile?.full_name || conversation.artisan?.business_name || 'Professional'
+
+    return `${customerName} ↔ ${artisanName}`
+  }
+
   if (user?.role === 'artisan') {
     return conversation.customer?.full_name || conversation.customer?.email || 'Customer'
   }
@@ -97,6 +104,10 @@ function getOtherPerson(conversation, user) {
 }
 
 function getOtherPersonProfile(conversation, user) {
+  if (user?.role === 'admin') {
+    return {}
+  }
+
   if (user?.role === 'artisan') {
     return conversation.customer || {}
   }
@@ -340,7 +351,7 @@ export async function getConversationsForUser(user) {
     }
 
     query = query.eq('artisan_id', artisanProfile.id)
-  } else {
+  } else if (user.role !== 'admin') {
     query = query.eq('customer_id', user.id)
   }
 
@@ -362,7 +373,9 @@ export async function getConversationsForUser(user) {
     { error: unreadError, unreadByConversation },
   ] = await Promise.all([
     getLatestMessagesForConversations(conversationIds),
-    getUnreadCountsForConversations(conversationIds, user.id),
+    user.role === 'admin'
+      ? Promise.resolve({ error: null, unreadByConversation: new Map() })
+      : getUnreadCountsForConversations(conversationIds, user.id),
   ])
 
   return {
@@ -496,20 +509,21 @@ export async function sendConversationMessage({
     .eq('id', conversationId)
 
   if (conversation) {
-    const receiverProfileId = senderId === conversation.customer_id
-      ? conversation.artisan?.profile_id
-      : conversation.customer_id
+    const participantIds = [conversation.customer_id, conversation.artisan?.profile_id]
+      .filter((profileId) => profileId && profileId !== senderId)
 
-    await createNotificationSafely({
+    await Promise.all(participantIds.map((profileId) => createNotificationSafely({
       body: trimmedBody.length > 120 ? `${trimmedBody.slice(0, 117)}...` : trimmedBody,
       data: {
         booking_id: conversation.booking_id,
         conversation_id: conversation.id,
       },
-      profileId: receiverProfileId,
-      title: 'New message',
+      profileId,
+      title: senderId === conversation.customer_id || senderId === conversation.artisan?.profile_id
+        ? 'New message'
+        : 'Handiwave support joined the conversation',
       type: 'message',
-    })
+    })))
   }
 
   return {

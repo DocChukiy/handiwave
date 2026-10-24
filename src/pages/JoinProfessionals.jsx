@@ -2,6 +2,7 @@ import {
   BadgeCheck,
   BriefcaseBusiness,
   CheckCircle2,
+  Globe2,
   MapPin,
   MessageCircle,
   ShieldCheck,
@@ -11,7 +12,7 @@ import { useEffect, useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   buildTrackedPath,
-  kadunaFlyerParameters,
+  pilotFlyerParameters,
   rememberRecruitmentAttribution,
 } from '../utils/recruitmentTracking.js'
 const benefits = [
@@ -57,7 +58,7 @@ function JoinProfessionals() {
   const signupPath = buildTrackedPath('/signup?role=artisan', attribution)
 
   useEffect(() => {
-    document.title = 'Join Handiwave Kaduna Professionals'
+    document.title = 'Join Handiwave Professionals'
 
     return () => {
       document.title = 'Handiwave'
@@ -68,22 +69,28 @@ function JoinProfessionals() {
     <main className="join-professionals-page">
       <section className="professional-join-hero">
         <div className="professional-join-copy">
-          <p className="section-kicker">Kaduna founding professionals</p>
+          <p className="section-kicker">Founding professionals • Kaduna + Abuja launch</p>
           <h1>Let your skill bring you more work.</h1>
           <p className="professional-join-lead">
-            Handiwave is selecting a small founding network of dependable electricians,
-            plumbers, AC technicians, solar installers, generator technicians, cleaners,
-            carpenters, and handymen for our Kaduna South pilot.
+            Handiwave is starting with a focused network of dependable professionals in Kaduna and Abuja,
+            while building an early-access community of skilled professionals across Nigeria.
           </p>
           <div className="pilot-area-callout">
             <MapPin aria-hidden="true" size={22} />
             <div>
-              <strong>First pilot area: Barnawa–Narayi corridor</strong>
-              <span>Apply if you can reliably serve Barnawa, Narayi, and nearby communities.</span>
+              <strong>First active pilot: Kaduna and Abuja</strong>
+              <span>Applicants in both cities can be considered for the first service opportunities.</span>
+            </div>
+          </div>
+          <div className="national-interest-callout">
+            <Globe2 aria-hidden="true" size={22} />
+            <div>
+              <strong>Outside Kaduna or Abuja? You can still join early.</strong>
+              <span>Create your professional profile now and register interest for expansion into your area.</span>
             </div>
           </div>
           <div className="professional-join-actions">
-            <Link className="hw-btn hw-btn-primary" to={signupPath}>Apply as a professional</Link>
+            <Link className="hw-btn hw-btn-primary" to={signupPath}>Apply or join early access</Link>
             <a className="hw-btn hw-btn-secondary" href="#how-it-works">See how approval works</a>
           </div>
           <p className="professional-join-fineprint">
@@ -94,13 +101,14 @@ function JoinProfessionals() {
 
         <aside className="founding-offer-card" aria-label="Founding professional offer">
           <img src="/handiwave-mark.svg" alt="" />
-          <p>Founding network target</p>
-          <strong>20 responsive professionals</strong>
+          <p>First two-city network target</p>
+          <strong>A focused founding network</strong>
           <ul>
             <li><CheckCircle2 size={18} /> Free profile setup support</li>
             <li><CheckCircle2 size={18} /> No fee to view pilot requests</li>
             <li><CheckCircle2 size={18} /> Clear quotes and job records</li>
             <li><CheckCircle2 size={18} /> Human support when issues arise</li>
+            <li><CheckCircle2 size={18} /> Early access for other Nigerian cities</li>
           </ul>
         </aside>
       </section>
@@ -154,14 +162,18 @@ function JoinProfessionals() {
   )
 }
 
-export const kadunaProfessionalFlyerLink = buildTrackedPath(
+export const pilotProfessionalFlyerLink = buildTrackedPath(
   '/join-professionals',
-  kadunaFlyerParameters,
+  pilotFlyerParameters,
 )
 
-export function KadunaProfessionalRedirect() {
-  window.location.replace(kadunaProfessionalFlyerLink)
+export const kadunaProfessionalFlyerLink = pilotProfessionalFlyerLink
+
+export function PilotProfessionalRedirect() {
+  window.location.replace(pilotProfessionalFlyerLink)
   return null
 }
+
+export const KadunaProfessionalRedirect = PilotProfessionalRedirect
 
 export default JoinProfessionals

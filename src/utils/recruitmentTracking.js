@@ -8,13 +8,15 @@ const trackedParameters = [
   'utm_source',
 ]
 
-export const kadunaFlyerParameters = {
-  ref: 'kaduna-flyer',
-  utm_campaign: 'kaduna_founding_professionals',
+export const pilotFlyerParameters = {
+  ref: 'kaduna-abuja-flyer',
+  utm_campaign: 'kaduna_abuja_founding_professionals',
   utm_content: 'general_flyer',
   utm_medium: 'qr',
   utm_source: 'field_flyer',
 }
+
+export const kadunaFlyerParameters = pilotFlyerParameters
 
 export function readTrackedParameters(search = '') {
   const searchParameters = new URLSearchParams(search)

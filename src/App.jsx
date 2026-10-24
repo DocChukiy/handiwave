@@ -34,9 +34,9 @@ const Disputes = lazy(() => import('./pages/Disputes.jsx'))
 const Home = lazy(() => import('./pages/Home.jsx'))
 const Login = lazy(() => import('./pages/Login.jsx'))
 const JoinProfessionals = lazy(() => import('./pages/JoinProfessionals.jsx'))
-const KadunaProfessionalRedirect = lazy(() =>
+const PilotProfessionalRedirect = lazy(() =>
   import('./pages/JoinProfessionals.jsx').then((module) => ({
-    default: module.KadunaProfessionalRedirect,
+    default: module.PilotProfessionalRedirect,
   })),
 )
 const Messages = lazy(() => import('./pages/Messages.jsx'))
@@ -105,6 +105,27 @@ function RoleHome() {
   return <Home />
 }
 
+function NonAdminRoute({ children }) {
+  const { isLoading, user } = useAuth()
+
+  if (isLoading) {
+    return (
+      <section className="auth-loading-state">
+        <span></span>
+        <p>Loading Handiwave...</p>
+      </section>
+    )
+  }
+
+  return user?.role === 'admin' ? <Navigate replace to="/admin" /> : children
+}
+
+function RoleWallet() {
+  const { user } = useAuth()
+
+  return user?.role === 'admin' ? <Navigate replace to="/admin/finance" /> : <Wallet />
+}
+
 function AnimatedRoutes() {
   const location = useLocation()
 
@@ -126,8 +147,8 @@ function AnimatedRoutes() {
         )}>
           <Routes location={location}>
           <Route path="/" element={<RoleHome />} />
-          <Route path="/services" element={<Services />} />
-          <Route path="/artisans" element={<Artisans />} />
+          <Route path="/services" element={<NonAdminRoute><Services /></NonAdminRoute>} />
+          <Route path="/artisans" element={<NonAdminRoute><Artisans /></NonAdminRoute>} />
           <Route
             path="/artisan-onboarding"
             element={(
@@ -207,7 +228,7 @@ function AnimatedRoutes() {
             path="/wallet"
             element={(
               <ProtectedRoute allowedRoles={['customer', 'artisan', 'admin']}>
-                <Wallet />
+                <RoleWallet />
               </ProtectedRoute>
             )}
           />
@@ -237,12 +258,22 @@ function AnimatedRoutes() {
           />
           <Route path="/login" element={<Login />} />
           <Route path="/join-professionals" element={<JoinProfessionals />} />
-          <Route path="/go/kaduna" element={<KadunaProfessionalRedirect />} />
+          <Route path="/go/pilot" element={<PilotProfessionalRedirect />} />
+          <Route path="/go/kaduna-abuja" element={<PilotProfessionalRedirect />} />
+          <Route path="/go/kaduna" element={<PilotProfessionalRedirect />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route
             path="/admin"
+            element={(
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/admin/:section"
             element={(
               <ProtectedRoute allowedRoles={['admin']}>
                 <AdminDashboard />
@@ -545,7 +576,7 @@ function AppShell() {
       />
 
       <main className="hw-app-main">
-        {installPromptEvent && !isInstallPromptDismissed && !isStandaloneDisplay() && (
+        {user?.role !== 'admin' && installPromptEvent && !isInstallPromptDismissed && !isStandaloneDisplay() && (
           <section className="hw-install-banner" aria-label="Install Handiwave">
             <div>
               <strong>Install Handiwave</strong>
@@ -565,7 +596,7 @@ function AppShell() {
         <AnimatedRoutes />
       </main>
 
-      <Footer />
+      {user?.role !== 'admin' && <Footer />}
 
       <MobileBottomNav />
 

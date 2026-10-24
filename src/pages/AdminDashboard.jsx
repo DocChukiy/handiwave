@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
 import EmptyState from '../components/EmptyState.jsx'
 import RoleNotice from '../components/RoleNotice.jsx'
@@ -13,8 +13,9 @@ import {
 import { showToast } from '../utils/toast.js'
 
 const tabs = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'professionals', label: 'Professionals' },
   { key: 'users', label: 'Users' },
-  { key: 'artisans', label: 'Artisans' },
   { key: 'bookings', label: 'Bookings' },
   { key: 'disputes', label: 'Disputes' },
   { key: 'moderation', label: 'Moderation' },
@@ -115,17 +116,40 @@ function AdminSection({ children, emptyText, items, title }) {
 
 function AdminDashboard() {
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState('users')
+  const navigate = useNavigate()
+  const { section } = useParams()
+  const activeTab = tabs.some((tab) => tab.key === section) ? section : 'overview'
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [professionalFilter, setProfessionalFilter] = useState('all')
+  const [professionalNotes, setProfessionalNotes] = useState({})
+  const [professionalSearch, setProfessionalSearch] = useState('')
   const [rejectionReasons, setRejectionReasons] = useState({})
   const [updatingArtisanId, setUpdatingArtisanId] = useState('')
   const [updatingWithdrawalId, setUpdatingWithdrawalId] = useState('')
 
   const pendingArtisans = useMemo(() => (
-    data?.artisans.filter((artisan) => artisan.verificationStatus === 'pending') || []
+    data?.artisans.filter((artisan) => ['incomplete', 'pending'].includes(artisan.verificationStatus)) || []
   ), [data])
+
+  const filteredProfessionals = useMemo(() => {
+    const search = professionalSearch.trim().toLowerCase()
+
+    return (data?.artisans || []).filter((artisan) => {
+      const matchesStatus = professionalFilter === 'all' || artisan.verificationStatus === professionalFilter
+      const matchesSearch = !search || [
+        artisan.businessName,
+        artisan.city,
+        artisan.email,
+        artisan.fullName,
+        artisan.primaryService,
+        artisan.state,
+      ].some((value) => value?.toLowerCase().includes(search))
+
+      return matchesStatus && matchesSearch
+    })
+  }, [data, professionalFilter, professionalSearch])
 
   async function loadAdminDashboard() {
     setError('')
@@ -159,7 +183,7 @@ function AdminDashboard() {
       const { error: updateError } = await updateArtisanVerification({
         adminId: user.id,
         artisanId: artisan.id,
-        notes: `Admin changed verification status to ${status}.`,
+        notes: professionalNotes[artisan.id]?.trim() || `Admin changed verification status to ${status}.`,
         status,
       })
 
@@ -175,6 +199,17 @@ function AdminDashboard() {
     } finally {
       setUpdatingArtisanId('')
     }
+  }
+
+  function openSection(tab) {
+    navigate(tab === 'overview' ? '/admin' : `/admin/${tab}`)
+  }
+
+  function updateProfessionalNote(artisanId, value) {
+    setProfessionalNotes((currentNotes) => ({
+      ...currentNotes,
+      [artisanId]: value,
+    }))
   }
 
   function updateRejectionReason(withdrawalId, value) {
@@ -253,14 +288,22 @@ function AdminDashboard() {
   }
 
   const metrics = data?.metrics || {}
+  const visibleMetrics = activeTab === 'finance'
+    ? metricLabels.filter((metric) => [
+        'walletEscrowBalance',
+        'commissionTotal',
+        'totalBookings',
+        'activeBookings',
+      ].includes(metric.key))
+    : metricLabels.slice(0, 8)
 
   return (
     <div className="starter-page admin-dashboard-page">
       <section className="page-hero compact admin-hero">
-        <p className="section-kicker">Admin Dashboard V2</p>
-        <h1>Monitor Handiwave operations</h1>
+        <p className="section-kicker">Handiwave control centre</p>
+        <h1>Run the platform from one place</h1>
         <p>
-          Track users, verification, bookings, disputes, moderation, wallet activity, reels, reviews, and audit logs from real Supabase data.
+          Review professional applications, monitor service activity, resolve issues, manage platform funds, and keep an audit trail.
         </p>
       </section>
 
@@ -269,7 +312,7 @@ function AdminDashboard() {
       {error && <p className="auth-error page-error">{error}</p>}
 
       <section className="summary-grid admin-summary-grid">
-        {metricLabels.map((metric) => (
+        {visibleMetrics.map((metric) => (
           <div key={metric.key}>
             <strong>{metric.money ? formatMoney(metrics[metric.key]) : metrics[metric.key] || 0}</strong>
             <span>{metric.label}</span>
@@ -277,24 +320,32 @@ function AdminDashboard() {
         ))}
       </section>
 
-      <section className="admin-layout">
+      {activeTab === 'overview' && <section className="admin-layout">
         <div className="admin-card">
-          <p className="section-kicker">Verification queue</p>
-          <h3>{pendingArtisans.length} pending artisans</h3>
-          <p>Review new artisan profiles and move trusted professionals into the public marketplace.</p>
-          <button type="button" onClick={() => setActiveTab('artisans')}>
-            Review Artisans
+          <p className="section-kicker">Professional applications</p>
+          <h3>{pendingArtisans.length} awaiting a decision</h3>
+          <p>Open each application, check submitted details, add an internal note, and approve only completed profiles.</p>
+          <button type="button" onClick={() => openSection('professionals')}>
+            Review Professionals
           </button>
         </div>
         <div className="admin-card">
           <p className="section-kicker">Platform health</p>
           <h3>{metrics.activeBookings || 0} active bookings</h3>
           <p>{metrics.disputes || 0} open disputes and {metrics.commissionTotal ? formatMoney(metrics.commissionTotal) : 'NGN 0'} in tracked commission.</p>
-          <button type="button" onClick={() => setActiveTab('disputes')}>
+          <button type="button" onClick={() => openSection('disputes')}>
             Review Disputes
           </button>
         </div>
-      </section>
+        <div className="admin-card">
+          <p className="section-kicker">Platform finance</p>
+          <h3>{formatMoney(metrics.walletEscrowBalance)}</h3>
+          <p>{data.withdrawals.filter((item) => item.status === 'pending').length} withdrawal requests need attention.</p>
+          <button type="button" onClick={() => openSection('finance')}>
+            Open Finance
+          </button>
+        </div>
+      </section>}
 
       <div className="admin-tabs" role="tablist" aria-label="Admin dashboard sections">
         {tabs.map((tab) => (
@@ -302,12 +353,41 @@ function AdminDashboard() {
             className={activeTab === tab.key ? 'active' : ''}
             key={tab.key}
             type="button"
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => openSection(tab.key)}
           >
             {tab.label}
           </button>
         ))}
       </div>
+
+      {activeTab === 'overview' && (
+        <section className="admin-overview-grid">
+          <AdminSection emptyText="No professional applications are waiting." items={pendingArtisans.slice(0, 5)} title="Priority verification queue">
+            {pendingArtisans.slice(0, 5).map((artisan) => (
+              <article className="list-row admin-list-row" key={artisan.id}>
+                <div>
+                  <h3>{artisan.businessName || artisan.fullName}</h3>
+                  <p>{artisan.primaryService} • {artisan.city || 'City pending'}, {artisan.state || 'State pending'}</p>
+                  <small>Applied {formatDate(artisan.createdAt)}</small>
+                </div>
+                <button className="secondary-mini-link" type="button" onClick={() => openSection('professionals')}>Review</button>
+              </article>
+            ))}
+          </AdminSection>
+          <AdminSection emptyText="No withdrawal requests are waiting." items={data.withdrawals.filter((item) => item.status === 'pending').slice(0, 5)} title="Pending finance actions">
+            {data.withdrawals.filter((item) => item.status === 'pending').slice(0, 5).map((withdrawal) => (
+              <article className="list-row admin-list-row" key={withdrawal.id}>
+                <div>
+                  <h3>{withdrawal.amountLabel}</h3>
+                  <p>{withdrawal.bankName} • {withdrawal.accountName || 'Account name pending'}</p>
+                  <small>Requested {formatDate(withdrawal.requestedAt || withdrawal.createdAt)}</small>
+                </div>
+                <button className="secondary-mini-link" type="button" onClick={() => openSection('finance')}>Review</button>
+              </article>
+            ))}
+          </AdminSection>
+        </section>
+      )}
 
       {activeTab === 'users' && (
         <AdminSection emptyText="Users will appear after signup." items={data.users} title="Users">
@@ -323,31 +403,100 @@ function AdminDashboard() {
         </AdminSection>
       )}
 
-      {activeTab === 'artisans' && (
-        <AdminSection emptyText="Artisan onboarding profiles will appear here." items={data.artisans} title="Artisans and verification">
-          {data.artisans.map((artisan) => {
+      {activeTab === 'professionals' && (
+        <AdminSection emptyText="Professional applications will appear here after signup and onboarding." items={filteredProfessionals} title="Professional applications and verification">
+          <div className="admin-professional-toolbar">
+            <label>
+              <span>Search applications</span>
+              <input placeholder="Name, trade, city, or email" value={professionalSearch} onChange={(event) => setProfessionalSearch(event.target.value)} />
+            </label>
+            <label>
+              <span>Status</span>
+              <select value={professionalFilter} onChange={(event) => setProfessionalFilter(event.target.value)}>
+                <option value="all">All applications</option>
+                <option value="pending">Pending</option>
+                <option value="incomplete">Onboarding incomplete</option>
+                <option value="verified">Verified</option>
+                <option value="rejected">Rejected</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            </label>
+          </div>
+          {filteredProfessionals.map((artisan) => {
             const isUpdating = updatingArtisanId === artisan.id
+            const requirements = [
+              ['Contact information', Boolean(artisan.email && artisan.phone)],
+              ['Business name and trade', Boolean(artisan.businessName && artisan.primaryService !== 'No primary service')],
+              ['Service location and coverage', Boolean(artisan.city && artisan.state && artisan.serviceArea)],
+              ['Experience and professional bio', Boolean(artisan.yearsExperience && artisan.bio)],
+              ['Starting price', artisan.startingPrice > 0],
+              ['Government ID', artisan.governmentIdSubmitted],
+              ['At least 3 work samples', artisan.portfolioCount >= 3],
+              ['At least 2 customer references', artisan.referenceCount >= 2],
+            ]
+            const completedRequirements = requirements.filter(([, complete]) => complete).length
 
             return (
-              <article className="list-row admin-list-row artisan-admin-row" key={artisan.id}>
-                <div>
-                  <h3>{artisan.businessName || artisan.fullName}</h3>
-                  <p>{artisan.primaryService} • {artisan.city}, {artisan.state} • {artisan.rating.toFixed(1)} rating</p>
-                  <small>{artisan.completedJobs} completed jobs • {artisan.reviewCount} reviews</small>
+              <details className="admin-professional-card" key={artisan.id}>
+                <summary>
+                  <div>
+                    <h3>{artisan.businessName || artisan.fullName}</h3>
+                    <p>{artisan.primaryService} • {artisan.city || 'City pending'}, {artisan.state || 'State pending'}</p>
+                    <small>{artisan.email || 'Email pending'} • Applied {formatDate(artisan.createdAt)}</small>
+                  </div>
+                  <div className="admin-professional-summary-status">
+                    <StatusPill tone={artisan.verificationStatus}>
+                      {artisan.verificationStatus === 'incomplete' ? 'onboarding incomplete' : artisan.verificationStatus}
+                    </StatusPill>
+                    <strong>{completedRequirements}/{requirements.length} requirements</strong>
+                  </div>
+                </summary>
+                <div className="admin-professional-detail-grid">
+                  <section>
+                    <p className="section-kicker">Application details</p>
+                    <dl className="admin-application-details">
+                      <div><dt>Applicant</dt><dd>{artisan.fullName}</dd></div>
+                      <div><dt>Phone</dt><dd>{artisan.phone || 'Not provided'}</dd></div>
+                      <div><dt>Service area</dt><dd>{artisan.serviceArea || 'Not provided'}</dd></div>
+                      <div><dt>Experience</dt><dd>{artisan.yearsExperience ? `${artisan.yearsExperience} years` : 'Not provided'}</dd></div>
+                      <div><dt>Starting price</dt><dd>{artisan.startingPrice ? formatMoney(artisan.startingPrice) : 'Not provided'}</dd></div>
+                      <div><dt>Previous admin note</dt><dd>{artisan.verificationNotes || 'No note yet'}</dd></div>
+                    </dl>
+                    <p className="admin-professional-bio">{artisan.bio || 'No professional bio provided yet.'}</p>
+                  </section>
+                  <section>
+                    <p className="section-kicker">Verification requirements</p>
+                    <div className="admin-requirement-list">
+                      {requirements.map(([label, complete]) => (
+                        <span className={complete ? 'complete' : 'missing'} key={label}>
+                          <b>{complete ? '✓' : '!'}</b>{label}
+                        </span>
+                      ))}
+                    </div>
+                  </section>
                 </div>
-                <div className="admin-row-actions">
-                  <StatusPill tone={artisan.verificationStatus}>{artisan.verificationStatus}</StatusPill>
-                  <button disabled={isUpdating} type="button" onClick={() => handleVerificationUpdate(artisan, 'verified')}>
-                    Verify
-                  </button>
-                  <button disabled={isUpdating} type="button" onClick={() => handleVerificationUpdate(artisan, 'rejected')}>
-                    Reject
-                  </button>
-                  <button disabled={isUpdating} type="button" onClick={() => handleVerificationUpdate(artisan, 'suspended')}>
-                    Suspend
-                  </button>
+                <div className="admin-decision-panel">
+                  <label>
+                    <span>Internal review note</span>
+                    <textarea placeholder="Record what was checked or explain what is still required." value={professionalNotes[artisan.id] || ''} onChange={(event) => updateProfessionalNote(artisan.id, event.target.value)} />
+                  </label>
+                  {artisan.isSignupOnly ? (
+                    <small>This professional has created an account but has not completed the professional onboarding form yet.</small>
+                  ) : (
+                    <>
+                      <div className="admin-row-actions">
+                        <button disabled={isUpdating} type="button" onClick={() => handleVerificationUpdate(artisan, 'verified')}>
+                          {isUpdating ? 'Saving...' : 'Approve'}
+                        </button>
+                        <button disabled={isUpdating} type="button" onClick={() => handleVerificationUpdate(artisan, 'pending')}>Request updates</button>
+                        <button disabled={isUpdating} type="button" onClick={() => handleVerificationUpdate(artisan, 'rejected')}>Reject</button>
+                        <button className="danger-action" disabled={isUpdating} type="button" onClick={() => handleVerificationUpdate(artisan, 'suspended')}>Suspend</button>
+                      </div>
+                      {completedRequirements < requirements.length && <small>Some requirements are still missing. Confirm any checks completed outside the app in the internal note before approving.</small>}
+                    </>
+                  )}
                 </div>
-              </article>
+              </details>
             )
           })}
         </AdminSection>

@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom'
-import { House, CalendarDays, UserRound, Briefcase, WalletCards, MessageCircle } from 'lucide-react'
+import { House, CalendarDays, UserRound, Briefcase, WalletCards, MessageCircle, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../../auth/useAuth.js'
 
 function MobileBottomNav() {
   const { user, isAuthenticated } = useAuth()
   const isArtisan = user?.role === 'artisan'
+  const isAdmin = user?.role === 'admin'
 
   const customerLinks = [
     {
@@ -62,7 +63,35 @@ function MobileBottomNav() {
     },
   ]
 
-  const links = isArtisan ? artisanLinks : customerLinks
+  const adminLinks = [
+    {
+      path: '/admin',
+      label: 'Overview',
+      icon: House,
+    },
+    {
+      path: '/admin/professionals',
+      label: 'Professionals',
+      icon: ShieldCheck,
+    },
+    {
+      path: '/admin/bookings',
+      label: 'Operations',
+      icon: Briefcase,
+    },
+    {
+      path: '/messages',
+      label: 'Messages',
+      icon: MessageCircle,
+    },
+    {
+      path: '/admin/finance',
+      label: 'Finance',
+      icon: WalletCards,
+    },
+  ]
+
+  const links = isAdmin ? adminLinks : isArtisan ? artisanLinks : customerLinks
 
   return (
     <nav className="hw-mobile-bottom-nav" aria-label="Mobile navigation">
@@ -75,7 +104,7 @@ function MobileBottomNav() {
             className={({ isActive }) =>
               `hw-mobile-nav-item ${isActive ? 'active' : ''}`
             }
-            end={link.path === '/' || link.path === '/artisan-dashboard'}
+            end={link.path === '/' || link.path === '/artisan-dashboard' || link.path === '/admin'}
           >
             {Icon && <Icon size={19} />}
             <span>{link.label}</span>

@@ -39,25 +39,69 @@ function mapProfile(profile) {
     fullName: profile.full_name || 'Handiwave user',
     id: profile.id,
     isActive: profile.is_active,
+    phone: profile.phone || '',
     role: profile.role || 'customer',
     state: profile.state || '',
   }
 }
 
-function mapArtisan(artisan) {
+function mapSignupOnlyProfessional(profile) {
   return {
+    bio: '',
+    businessName: '',
+    city: profile.city,
+    completedJobs: 0,
+    createdAt: profile.createdAt,
+    email: profile.email,
+    fullName: profile.fullName,
+    governmentIdSubmitted: false,
+    id: `signup-${profile.id}`,
+    isAvailable: false,
+    isSignupOnly: true,
+    phone: profile.phone,
+    portfolioCount: 0,
+    primaryService: 'Onboarding not completed',
+    profileId: profile.id,
+    rating: 0,
+    referenceCount: 0,
+    reviewCount: 0,
+    serviceArea: '',
+    startingPrice: 0,
+    state: profile.state,
+    verificationNotes: '',
+    verificationStatus: 'incomplete',
+    yearsExperience: 0,
+  }
+}
+
+function mapArtisan(artisan) {
+  const portfolioItems = artisan.portfolio_urls || artisan.work_samples || []
+  const references = artisan.customer_references || artisan.references || []
+
+  return {
+    bio: artisan.bio || '',
     businessName: artisan.business_name || '',
     city: artisan.city || '',
     completedJobs: artisan.completed_jobs || 0,
     createdAt: artisan.created_at || '',
+    email: artisan.profile?.email || '',
     fullName: getPersonName(artisan.profile, artisan.business_name || 'Handiwave artisan'),
+    governmentIdSubmitted: Boolean(artisan.government_id_url || artisan.identity_document_url),
     id: artisan.id,
     isAvailable: artisan.is_available,
+    phone: artisan.profile?.phone || '',
+    portfolioCount: Array.isArray(portfolioItems) ? portfolioItems.length : 0,
     primaryService: artisan.primary_service?.name || 'No primary service',
+    profileId: artisan.profile_id || '',
     rating: Number(artisan.average_rating) || 0,
+    referenceCount: Array.isArray(references) ? references.length : 0,
     reviewCount: artisan.review_count || 0,
+    serviceArea: artisan.service_area || '',
+    startingPrice: Number(artisan.starting_price) || 0,
     state: artisan.state || '',
+    verificationNotes: artisan.verification_notes || '',
     verificationStatus: artisan.verification_status || 'pending',
+    yearsExperience: artisan.years_experience || 0,
   }
 }
 
@@ -188,7 +232,7 @@ export async function getAdminDashboardData() {
       .from('artisans')
       .select(`
         *,
-        profile:profiles!${artisanProfileRelation}(id, full_name, email),
+        profile:profiles!${artisanProfileRelation}(id, full_name, email, phone, city, state),
         primary_service:services!${artisanPrimaryServiceRelation}(id, name)
       `)
       .order('created_at', { ascending: false })
@@ -282,9 +326,16 @@ export async function getAdminDashboardData() {
     auditResult.error,
   ].find(Boolean)
 
+  const users = (usersResult.data || []).map(mapProfile)
+  const artisans = (artisansResult.data || []).map(mapArtisan)
+  const artisanProfileIds = new Set(artisans.map((artisan) => artisan.profileId))
+  const signupOnlyProfessionals = users
+    .filter((profile) => profile.role === 'artisan' && !artisanProfileIds.has(profile.id))
+    .map(mapSignupOnlyProfessional)
+
   return {
     data: {
-      artisans: (artisansResult.data || []).map(mapArtisan),
+      artisans: [...signupOnlyProfessionals, ...artisans],
       auditLogs: (auditResult.data || []).map(mapAuditLog),
       bookings: (bookingsResult.data || []).map(mapBooking),
       commissions: (commissionsResult.data || []).map(mapCommission),
@@ -293,7 +344,7 @@ export async function getAdminDashboardData() {
       moderationCases: (moderationResult.data || []).map(mapModerationCase),
       reels: (reelsResult.data || []).map(mapReel),
       reviews: (reviewsResult.data || []).map(mapReview),
-      users: (usersResult.data || []).map(mapProfile),
+      users,
       withdrawals: (withdrawalsResult.data || []).map(mapWithdrawal),
     },
     error,

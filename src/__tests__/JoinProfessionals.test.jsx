@@ -7,28 +7,29 @@ import {
   readTrackedParameters,
 } from '../utils/recruitmentTracking.js'
 
-describe('Kaduna professional recruitment flow', () => {
+describe('Kaduna and Abuja professional recruitment flow', () => {
   it('shows the selected pilot area and an artisan signup link', () => {
     render(
-      <MemoryRouter initialEntries={['/join-professionals?ref=kaduna-flyer&utm_source=field_flyer']}>
+      <MemoryRouter initialEntries={['/join-professionals?ref=kaduna-abuja-flyer&utm_source=field_flyer']}>
         <JoinProfessionals />
       </MemoryRouter>,
     )
 
-    expect(screen.getByText(/first pilot area: barnawa–narayi corridor/i)).toBeInTheDocument()
-    expect(screen.getAllByRole('link', { name: /apply as a professional|start free application/i })[0])
+    expect(screen.getByText(/first active pilot: kaduna and abuja/i)).toBeInTheDocument()
+    expect(screen.getByText(/outside kaduna or abuja.*join early/i)).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: /apply or join early access|start free application/i })[0])
       .toHaveAttribute('href', expect.stringContaining('role=artisan'))
   })
 
   it('keeps existing role selection while adding attribution', () => {
     expect(buildTrackedPath('/signup?role=artisan', {
-      ref: 'kaduna-flyer',
+      ref: 'kaduna-abuja-flyer',
       utm_source: 'field_flyer',
-    })).toBe('/signup?role=artisan&ref=kaduna-flyer&utm_source=field_flyer')
+    })).toBe('/signup?role=artisan&ref=kaduna-abuja-flyer&utm_source=field_flyer')
   })
 
   it('ignores unapproved query parameters', () => {
-    expect(readTrackedParameters('?ref=kaduna-flyer&email=private@example.com'))
-      .toEqual({ ref: 'kaduna-flyer' })
+    expect(readTrackedParameters('?ref=kaduna-abuja-flyer&email=private@example.com'))
+      .toEqual({ ref: 'kaduna-abuja-flyer' })
   })
 })

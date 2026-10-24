@@ -26,6 +26,7 @@ function getErrorMessage(error) {
 
 function Messages() {
   const { user } = useAuth()
+  const isAdmin = user.role === 'admin'
   const [searchParams, setSearchParams] = useSearchParams()
   const bookingId = searchParams.get('booking')
   const conversationIdParam = searchParams.get('conversation')
@@ -150,6 +151,10 @@ function Messages() {
 
         setMessages(data)
 
+        if (isAdmin) {
+          return
+        }
+
         const { data: beforeConversations, error: beforeConversationError } =
           await getConversationsForUser(user)
 
@@ -238,7 +243,7 @@ function Messages() {
     return () => {
       isMounted = false
     }
-  }, [activeConversationId, user])
+  }, [activeConversationId, isAdmin, user])
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
@@ -295,9 +300,9 @@ function Messages() {
   return (
     <div className="starter-page">
       <section className="page-hero compact">
-        <p className="section-kicker">Messages</p>
-        <h1>Chat safely before and during bookings</h1>
-        <p>Keep service details, quotes, and arrival updates in one trusted inbox.</p>
+        <p className="section-kicker">{isAdmin ? 'Support inbox' : 'Messages'}</p>
+        <h1>{isAdmin ? 'Oversee and support booking conversations' : 'Chat safely before and during bookings'}</h1>
+        <p>{isAdmin ? 'Review active conversations and step in when a customer or professional needs platform support.' : 'Keep service details, quotes, and arrival updates in one trusted inbox.'}</p>
       </section>
 
       <RoleNotice />
@@ -308,7 +313,7 @@ function Messages() {
         <div className="list-panel conversation-list-panel">
           <div className="booking-history-header">
             <p className="section-kicker">Inbox</p>
-            <h2>Booking conversations</h2>
+            <h2>{isAdmin ? 'Platform conversations' : 'Booking conversations'}</h2>
           </div>
 
           {isLoading ? (
@@ -396,7 +401,7 @@ function Messages() {
               <form className="message-compose" onSubmit={handleSendMessage}>
                 <input
                   disabled={isSending}
-                  placeholder="Type a message..."
+                  placeholder={isAdmin ? 'Send a Handiwave support message...' : 'Type a message...'}
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
                 />
