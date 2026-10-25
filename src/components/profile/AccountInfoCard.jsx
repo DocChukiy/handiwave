@@ -17,7 +17,12 @@ function AccountInfoCard({ title, details = [], actions = [], className = '' }) 
       {actions.length > 0 && (
         <div className="hw-account-info-actions">
           {actions.map((action) => (
-            <Button key={action.label} className={action.className || 'primary-cta'} to={action.to}>
+            <Button
+              key={action.label}
+              className={action.className || 'primary-cta'}
+              onClick={action.onClick}
+              to={action.to}
+            >
               {action.label}
             </Button>
           ))}

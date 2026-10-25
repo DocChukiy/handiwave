@@ -6,15 +6,7 @@ import SkeletonPreview from '../components/Skeletons.jsx'
 import PageShell from '../components/ui/PageShell.jsx'
 import Card from '../components/ui/Card.jsx'
 import Badge from '../components/ui/Badge.jsx'
-import Avatar from '../components/ui/Avatar.jsx'
-import { ArtisanCard, RecentArtisanCard } from '../components/cards.jsx'
-import {
-  artisanCategories,
-  artisanLocations,
-  artisans,
-  recentlyViewedArtisans,
-  savedArtisans,
-} from '../data/artisans.js'
+import { ArtisanCard } from '../components/cards.jsx'
 import { getVerifiedArtisans } from '../services/artisanService.js'
 import {
   Laptop,
@@ -23,6 +15,8 @@ import {
   Droplets,
   ShieldCheck,
   Wrench,
+  Scissors,
+  Sparkles,
 } from 'lucide-react'
 
 // Presentation categories with Lucide icons
@@ -63,6 +57,18 @@ const presentationCategories = [
     icon: Wrench,
     keywords: ['maintenance', 'repair', 'carpenter', 'painting', 'furniture', 'general'],
   },
+  {
+    id: 'cleaning',
+    title: 'Cleaning Services',
+    icon: Sparkles,
+    keywords: ['cleaning', 'cleaner', 'laundry', 'housekeeping', 'fumigation'],
+  },
+  {
+    id: 'beauty',
+    title: 'Beauty & Grooming',
+    icon: Scissors,
+    keywords: ['beauty', 'barber', 'hair', 'stylist', 'braider', 'makeup', 'nails'],
+  },
 ]
 
 // Map category keywords to presentation category
@@ -85,8 +91,6 @@ function getPresentationCategoryFromSkill(skill) {
 const sortOptions = [
   { label: 'Recommended', value: 'recommended' },
   { label: 'Highest Rated', value: 'highest-rated' },
-  { label: 'Most Reviews', value: 'most-reviews' },
-  { label: 'Most Jobs Completed', value: 'most-jobs' },
   { label: 'Recently Joined', value: 'recently-joined' },
 ]
 
@@ -105,35 +109,14 @@ function getSearchText(artisan) {
   ].filter(Boolean).join(' ').toLowerCase()
 }
 
-function getCompletedJobLabel(value) {
-  if (value === '100') {
-    return '100+ jobs'
-  }
-
-  if (value === '50') {
-    return '50+ jobs'
-  }
-
-  if (value === '10') {
-    return '10+ jobs'
-  }
-
-  return 'Any jobs'
-}
-
 function Artisans() {
   const [searchTerm, setSearchTerm] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
-  const [availableArtisans, setAvailableArtisans] = useState(artisans)
+  const [availableArtisans, setAvailableArtisans] = useState([])
   const [dataError, setDataError] = useState('')
-  const [completedJobsFilter, setCompletedJobsFilter] = useState('0')
-  const [isAvailableOnly, setIsAvailableOnly] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [locationFilter, setLocationFilter] = useState('All locations')
-  const [minimumRating, setMinimumRating] = useState('0')
   const [sortBy, setSortBy] = useState('recommended')
-  const [topRatedOnly, setTopRatedOnly] = useState(false)
-  const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
 
   useEffect(() => {
@@ -152,15 +135,15 @@ function Artisans() {
 
         if (error) {
           setDataError(error.message)
-          setAvailableArtisans(artisans)
+          setAvailableArtisans([])
           return
         }
 
-        setAvailableArtisans(data.length > 0 ? data : artisans)
+        setAvailableArtisans(data)
       } catch (error) {
         if (isMounted) {
           setDataError(error.message)
-          setAvailableArtisans(artisans)
+          setAvailableArtisans([])
         }
       } finally {
         if (isMounted) {
@@ -189,38 +172,12 @@ function Artisans() {
         artisan.location === locationFilter ||
         artisan.area === locationFilter ||
         artisan.fullLocation === locationFilter
-      const matchesRating = artisan.rating >= Number(minimumRating)
-      const matchesCompletedJobs = (artisan.completedJobs || 0) >= Number(completedJobsFilter)
-      const matchesVerified = !verifiedOnly || artisan.verified
-      const matchesTopRated = !topRatedOnly || (
-        Number(artisan.rating) >= 4.5 &&
-        Number(artisan.reviewCount || 0) >= 3
-      )
-      const matchesAvailability = !isAvailableOnly || artisan.isAvailable !== false
-
-      return (
-        matchesSearch &&
-        matchesCategory &&
-        matchesLocation &&
-        matchesRating &&
-        matchesCompletedJobs &&
-        matchesVerified &&
-        matchesTopRated &&
-        matchesAvailability
-      )
+      return matchesSearch && matchesCategory && matchesLocation
     })
 
     return [...filtered].sort((first, second) => {
       if (sortBy === 'highest-rated') {
         return (second.rating || 0) - (first.rating || 0)
-      }
-
-      if (sortBy === 'most-reviews') {
-        return (second.reviewCount || 0) - (first.reviewCount || 0)
-      }
-
-      if (sortBy === 'most-jobs') {
-        return (second.completedJobs || 0) - (first.completedJobs || 0)
       }
 
       if (sortBy === 'recently-joined') {
@@ -237,29 +194,15 @@ function Artisans() {
   }, [
     activeCategory,
     availableArtisans,
-    completedJobsFilter,
-    isAvailableOnly,
     locationFilter,
-    minimumRating,
     searchTerm,
     sortBy,
-    topRatedOnly,
-    verifiedOnly,
   ])
 
-  const categories = useMemo(
-    () => [
-      ...new Set([
-        ...artisanCategories,
-        ...availableArtisans.map((artisan) => artisan.category).filter(Boolean),
-      ]),
-    ],
-    [availableArtisans],
-  )
   const locations = useMemo(
     () => [
       ...new Set([
-        ...artisanLocations,
+        'All locations',
         ...availableArtisans.map((artisan) => artisan.location).filter(Boolean),
         ...availableArtisans.map((artisan) => artisan.area).filter(Boolean),
       ]),
@@ -270,22 +213,12 @@ function Artisans() {
     searchTerm.trim(),
     activeCategory !== 'All',
     locationFilter !== 'All locations',
-    minimumRating !== '0',
-    completedJobsFilter !== '0',
-    verifiedOnly,
-    topRatedOnly,
-    isAvailableOnly,
   ].filter(Boolean).length
 
   function resetFilters() {
     setSearchTerm('')
     setActiveCategory('All')
     setLocationFilter('All locations')
-    setMinimumRating('0')
-    setCompletedJobsFilter('0')
-    setVerifiedOnly(false)
-    setTopRatedOnly(false)
-    setIsAvailableOnly(false)
     setSortBy('recommended')
   }
 
@@ -297,8 +230,14 @@ function Artisans() {
             SECTION 1: CONTEXT HEADER
             ============================================ */}
         <header className="hw-professionals-header">
+          <span className="hw-professionals-eyebrow">Verified Handiwave network</span>
           <h1>Find a professional</h1>
-          <p>Browse trusted professionals for your next job.</p>
+          <p>Review real profiles, work history, and customer feedback before choosing who you want to contact.</p>
+          <div className="hw-professionals-trust-row">
+            <span>Identity reviewed</span>
+            <span>Profiles approved by Handiwave</span>
+            <span>New professionals are clearly labelled</span>
+          </div>
         </header>
 
         {/* ============================================
@@ -401,33 +340,6 @@ function Artisans() {
             ============================================ */}
         <section className={`hw-filter-panel ${showFilters ? 'show' : ''}`}>
           <div className="hw-filter-grid">
-            <label className="hw-toggle-filter">
-              <input
-                checked={verifiedOnly}
-                type="checkbox"
-                onChange={(event) => setVerifiedOnly(event.target.checked)}
-              />
-              <span>Verified Only</span>
-            </label>
-
-            <label className="hw-toggle-filter">
-              <input
-                checked={topRatedOnly}
-                type="checkbox"
-                onChange={(event) => setTopRatedOnly(event.target.checked)}
-              />
-              <span>Top Rated</span>
-            </label>
-
-            <label className="hw-toggle-filter">
-              <input
-                checked={isAvailableOnly}
-                type="checkbox"
-                onChange={(event) => setIsAvailableOnly(event.target.checked)}
-              />
-              <span>Available Now</span>
-            </label>
-
             <div className="hw-filter-group">
               <label htmlFor="location-filter">Location</label>
               <select
@@ -441,36 +353,7 @@ function Artisans() {
                 ))}
               </select>
             </div>
-
-            <div className="hw-filter-group">
-              <label htmlFor="rating-filter">Minimum rating</label>
-              <select
-                id="rating-filter"
-                className="hw-select"
-                value={minimumRating}
-                onChange={(event) => setMinimumRating(event.target.value)}
-              >
-                <option value="0">Any rating</option>
-                <option value="4.5">4.5+</option>
-                <option value="4.8">4.8+</option>
-                <option value="4.9">4.9+</option>
-              </select>
-            </div>
-
-            <div className="hw-filter-group">
-              <label htmlFor="jobs-filter">Completed jobs</label>
-              <select
-                id="jobs-filter"
-                className="hw-select"
-                value={completedJobsFilter}
-                onChange={(event) => setCompletedJobsFilter(event.target.value)}
-              >
-                <option value="0">Any</option>
-                <option value="10">10+ jobs</option>
-                <option value="50">50+ jobs</option>
-                <option value="100">100+ jobs</option>
-              </select>
-            </div>
+            <p className="hw-filter-note">Every profile shown here is verified and currently accepting work.</p>
           </div>
 
           <div className="hw-filter-actions">
@@ -506,34 +389,11 @@ function Artisans() {
         </div>
 
         {/* ============================================
-            SECTION 7: SAVED ARTISANS (if any)
-            ============================================ */}
-        {savedArtisans.length > 0 && (
-          <section className="hw-saved-artisans">
-            <div className="hw-section-header">
-              <h2>Your saved professionals</h2>
-              <span className="hw-count-badge">{savedArtisans.length}</span>
-            </div>
-            <div className="hw-saved-scroll">
-              {savedArtisans.map((artisan) => (
-                <Link key={artisan.name} to={`/artisan-profile/${artisan.id}`} className="hw-saved-card">
-                  <Avatar name={artisan.name} src={artisan.avatarUrl} size="sm" />
-                  <div>
-                    <strong>{artisan.name}</strong>
-                    <span>{artisan.skill}</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ============================================
             SECTION 8: ERROR STATE
             ============================================ */}
         {dataError && (
           <Card variant="outlined" className="hw-error-card">
-            <p>Supabase professionals could not load. {dataError}</p>
+            <p>Professionals could not load right now. Please refresh and try again.</p>
           </Card>
         )}
 
@@ -553,6 +413,13 @@ function Artisans() {
               <ArtisanCard key={artisan.id || artisan.name} artisan={artisan} />
             ))}
           </motion.div>
+        ) : dataError ? null : availableArtisans.length === 0 ? (
+          <EmptyState
+            action={<Link className="hw-btn hw-btn-primary" to="/requests">Post a service request</Link>}
+            title="Verified professionals are joining"
+          >
+            Tell us what you need and Handiwave will share your request with suitable professionals as they become available.
+          </EmptyState>
         ) : (
           <EmptyState
             action={(
@@ -562,47 +429,17 @@ function Artisans() {
             )}
             title="No professionals found"
           >
-            Try another service, location, rating, or price range.
+            Try another service, skill, or location.
           </EmptyState>
         )}
 
-        {/* ============================================
-            SECTION 10: CATEGORY FILTERS (Desktop)
-            ============================================ */}
-        <section className="hw-category-filters-section hw-hide-mobile">
-          <div className="hw-section-header">
-            <h2>Browse by category</h2>
+        <section className="hw-professionals-request-cta">
+          <div>
+            <span>Prefer professionals to come to you?</span>
+            <h2>Describe the job once and compare sealed offers.</h2>
           </div>
-          <div className="hw-category-chips">
-            {categories.map((category) => (
-              <button
-                className={`hw-chip ${activeCategory === category ? 'active' : ''}`}
-                key={category}
-                type="button"
-                onClick={() => setActiveCategory(category)}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
+          <Link className="hw-btn hw-btn-primary" to="/requests">Post a service request</Link>
         </section>
-
-        {/* ============================================
-            SECTION 11: RECENTLY VIEWED
-            ============================================ */}
-        {recentlyViewedArtisans.length > 0 && (
-          <section className="hw-recently-viewed">
-            <div className="hw-section-header hw-flex-between">
-              <h2>Recently viewed</h2>
-              <Link to="/services" className="hw-link">Explore services</Link>
-            </div>
-            <div className="hw-recently-viewed-row">
-              {recentlyViewedArtisans.map((artisan) => (
-                <RecentArtisanCard key={artisan.name} artisan={artisan} />
-              ))}
-            </div>
-          </section>
-        )}
 
       </div>
     </PageShell>

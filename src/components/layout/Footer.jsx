@@ -3,17 +3,17 @@ import { Camera, MessageCircle, Share2, Phone, Mail, MapPin } from 'lucide-react
 
 const quickLinks = [
   { path: '/', label: 'Home' },
-  { path: '/artisans', label: 'Find Artisans' },
+  { path: '/requests', label: 'Post a Job' },
+  { path: '/artisans', label: 'Find Professionals' },
   { path: '/bookings', label: 'My Bookings' },
-  { path: '/messages', label: 'Messages' },
 ]
 
 const serviceLinks = [
-  { path: '/services', label: 'Electrician' },
-  { path: '/services', label: 'Plumber' },
-  { path: '/services', label: 'Cleaner' },
-  { path: '/services', label: 'AC Repair' },
-  { path: '/services', label: 'Generator Repair' },
+  { path: '/services?search=Electrician', label: 'Electrician' },
+  { path: '/services?search=Plumber', label: 'Plumber' },
+  { path: '/services?search=Cleaner', label: 'Cleaner' },
+  { path: '/services?search=AC%20Repair', label: 'AC Repair' },
+  { path: '/services?search=Generator%20Repair', label: 'Generator Repair' },
 ]
 
 function Footer() {
@@ -26,7 +26,7 @@ function Footer() {
             <span>Handiwave</span>
           </NavLink>
           <p>
-            Book trusted artisans for home services quickly, safely, and confidently across Nigeria.
+            Find trusted professionals, compare suitable offers, and manage service jobs with confidence.
           </p>
           <div className="hw-social-links" aria-label="Social links">
             <button type="button" className="hw-social-link" disabled aria-label="Instagram (coming soon)">
@@ -61,17 +61,17 @@ function Footer() {
 
         <div className="hw-footer-column hw-footer-contact">
           <h3>Contact</h3>
-          <span>
+          <a href="tel:+2348020576950">
             <Phone size={17} />
-            +234 800 123 4567
-          </span>
-          <span>
+            +234 80 2057 6950
+          </a>
+          <a href="mailto:support@handiwave.com">
             <Mail size={17} />
             support@handiwave.com
-          </span>
+          </a>
           <span>
             <MapPin size={17} />
-            Lagos, Nigeria
+            Abuja, Nigeria
           </span>
         </div>
       </div>

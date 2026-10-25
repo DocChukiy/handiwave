@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
 import EmptyState from '../components/EmptyState.jsx'
 import RoleNotice from '../components/RoleNotice.jsx'
@@ -14,6 +14,23 @@ import {
 } from '../services/messageService.js'
 import { markMessageNotificationsForConversationRead } from '../services/notificationService.js'
 import { showToast } from '../utils/toast.js'
+import { getSupabaseClient } from '../lib/supabaseClient.js'
+
+const bookingStatusLabels = {
+  artisan_completed: 'Confirm completed work',
+  cancelled: 'Cancelled',
+  completed: 'Completed',
+  confirmed: 'Booking confirmed',
+  customer_confirmed: 'Work confirmed',
+  disputed: 'Support reviewing issue',
+  in_progress: 'Work in progress',
+  pending: 'Awaiting professional',
+  reschedule_requested: 'New time proposed',
+}
+
+function getBookingStatusLabel(status) {
+  return bookingStatusLabels[status] || status?.replaceAll('_', ' ') || 'Booking update'
+}
 
 function getErrorMessage(error) {
   return [
@@ -32,6 +49,7 @@ function Messages() {
   const conversationIdParam = searchParams.get('conversation')
   const [activeConversationId, setActiveConversationId] = useState('')
   const [conversations, setConversations] = useState([])
+  const [conversationSearch, setConversationSearch] = useState('')
   const [error, setError] = useState('')
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(true)
@@ -43,8 +61,24 @@ function Messages() {
   const activeConversation = useMemo(() => (
     conversations.find((conversation) => conversation.id === activeConversationId) || null
   ), [activeConversationId, conversations])
+  const filteredConversations = useMemo(() => {
+    const query = conversationSearch.trim().toLowerCase()
+    if (!query) return conversations
 
-  const refreshConversations = useCallback(async (nextActiveConversationId = activeConversationId) => {
+    return conversations.filter((conversation) => (
+      [conversation.otherPerson, conversation.service, conversation.lastMessagePreview]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(query)
+    ))
+  }, [conversationSearch, conversations])
+  const conversationIds = useMemo(
+    () => conversations.map((conversation) => conversation.id).sort().join(','),
+    [conversations],
+  )
+
+  const refreshConversations = useCallback(async () => {
     const { data, error: conversationError } = await getConversationsForUser(user)
 
     if (conversationError) {
@@ -54,12 +88,8 @@ function Messages() {
 
     setConversations(data)
 
-    if (!nextActiveConversationId && data[0]?.id) {
-      setActiveConversationId(data[0].id)
-    }
-
     return true
-  }, [activeConversationId, user])
+  }, [user])
 
   useEffect(() => {
     let isMounted = true
@@ -98,7 +128,7 @@ function Messages() {
         const nextActiveConversationId = requestedConversationId ||
           (data.some((conversation) => conversation.id === conversationIdParam)
             ? conversationIdParam
-            : data[0]?.id || '')
+            : '')
 
         setConversations(data)
         setActiveConversationId(nextActiveConversationId)
@@ -246,6 +276,52 @@ function Messages() {
   }, [activeConversationId, isAdmin, user])
 
   useEffect(() => {
+    if (!conversationIds) return undefined
+
+    const supabase = getSupabaseClient()
+    const channel = supabase.channel(`message-inbox-${user.id}`)
+
+    conversationIds.split(',').forEach((conversationId) => {
+      channel.on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          filter: `conversation_id=eq.${conversationId}`,
+          schema: 'public',
+          table: 'messages',
+        },
+        async (payload) => {
+          await refreshConversations()
+
+          if (conversationId !== activeConversationId) return
+
+          const { data, error: messageError } = await getMessagesForConversation(activeConversationId)
+          if (messageError) {
+            setError(getErrorMessage(messageError))
+            return
+          }
+
+          setMessages(data)
+
+          if (!isAdmin && payload.new.sender_id !== user.id) {
+            await Promise.all([
+              markConversationMessagesRead({ conversationId, userId: user.id }),
+              markMessageNotificationsForConversationRead({ conversationId, userId: user.id }),
+            ])
+            window.dispatchEvent(new CustomEvent('handiwave-awareness-refresh'))
+          }
+        },
+      )
+    })
+
+    channel.subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [activeConversationId, conversationIds, isAdmin, refreshConversations, user.id])
+
+  useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [activeConversationId, messages])
 
@@ -273,7 +349,7 @@ function Messages() {
       }
 
       if (!data?.id) {
-        setError('Supabase did not confirm the message was sent.')
+        setError('Your message could not be confirmed. Please try again.')
         return
       }
 
@@ -287,7 +363,7 @@ function Messages() {
       }
 
       setMessages(refreshedMessages)
-      await refreshConversations(activeConversationId)
+      await refreshConversations()
       window.dispatchEvent(new CustomEvent('handiwave-awareness-refresh'))
       showToast('Message sent.')
     } catch (sendError) {
@@ -297,29 +373,56 @@ function Messages() {
     }
   }
 
+  function handleConversationSelect(conversationId) {
+    setActiveConversationId(conversationId)
+    setSearchParams({ conversation: conversationId })
+  }
+
+  function handleBackToInbox() {
+    setActiveConversationId('')
+    setSearchParams({})
+  }
+
   return (
     <div className="starter-page">
       <section className="page-hero compact">
         <p className="section-kicker">{isAdmin ? 'Support inbox' : 'Messages'}</p>
         <h1>{isAdmin ? 'Oversee and support booking conversations' : 'Chat safely before and during bookings'}</h1>
         <p>{isAdmin ? 'Review active conversations and step in when a customer or professional needs platform support.' : 'Keep service details, quotes, and arrival updates in one trusted inbox.'}</p>
+        {!isAdmin && (
+          <div className="message-safety-note">
+            Keep payment and job agreements inside Handiwave. Never share passwords, PINs, or verification codes.
+          </div>
+        )}
       </section>
 
       <RoleNotice />
 
       {error && <p className="auth-error page-error">{error}</p>}
 
-      <section className="messages-layout">
+      <section className={`messages-layout ${activeConversation ? 'has-active-conversation' : ''}`}>
         <div className="list-panel conversation-list-panel">
           <div className="booking-history-header">
             <p className="section-kicker">Inbox</p>
             <h2>{isAdmin ? 'Platform conversations' : 'Booking conversations'}</h2>
           </div>
 
+          {conversations.length > 0 && (
+            <div className="conversation-search">
+              <input
+                aria-label="Search conversations"
+                placeholder="Search by professional or service"
+                type="search"
+                value={conversationSearch}
+                onChange={(event) => setConversationSearch(event.target.value)}
+              />
+            </div>
+          )}
+
           {isLoading ? (
             <SkeletonPreview count={4} label="Loading conversations" type="service" />
-          ) : conversations.length > 0 ? (
-            conversations.map((conversation) => (
+          ) : filteredConversations.length > 0 ? (
+            filteredConversations.map((conversation) => (
               <button
                 className={
                   [
@@ -330,7 +433,7 @@ function Messages() {
                 }
                 key={conversation.id}
                 type="button"
-                onClick={() => setActiveConversationId(conversation.id)}
+                onClick={() => handleConversationSelect(conversation.id)}
               >
                 <div>
                   <strong>{conversation.otherPerson}</strong>
@@ -338,7 +441,7 @@ function Messages() {
                     {conversation.otherPersonPresence}
                   </span>
                   <p>{conversation.lastMessagePreview}</p>
-                  <small>{conversation.service} • {conversation.bookingStatus.replaceAll('_', ' ')}</small>
+                  <small>{conversation.service} • {getBookingStatusLabel(conversation.bookingStatus)}</small>
                 </div>
                 <span>{conversation.lastMessageTime}</span>
                 {conversation.unreadCount > 0 && (
@@ -346,9 +449,17 @@ function Messages() {
                 )}
               </button>
             ))
+          ) : conversations.length > 0 ? (
+            <EmptyState compact title="No matching conversations">
+              Try another professional, service, or message keyword.
+            </EmptyState>
           ) : (
-            <EmptyState compact title="No conversations yet">
-              Chats will appear after a customer creates a booking request.
+            <EmptyState
+              action={<Link className="hw-btn hw-btn-primary" to="/requests">Post a service request</Link>}
+              compact
+              title="No conversations yet"
+            >
+              A private chat opens after you book a professional or choose an offer.
             </EmptyState>
           )}
         </div>
@@ -358,6 +469,7 @@ function Messages() {
             <>
               <div className="chat-header">
                 <div>
+                  <button className="chat-back-button" type="button" onClick={handleBackToInbox}>← Inbox</button>
                   <p className="section-kicker">{activeConversation.service}</p>
                   <h3>{activeConversation.otherPerson}</h3>
                   <span className={activeConversation.otherPersonOnline ? 'presence-label online' : 'presence-label'}>
@@ -366,9 +478,9 @@ function Messages() {
                 </div>
                 <div className="chat-header-meta">
                   <span className={`booking-status status-${activeConversation.bookingStatus}`}>
-                    {activeConversation.bookingStatus.replaceAll('_', ' ')}
+                    {getBookingStatusLabel(activeConversation.bookingStatus)}
                   </span>
-                  <small>{activeConversation.service}</small>
+                  <small>Booking conversation</small>
                 </div>
               </div>
 
@@ -399,16 +511,23 @@ function Messages() {
               </div>
 
               <form className="message-compose" onSubmit={handleSendMessage}>
-                <input
+                <textarea
                   disabled={isSending}
-                  placeholder={isAdmin ? 'Send a Handiwave support message...' : 'Type a message...'}
+                  maxLength={2000}
+                  placeholder={isAdmin ? 'Send a Handiwave support message...' : 'Write a message about this booking...'}
+                  rows={2}
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
                 />
-                <button disabled={isSending} type="submit">
+                <button disabled={isSending || !input.trim()} type="submit">
                   {isSending ? 'Sending...' : 'Send'}
                 </button>
               </form>
+              {!isAdmin && (
+                <p className="message-support-link">
+                  Need Handiwave support? <Link to="/bookings">Open the booking and report an issue.</Link>
+                </p>
+              )}
             </>
           ) : (
             <EmptyState compact title="Choose a conversation">

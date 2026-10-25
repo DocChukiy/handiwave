@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import EmptyState from '../EmptyState.jsx'
 import BookingCard from '../bookings/BookingCard.jsx'
 import ProfileHero from './ProfileHero.jsx'
 import AccountInfoCard from './AccountInfoCard.jsx'
@@ -8,8 +9,8 @@ import QuickActions from './QuickActions.jsx'
 
 const quickActions = [
   {
-    label: 'Browse Services',
-    to: '/services',
+    label: 'Post a Job',
+    to: '/requests',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="11" cy="11" r="8" />
@@ -39,27 +40,72 @@ const quickActions = [
     ),
   },
   {
-    label: 'Wallet',
-    to: '/wallet',
+    label: 'Find Professionals',
+    to: '/artisans',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect width="20" height="16" x="2" y="5" rx="2" />
-        <line x1="2" x2="22" y1="10" y2="10" />
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
       </svg>
     ),
   },
 ]
 
-function CustomerProfile({ user, bookings = [], summary, onEditProfile }) {
+function CustomerProfile({ user, bookings = [], error = '', summary, onSaveProfile }) {
+  const [editError, setEditError] = useState('')
+  const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [profileForm, setProfileForm] = useState({
+    city: user?.city || '',
+    name: user?.name || '',
+    phone: user?.phone || '',
+    state: user?.state || '',
+  })
   const recentBookings = useMemo(() => bookings.slice(0, 5), [bookings])
-  const cancelledCount = useMemo(
-    () => bookings.filter((booking) => booking.rawStatus === 'cancelled').length,
-    [bookings],
-  )
+  const profileCompletion = useMemo(() => {
+    const fields = [user?.name, user?.email, user?.phone, user?.city, user?.state]
+    return Math.round((fields.filter(Boolean).length / fields.length) * 100)
+  }, [user])
+
+  function updateProfileForm(field, value) {
+    setProfileForm((current) => ({ ...current, [field]: value }))
+  }
+
+  function handleEditToggle() {
+    if (!isEditing) {
+      setProfileForm({
+        city: user?.city || '',
+        name: user?.name || '',
+        phone: user?.phone || '',
+        state: user?.state || '',
+      })
+      setEditError('')
+    }
+    setIsEditing((current) => !current)
+  }
+
+  async function handleProfileSubmit(event) {
+    event.preventDefault()
+    setEditError('')
+    setIsSaving(true)
+
+    try {
+      await onSaveProfile(profileForm)
+      setIsEditing(false)
+    } catch (saveError) {
+      setEditError(saveError.message || 'Your profile could not be updated. Please try again.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   return (
     <div className="hw-profile-page">
-      <ProfileHero user={user} isArtisan={false} />
+      <ProfileHero user={user} isArtisan={false} className="customer-profile-hero" />
+
+      {error && <p className="auth-error">Some profile activity could not load. Please refresh and try again.</p>}
 
       <div className="hw-profile-grid">
         <AccountInfoCard
@@ -70,68 +116,93 @@ function CustomerProfile({ user, bookings = [], summary, onEditProfile }) {
             { label: 'Phone', value: user?.phone },
             { label: 'City / State', value: `${user?.city || 'City not set'} / ${user?.state || 'State not set'}` },
           ]}
-          actions={
-            onEditProfile
-              ? [{ label: 'Edit Profile', to: '#', className: 'primary-cta' }]
-              : []
-          }
+          actions={[{
+            className: 'primary-cta',
+            label: isEditing ? 'Close Editor' : 'Edit Details',
+            onClick: handleEditToggle,
+          }]}
         />
 
         <div className="hw-dashboard-metric-grid">
-          <DashboardMetric value={summary.total} label="Total bookings" />
+          <DashboardMetric value={`${profileCompletion}%`} label="Profile complete" />
+          <DashboardMetric value={summary.active} label="Active bookings" />
           <DashboardMetric value={summary.completed} label="Completed bookings" />
-          <DashboardMetric value={cancelledCount} label="Cancelled bookings" />
+          <DashboardMetric value={summary.total} label="All bookings" />
         </div>
       </div>
 
+      {isEditing && (
+        <form className="hw-customer-profile-form" onSubmit={handleProfileSubmit}>
+          <div className="hw-profile-section-header">
+            <p className="hw-section-kicker">Account details</p>
+            <h2>Edit your profile</h2>
+            <p>Accurate contact and location details make booking coordination easier.</p>
+          </div>
+          <div className="hw-customer-profile-form-grid">
+            <label>
+              Full name
+              <input required value={profileForm.name} onChange={(event) => updateProfileForm('name', event.target.value)} />
+            </label>
+            <label>
+              Phone number
+              <input inputMode="tel" placeholder="+234 800 000 0000" value={profileForm.phone} onChange={(event) => updateProfileForm('phone', event.target.value)} />
+            </label>
+            <label>
+              City / Area
+              <input placeholder="Abuja" value={profileForm.city} onChange={(event) => updateProfileForm('city', event.target.value)} />
+            </label>
+            <label>
+              State
+              <input placeholder="FCT" value={profileForm.state} onChange={(event) => updateProfileForm('state', event.target.value)} />
+            </label>
+          </div>
+          {editError && <p className="auth-error">{editError}</p>}
+          <div className="hw-customer-profile-form-actions">
+            <button className="primary-cta" disabled={isSaving} type="submit">{isSaving ? 'Saving...' : 'Save Changes'}</button>
+            <button className="secondary-cta" disabled={isSaving} type="button" onClick={() => setIsEditing(false)}>Cancel</button>
+          </div>
+        </form>
+      )}
+
       <QuickActions actions={quickActions} />
 
-      {recentBookings.length > 0 && (
-        <section className="hw-profile-section">
+      <section className="hw-profile-section">
           <div className="hw-profile-section-header">
             <h2>Recent Bookings</h2>
             <p>Your latest service requests and their current status.</p>
           </div>
-          <div className="hw-booking-list">
-            {recentBookings.map((booking) => (
-              <BookingCard
-                key={booking.id}
-                booking={booking}
-                participantLabel={(b) => b.artisan}
-                showActions={false}
-                isCustomer={true}
-                user={user}
-              />
-            ))}
-          </div>
-          <div style={{ marginTop: 'var(--hw-space-4)' }}>
-            <Link to="/bookings" className="hw-link">View all bookings</Link>
-          </div>
+          {recentBookings.length > 0 ? (
+            <>
+              <div className="hw-booking-list">
+                {recentBookings.map((booking) => (
+                  <BookingCard
+                    key={booking.id}
+                    booking={booking}
+                    participantLabel={(bookingItem) => bookingItem.artisan}
+                    showActions={false}
+                    isCustomer
+                    user={user}
+                  />
+                ))}
+              </div>
+              <div className="hw-profile-section-action">
+                <Link to="/bookings" className="hw-link">View all bookings</Link>
+              </div>
+            </>
+          ) : (
+            <EmptyState action={<Link className="hw-btn hw-btn-primary" to="/requests">Post your first job</Link>} compact title="No bookings yet">
+              Describe what you need and compare offers from verified professionals.
+            </EmptyState>
+          )}
         </section>
-      )}
 
-      <section className="hw-profile-section">
-        <div className="hw-profile-section-header">
-          <h2>Wallet</h2>
-          <p>Payments, escrow, and refunds for your bookings.</p>
+      <section className="hw-profile-trust-card">
+        <div>
+          <span>Account safety</span>
+          <h2>Keep bookings and payments inside Handiwave.</h2>
+          <p>This preserves your booking record, message history, payment protection, and access to support.</p>
         </div>
-        <div className="hw-wallet-summary-grid">
-          <div className="hw-wallet-summary-item">
-            <strong>NGN 0</strong>
-            <span>Available balance</span>
-          </div>
-          <div className="hw-wallet-summary-item">
-            <strong>NGN 0</strong>
-            <span>Escrow balance</span>
-          </div>
-          <div className="hw-wallet-summary-item">
-            <strong>Coming Soon</strong>
-            <span>Top up wallet</span>
-          </div>
-        </div>
-        <div style={{ marginTop: 'var(--hw-space-4)' }}>
-          <Link to="/wallet" className="primary-cta">Open Wallet</Link>
-        </div>
+        <Link className="hw-btn hw-btn-secondary" to="/bookings">Review my bookings</Link>
       </section>
     </div>
   )

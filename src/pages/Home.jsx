@@ -4,14 +4,13 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   ArtisanCard,
   ReelCard,
-  ServiceCategoryCard,
 } from '../components/cards.jsx'
 import { openUrl as openInBrowser, getMobilePaymentCallbackUrl } from '../mobile/capacitor.js'
 import { useAuth } from '../auth/useAuth.js'
-import { featuredArtisans } from '../data/artisans.js'
 import { howItWorksSteps, trustedMarkets } from '../data/home.js'
-import { reelsPreview } from '../data/reels.js'
 import { services } from '../data/services.js'
+import { getVerifiedArtisans } from '../services/artisanService.js'
+import { getPublishedReels } from '../services/reelsService.js'
 import {
   getBookingsForUser,
   respondToBookingReschedule,
@@ -350,7 +349,7 @@ function TrustCard() {
 // CATEGORY CARD
 // ============================================
 
-function CategoryCard({ category, index }) {
+function CategoryCard({ category }) {
   return (
     <motion.div
       variants={cardVariants}
@@ -383,6 +382,10 @@ function Home() {
   const greeting = getGreeting()
   const [bookings, setBookings] = useState([])
   const [bookingError, setBookingError] = useState('')
+  const [featuredProfessionals, setFeaturedProfessionals] = useState([])
+  const [isLoadingProfessionals, setIsLoadingProfessionals] = useState(true)
+  const [publishedReels, setPublishedReels] = useState([])
+  const [isLoadingReels, setIsLoadingReels] = useState(true)
   const [payingBookingId, setPayingBookingId] = useState('')
   const [updatingBookingId, setUpdatingBookingId] = useState('')
 
@@ -411,6 +414,44 @@ function Home() {
       isMounted = false
     }
   }, [isCustomer, user])
+
+  useEffect(() => {
+    let isMounted = true
+
+    getVerifiedArtisans().then(({ data, error }) => {
+      if (!isMounted) return
+
+      if (error) {
+        logger.error('[Handiwave home] featured professionals failed to load:', error)
+      }
+
+      setFeaturedProfessionals((data || []).slice(0, 4))
+      setIsLoadingProfessionals(false)
+    })
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+
+    getPublishedReels().then(({ data, error }) => {
+      if (!isMounted) return
+
+      if (error) {
+        logger.error('[Handiwave home] published reels failed to load:', error)
+      }
+
+      setPublishedReels((data || []).slice(0, 4))
+      setIsLoadingReels(false)
+    })
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   async function refreshCustomerBookings() {
     const { data, error } = await getBookingsForUser(user)
@@ -448,7 +489,7 @@ function Home() {
       }
 
       if (!data?.id) {
-        setBookingError('Supabase did not return the updated booking row.')
+        setBookingError('We could not confirm that update. Please try again.')
         return
       }
 
@@ -479,7 +520,7 @@ function Home() {
       }
 
       if (!data?.authorization_url) {
-        setBookingError('Paystack did not return an authorization URL.')
+        setBookingError('We could not start the secure payment. Please try again.')
         return
       }
 
@@ -550,7 +591,7 @@ function Home() {
             </form>
 
             <div className="hw-hero-actions">
-              <Link className="hw-btn hw-btn-primary hw-btn-lg" to="/services">Book a Service</Link>
+              <Link className="hw-btn hw-btn-primary hw-btn-lg" to="/requests">Post a Job</Link>
               <Link className="hw-btn hw-btn-secondary hw-btn-lg" to="/artisans">Browse Professionals</Link>
             </div>
           </div>
@@ -561,10 +602,10 @@ function Home() {
               <span>Safe. Reliable. Trusted.</span>
             </div>
             <div className="hw-hero-stat-grid">
-              <div><strong>2K+</strong><span>Verified professionals</span></div>
-              <div><strong>24/7</strong><span>Fast booking</span></div>
+              <div><strong>Verified</strong><span>Professional profiles</span></div>
+              <div><strong>Private</strong><span>Sealed offers</span></div>
             </div>
-            <p>Trusted by homeowners and small businesses in</p>
+            <p>Starting our active pilot in</p>
             <div className="hw-hero-markets">
               {trustedMarkets.map((market) => <span key={market}>{market}</span>)}
             </div>
@@ -613,8 +654,8 @@ function Home() {
             viewport={{ once: true, amount: 0.2 }}
             transition={{ staggerChildren: 0.08 }}
           >
-            {presentationCategories.map((category, index) => (
-              <CategoryCard key={category.id} category={category} index={index} />
+            {presentationCategories.map((category) => (
+              <CategoryCard key={category.id} category={category} />
             ))}
           </motion.div>
 
@@ -676,10 +717,23 @@ function Home() {
             viewport={{ once: true, amount: 0.2 }}
             transition={{ staggerChildren: 0.1 }}
           >
-            {featuredArtisans.map((artisan) => (
-              <ArtisanCard artisan={artisan} featured key={artisan.name} />
+            {featuredProfessionals.map((artisan) => (
+              <ArtisanCard artisan={artisan} featured key={artisan.id} />
             ))}
           </motion.div>
+          {!isLoadingProfessionals && featuredProfessionals.length === 0 && (
+            <div className="hw-featured-empty-state">
+              <div>
+                <span>Professionals are joining now</span>
+                <h3>Verified profiles will appear here after review.</h3>
+                <p>We only feature real professionals whose profiles have passed Handiwave verification.</p>
+              </div>
+              <div>
+                <Link className="hw-btn hw-btn-primary" to="/requests">Post a Job</Link>
+                <Link className="hw-btn hw-btn-secondary" to="/join-professionals">Join as a Professional</Link>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* ============================================
@@ -688,13 +742,13 @@ function Home() {
         <section className="hw-trust-strip" aria-label="Handiwave highlights">
           <div className="hw-trust-stats">
             <div className="hw-trust-stat">
-              <strong>2K+</strong>
-              <span>Verified professionals</span>
+              <strong>Verified</strong>
+              <span>Professional profiles</span>
             </div>
             <div className="hw-trust-divider" />
             <div className="hw-trust-stat">
-              <strong>24/7</strong>
-              <span>Fast booking</span>
+              <strong>Sealed</strong>
+              <span>Private offers</span>
             </div>
             <div className="hw-trust-divider" />
             <div className="hw-trust-stat">
@@ -710,8 +764,8 @@ function Home() {
         <section className="hw-home-how-it-works">
           <Section
             kicker="How it works"
-            title="Book trusted help in four steps"
-            description="From search to safe completion, Handiwave keeps the process clear, fast, and easy to follow."
+            title="Get trusted help in four clear steps"
+            description="Describe the job once, compare suitable offers, and stay informed from booking to completion."
             align="center"
           >
             <motion.div
@@ -754,15 +808,31 @@ function Home() {
               viewport={{ once: true, amount: 0.2 }}
               transition={{ staggerChildren: 0.1 }}
             >
-              {reelsPreview.map((reel) => (
-                <ReelCard key={`${reel.artisan}-${reel.category}`} preview reel={reel} />
+              {publishedReels.map((reel) => (
+                <ReelCard key={reel.id} preview reel={reel} />
               ))}
             </motion.div>
-            <div className="hw-reels-cta">
-              <Link to="/reels" className="hw-btn hw-btn-secondary">
-                Watch more reels
-              </Link>
-            </div>
+            {!isLoadingReels && publishedReels.length === 0 ? (
+              <div className="hw-featured-empty-state">
+                <div>
+                  <span>Work showcases are coming</span>
+                  <h3>Real professional videos will appear here after review.</h3>
+                  <p>Until then, browse verified profiles or post a job to receive suitable offers.</p>
+                </div>
+                <div>
+                  <Link className="hw-btn hw-btn-primary" to="/requests">Post a Job</Link>
+                  <Link className="hw-btn hw-btn-secondary" to="/artisans">Browse Professionals</Link>
+                </div>
+              </div>
+            ) : (
+              publishedReels.length > 0 && (
+                <div className="hw-reels-cta">
+                  <Link to="/reels" className="hw-btn hw-btn-secondary">
+                    Watch more reels
+                  </Link>
+                </div>
+              )
+            )}
           </Section>
         </section>
 
@@ -770,7 +840,7 @@ function Home() {
             11. TRUSTED MARKETS
             ============================================ */}
         <section className="hw-trusted-markets" aria-label="Service areas">
-          <p>Trusted by homeowners and businesses in</p>
+          <p>Active pilot areas</p>
           <div className="hw-markets-list">
             {trustedMarkets.map((market) => (
               <span key={market}>{market}</span>

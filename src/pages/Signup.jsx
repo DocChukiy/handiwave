@@ -15,10 +15,10 @@ const signupTypes = [
   {
     label: 'Customer',
     value: 'customer',
-    description: 'Find artisans, book home services, and pay safely.',
+    description: 'Post service jobs, compare offers, and book safely.',
   },
   {
-    label: 'Artisan',
+    label: 'Professional',
     value: 'artisan',
     description: 'Offer your services, receive bookings, and build trust.',
   },
@@ -134,7 +134,7 @@ function Signup() {
 
         navigate('/')
       } else {
-        setFormError('Signup created an auth user, but no active session was returned. Check Supabase email confirmation settings or confirm the email, then log in.')
+        setFormError('Your account was created. Please confirm your email if requested, then log in.')
         showToast('Account created. Please confirm your email if required, then log in.')
       }
     } catch (error) {
@@ -197,9 +197,6 @@ function Signup() {
           )}
           {(formError || authError) && (
             <p className="auth-error">{formError || authError}</p>
-          )}
-          {disabledReason && !isSubmitting && (
-            <p className="auth-hint">Sign up button disabled because {disabledReason}.</p>
           )}
           <button disabled={isSignupDisabled} type="submit">
             {isSubmitting ? 'Creating account...' : 'Sign Up'}

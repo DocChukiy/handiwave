@@ -21,14 +21,15 @@ export function mapArtisanRow(artisan) {
   const profile = artisan.profile || {}
   const primaryService = artisan.primary_service || {}
   const name = profile.full_name || artisan.business_name || 'Handiwave artisan'
-  const city = artisan.city || profile.city || 'Lagos'
-  const state = artisan.state || profile.state || 'Nigeria'
+  const city = artisan.city || profile.city || ''
+  const state = artisan.state || profile.state || ''
   const serviceName = primaryService.name || 'General Service'
-  const priceValue = Number(artisan.starting_price) || 30000
+  const priceValue = Number(artisan.starting_price) || 0
   const rating = Number(artisan.average_rating) || 0
   const reviewCount = artisan.review_count || 0
 
   return {
+    avatarUrl: profile.avatar_url || '',
     bio: artisan.bio || '',
     businessName: artisan.business_name || '',
     area: city,
@@ -36,7 +37,7 @@ export function mapArtisanRow(artisan) {
     completedJobs: artisan.completed_jobs || 0,
     createdAt: artisan.created_at || '',
     featuredSkill: serviceName,
-    fullLocation: `${city}, ${state}`,
+    fullLocation: [city, state].filter(Boolean).join(', ') || 'Service area available on request',
     id: artisan.id,
     initials: getInitials(name),
     isAvailable: artisan.is_available !== false,

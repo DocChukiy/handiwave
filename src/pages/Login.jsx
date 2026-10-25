@@ -9,10 +9,10 @@ const roles = [
   {
     label: 'Customer',
     value: 'customer',
-    description: 'Book services, chat with artisans, and manage wallet payments.',
+    description: 'Post service jobs, compare offers, and manage your bookings.',
   },
   {
-    label: 'Artisan',
+    label: 'Professional',
     value: 'artisan',
     description: 'Manage bookings, customer messages, and your service showcase.',
   },
@@ -149,7 +149,7 @@ function Login() {
       <section className="auth-card">
         <p className="section-kicker">Welcome back</p>
         <h1>Log in to Handiwave</h1>
-        <p>Log in with Supabase Auth and continue with the right Handiwave role.</p>
+        <p>Access your Handiwave account and continue where you stopped.</p>
         <form className="auth-form" onSubmit={handleLogin}>
           <div className="role-selector" aria-label="Login role">
             {visibleRoles.map((role) => (
@@ -166,9 +166,6 @@ function Login() {
           </div>
           <label>Email address<input type="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
           <label>Password<input type="password" placeholder="Enter your password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
-          {disabledReason && !isSubmitting && (
-            <p className="auth-hint">Login button disabled because {disabledReason}.</p>
-          )}
           {(formError || authError) && (
             <p className="auth-error">{formError || authError}</p>
           )}

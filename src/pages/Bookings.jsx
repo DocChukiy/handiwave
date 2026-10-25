@@ -47,27 +47,6 @@ const initialDisputeForm = {
   requestedResolution: '',
 }
 
-const statusLabels = {
-  cancelled: 'Cancelled',
-  artisan_completed: 'Awaiting customer confirmation',
-  completed: 'Completed',
-  confirmed: 'Confirmed',
-  customer_confirmed: 'Customer confirmed',
-  disputed: 'Issue reported',
-  in_progress: 'In progress',
-  pending: 'Pending',
-  reschedule_requested: 'Reschedule requested',
-}
-
-const paymentStatusLabels = {
-  failed: 'Failed',
-  held_in_escrow: 'Held in escrow',
-  pending: 'Pending verification',
-  refunded: 'Refunded',
-  released: 'Released',
-  unpaid: 'Unpaid',
-}
-
 export function getErrorMessage(error) {
   return [
     error.message,
@@ -107,14 +86,6 @@ export function getQuoteStatus(booking) {
   }
 
   return 'awaiting'
-}
-
-const quoteStatusLabels = {
-  accepted: 'Quote Accepted',
-  awaiting: 'Awaiting Quote',
-  paid: 'Paid / Escrow Held',
-  rejected: 'Quote Rejected',
-  sent: 'Quote Sent',
 }
 
 export function getDisplayPaymentStatus(booking) {
@@ -322,6 +293,7 @@ function Bookings() {
   const [options, setOptions] = useState({ artisans: [], services: [] })
   const [payingBookingId, setPayingBookingId] = useState('')
   const [reviewForms, setReviewForms] = useState({})
+  const [showBookingForm, setShowBookingForm] = useState(Boolean(searchParams.get('artisan')))
   const [submittingReviewId, setSubmittingReviewId] = useState('')
   const [updatingBookingId, setUpdatingBookingId] = useState('')
   const [updatingCompletionId, setUpdatingCompletionId] = useState('')
@@ -356,12 +328,6 @@ function Bookings() {
   const slotsForSelectedDate = availability.slots.filter((slot) => (
     Number(slot.dayOfWeek) === dateDayOfWeek
   ))
-  const availableTimesForSelectedDate = useMemo(() => (
-    getAvailableTimesForDate({
-      availability,
-      date: form.scheduledDate,
-    })
-  ), [availability, form.scheduledDate])
   const isSelectedDateUnavailable = availability.unavailableDates.some((date) => (
     date.unavailableDate === form.scheduledDate
   ))
@@ -381,6 +347,15 @@ function Bookings() {
     const cancelledCount = bookings.filter((booking) => booking.rawStatus === 'cancelled').length
 
     return {
+      attentionCount: bookings.filter((booking) => {
+        const quoteStatus = getQuoteStatus(booking)
+        const paymentStatus = booking.paymentStatus || 'unpaid'
+
+        return booking.rawStatus === 'reschedule_requested' ||
+          booking.rawStatus === 'artisan_completed' ||
+          quoteStatus === 'sent' ||
+          (quoteStatus === 'accepted' && ['unpaid', 'failed'].includes(paymentStatus))
+      }).length,
       cancelledCount,
       completedCount,
       upcomingCount,
@@ -415,23 +390,21 @@ function Bookings() {
         const nextOptions = optionsResult.data
         setOptions(nextOptions)
         setBookings(bookingsResult.data)
+        if (isCustomer && bookingsResult.data.length === 0) {
+          setShowBookingForm(true)
+        }
 
         setForm((currentForm) => {
           const requestedArtisan = nextOptions.artisans.find((artisan) => (
             artisan.id === requestedArtisanId
           ))
-          const firstArtisan = requestedArtisan || nextOptions.artisans[0]
-          const firstService = nextOptions.services[0]
 
           return {
             ...currentForm,
-            artisanId: requestedArtisan?.id || currentForm.artisanId || firstArtisan?.id || '',
+            artisanId: requestedArtisan?.id || currentForm.artisanId || '',
             serviceId:
               requestedArtisan?.primary_service_id ||
-              currentForm.serviceId ||
-              firstArtisan?.primary_service_id ||
-              firstService?.id ||
-              '',
+              currentForm.serviceId || '',
           }
         })
       } catch (loadError) {
@@ -450,7 +423,7 @@ function Bookings() {
     return () => {
       isMounted = false
     }
-  }, [requestedArtisanId, user])
+  }, [isCustomer, requestedArtisanId, user])
 
   useEffect(() => {
     if (!isCustomer || !user?.id) {
@@ -616,7 +589,7 @@ function Bookings() {
       }
 
       if (!data?.id) {
-        setError('Supabase did not return the updated booking row.')
+        setError('We could not confirm that booking update. Please try again.')
         return
       }
 
@@ -654,7 +627,7 @@ function Bookings() {
       }
 
       if (!data?.id) {
-        setError('Supabase did not confirm the booking completion update.')
+        setError('We could not confirm that the job was completed. Please try again.')
         return
       }
 
@@ -726,7 +699,7 @@ function Bookings() {
       }
 
       if (!data?.id) {
-        setError('Supabase did not confirm that the review was saved.')
+        setError('We could not confirm your review. Please try again.')
         return
       }
 
@@ -796,7 +769,7 @@ function Bookings() {
       }
 
       if (!data) {
-        setError('Supabase did not return the dispute id.')
+        setError('We could not confirm your issue report. Please try again.')
         return
       }
 
@@ -825,7 +798,7 @@ function Bookings() {
       }
 
       if (!data?.authorization_url) {
-        setError('Paystack did not return an authorization URL.')
+        setError('We could not start the secure payment. Please try again.')
         return
       }
 
@@ -860,7 +833,7 @@ function Bookings() {
       }
 
       if (!data) {
-        setError('Supabase did not confirm the quote response.')
+        setError('We could not confirm your quote response. Please try again.')
         return
       }
 
@@ -928,7 +901,7 @@ function Bookings() {
       }
 
       if (!data?.id) {
-        setError('Supabase did not confirm that the booking row was created.')
+        setError('We could not confirm your booking request. Please try again.')
         return
       }
 
@@ -941,7 +914,7 @@ function Bookings() {
       }))
       setAttachmentInputKey((currentKey) => currentKey + 1)
       setUploadProgress(null)
-      showToast('Booking request saved to Supabase successfully.')
+      showToast('Booking request sent successfully.')
     } catch (saveError) {
       setError(getErrorMessage(saveError))
     } finally {
@@ -952,19 +925,33 @@ function Bookings() {
   return (
     <div className="hw-booking-page">
       <section className="hw-booking-header">
-        <p className="section-kicker">Bookings</p>
-        <h1>{isCustomer ? 'Book a trusted artisan' : 'Manage real bookings'}</h1>
+        <div>
+          <p className="section-kicker">Bookings</p>
+          <h1>{isCustomer ? 'My bookings' : 'Manage real bookings'}</h1>
+        </div>
         <p>
           {isCustomer
-            ? 'Choose a verified artisan, share your location, and confirm appointment details before work begins.'
-            : 'View customer requests, appointment details, locations, and booking progress from Supabase.'}
+            ? 'Track appointments, respond to quotes, make protected payments, and confirm completed work.'
+            : 'View customer requests, appointment details, locations, and booking progress.'}
         </p>
+        {isCustomer && (
+          <div className="hw-booking-header-actions">
+            <button className="hw-btn hw-btn-secondary" type="button" onClick={() => setShowBookingForm((current) => !current)}>
+              {showBookingForm ? 'Close booking form' : 'Book a professional'}
+            </button>
+            <Link className="hw-btn hw-btn-primary" to="/requests">Post a job for offers</Link>
+          </div>
+        )}
       </section>
 
       <div className="hw-booking-summary">
         <div className="hw-booking-summary-item">
           <strong>{summary.upcomingCount}</strong>
-          <span>Upcoming</span>
+          <span>Active</span>
+        </div>
+        <div className={`hw-booking-summary-item ${summary.attentionCount > 0 ? 'needs-attention' : ''}`}>
+          <strong>{summary.attentionCount}</strong>
+          <span>Needs you</span>
         </div>
         <div className="hw-booking-summary-item">
           <strong>{summary.completedCount}</strong>
@@ -1007,8 +994,8 @@ function Bookings() {
         </div>
       )}
 
-      <div className="hw-booking-layout">
-        {isCustomer && (
+      <div className={`hw-booking-layout ${isCustomer && !showBookingForm ? 'single-column' : ''}`}>
+        {isCustomer && showBookingForm && (
           <BookingForm
             form={form}
             updateForm={updateForm}
@@ -1024,8 +1011,6 @@ function Bookings() {
             availabilityError={availabilityError}
             availableDayLabels={availableDayLabels}
             availableBookingDates={availableBookingDates}
-            availableTimesForSelectedDate={availableTimesForSelectedDate}
-            dateDayOfWeek={dateDayOfWeek}
             slotsForSelectedDate={slotsForSelectedDate}
             isSelectedDateUnavailable={isSelectedDateUnavailable}
             isLoadingAvailability={isLoadingAvailability}
@@ -1040,7 +1025,7 @@ function Bookings() {
         {isCustomer ? (
           <BookingHistory
             bookings={bookings}
-            emptyText="Your confirmed service requests will appear here after Supabase creates the booking row."
+            emptyText="Your direct bookings will appear here. You can also post a job and compare offers from matching professionals."
             editingReviewId={editingReviewId}
             isLoading={isLoading}
             onCompletionAction={handleCompletionAction}
@@ -1056,7 +1041,7 @@ function Bookings() {
             reviewForms={reviewForms}
             showActions
             submittingReviewId={submittingReviewId}
-            title="Customer booking history"
+            title="Your bookings"
             updatingBookingId={updatingBookingId}
             updatingCompletionId={updatingCompletionId}
             updatingQuoteId={updatingQuoteId}

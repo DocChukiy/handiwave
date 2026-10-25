@@ -144,6 +144,7 @@ function mapConversationRow(conversation, user, lastMessage, unreadCount = 0) {
     lastMessagePreview: lastMessage?.body || 'No messages yet. Start the conversation.',
     lastMessageTime: formatTime(lastMessageTime),
     otherPerson: getOtherPerson(conversation, user),
+    otherPersonAvatar: otherProfile.avatar_url || '',
     otherPersonLastSeen: otherProfile.last_seen || '',
     otherPersonPresence: presence.label,
     otherPersonOnline: presence.isOnline,

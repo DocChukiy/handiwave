@@ -51,21 +51,6 @@ const Wallet = lazy(() => import('./pages/Wallet.jsx'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy.jsx'))
 const TermsOfService = lazy(() => import('./pages/TermsOfService.jsx'))
 
-const quickLinks = [
-  { path: '/', label: 'Home' },
-  { path: '/artisans', label: 'Find Artisans' },
-  { path: '/bookings', label: 'My Bookings' },
-  { path: '/messages', label: 'Messages' },
-]
-
-const serviceLinks = [
-  'Electrician',
-  'Plumber',
-  'Cleaner',
-  'AC Repair',
-  'Generator Repair',
-]
-
 function isStandaloneDisplay() {
   return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone
 }
@@ -329,6 +314,7 @@ function AppShell() {
   const [awarenessRefreshTick, setAwarenessRefreshTick] = useState(0)
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0)
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0)
+  const isAuthPage = ['/login', '/signup'].includes(location.pathname)
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -614,9 +600,9 @@ function AppShell() {
         <AnimatedRoutes />
       </main>
 
-      {user?.role !== 'admin' && <Footer />}
+      {user?.role !== 'admin' && !isAuthPage && <Footer />}
 
-      <MobileBottomNav />
+      {!isAuthPage && <MobileBottomNav />}
 
       <AnimatePresence>
         {toast && (

@@ -264,7 +264,7 @@ function Wallet() {
               Account name
               <input
                 disabled={isSubmitting || !canWithdraw}
-                placeholder="Ada Okafor"
+                placeholder="Name on the bank account"
                 value={form.accountName}
                 onChange={(event) => updateForm('accountName', event.target.value)}
               />

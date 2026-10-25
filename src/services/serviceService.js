@@ -4,16 +4,9 @@ export function mapServiceRow(service) {
   return {
     category: service.category || 'General',
     description: service.description || 'Book a verified Handiwave artisan for this service.',
-    duration: 'By quote',
     icon: service.icon || '🛠️',
     id: service.id,
-    locations: ['Lagos', 'Abuja', 'Port Harcourt', 'Ibadan'],
     popular: Boolean(service.is_popular),
-    price: service.base_price
-      ? `From NGN ${Number(service.base_price).toLocaleString()}`
-      : 'By quote',
-    priceValue: Number(service.base_price) || 30000,
-    rating: 4.8,
     title: service.name,
   }
 }

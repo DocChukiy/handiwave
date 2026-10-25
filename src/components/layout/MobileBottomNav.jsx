@@ -30,7 +30,7 @@ function MobileBottomNav() {
     },
     {
       path: isAuthenticated ? '/profile' : '/login',
-      label: isAuthenticated ? 'Wallet' : 'Profile',
+      label: 'Profile',
       icon: UserRound,
     },
   ]

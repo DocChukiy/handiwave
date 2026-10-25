@@ -6,9 +6,7 @@ import SkeletonPreview from '../components/Skeletons.jsx'
 import { ServiceCard } from '../components/cards.jsx'
 import { getServices } from '../services/serviceService.js'
 import PageShell from '../components/ui/PageShell.jsx'
-import Section from '../components/ui/Section.jsx'
 import Card from '../components/ui/Card.jsx'
-import Badge from '../components/ui/Badge.jsx'
 import {
   Laptop,
   Zap,
@@ -19,7 +17,6 @@ import {
 } from 'lucide-react'
 
 const baseCategories = ['All']
-const baseLocations = ['All locations', 'Lagos', 'Abuja', 'Port Harcourt', 'Ibadan']
 
 // Presentation categories with Lucide icons
 const presentationCategories = [
@@ -150,10 +147,6 @@ function Services() {
   const [dataError, setDataError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '')
-  const [locationFilter, setLocationFilter] = useState('All locations')
-  const [minimumRating, setMinimumRating] = useState('0')
-  const [maximumPrice, setMaximumPrice] = useState(30000)
-  const [showFilters, setShowFilters] = useState(false)
 
   useEffect(() => {
     let isMounted = true
@@ -207,15 +200,9 @@ function Services() {
         service.description.toLowerCase().includes(query) ||
         service.category.toLowerCase().includes(query) ||
         service.locations.some((location) => location.toLowerCase().includes(query))
-      const matchesLocation =
-        locationFilter === 'All locations' ||
-        service.locations.includes(locationFilter)
-      const matchesRating = service.rating >= Number(minimumRating)
-      const matchesPrice = service.priceValue <= Number(maximumPrice)
-
-      return matchesCategory && matchesSearch && matchesLocation && matchesRating && matchesPrice
+      return matchesCategory && matchesSearch
     })
-  }, [activeCategory, availableServices, locationFilter, maximumPrice, minimumRating, searchTerm])
+  }, [activeCategory, availableServices, searchTerm])
 
   const popularServices = availableServices.filter((service) => service.popular)
   const categories = useMemo(
@@ -239,8 +226,14 @@ function Services() {
             SECTION 1: SMART CONTEXT HEADER
             ============================================ */}
         <header className="hw-services-header">
+          <span className="hw-services-eyebrow">Customer services</span>
           <h1>{headerContext.title}</h1>
           <p>{headerContext.description}</p>
+          <div className="hw-services-process" aria-label="How service requests work">
+            <span><strong>1</strong> Choose a service</span>
+            <span><strong>2</strong> Describe the job</span>
+            <span><strong>3</strong> Compare sealed offers</span>
+          </div>
         </header>
 
         {/* ============================================
@@ -323,11 +316,11 @@ function Services() {
                   whileHover={{ y: -4 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <Link to="/artisans">
+                  <Link to={`/requests?service=${service.id}`}>
                     <span className="hw-popular-icon">{service.icon}</span>
                     <div className="hw-popular-info">
                       <strong>{service.title}</strong>
-                      <span>{service.price}</span>
+                      <span>Request offers</span>
                     </div>
                   </Link>
                 </motion.div>
@@ -335,107 +328,6 @@ function Services() {
             </div>
           </section>
         )}
-
-        {/* ============================================
-            SECTION 5: FILTER TOGGLE (Mobile)
-            ============================================ */}
-        <div className="hw-filter-toggle">
-          <button
-            className="hw-btn hw-btn-secondary"
-            type="button"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
-            </svg>
-            Filters
-            {(locationFilter !== 'All locations' || minimumRating !== '0' || maximumPrice < 30000) && (
-              <Badge variant="info" className="hw-filter-badge">Active</Badge>
-            )}
-          </button>
-          <span className="hw-results-count">
-            {filteredServices.length} service{filteredServices.length !== 1 ? 's' : ''}
-          </span>
-        </div>
-
-        {/* ============================================
-            SECTION 6: FILTER PANEL
-            ============================================ */}
-        <section className={`hw-filter-panel ${showFilters ? 'show' : ''}`}>
-          <div className="hw-filter-grid">
-            <div className="hw-filter-group">
-              <label htmlFor="location-filter">Location</label>
-              <select
-                id="location-filter"
-                className="hw-select"
-                value={locationFilter}
-                onChange={(event) => setLocationFilter(event.target.value)}
-              >
-                {baseLocations.map((location) => (
-                  <option key={location}>{location}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="hw-filter-group">
-              <label htmlFor="rating-filter">Minimum rating</label>
-              <select
-                id="rating-filter"
-                className="hw-select"
-                value={minimumRating}
-                onChange={(event) => setMinimumRating(event.target.value)}
-              >
-                <option value="0">Any rating</option>
-                <option value="4.5">4.5+</option>
-                <option value="4.8">4.8+</option>
-                <option value="4.9">4.9+</option>
-              </select>
-            </div>
-
-            <div className="hw-filter-group hw-filter-range">
-              <label htmlFor="price-filter">
-                Max price: <strong>NGN {Number(maximumPrice).toLocaleString()}</strong>
-              </label>
-              <input
-                id="price-filter"
-                type="range"
-                className="hw-range-input"
-                min="5000"
-                max="30000"
-                step="1000"
-                value={maximumPrice}
-                onChange={(event) => setMaximumPrice(event.target.value)}
-              />
-              <div className="hw-range-labels">
-                <span>NGN 5,000</span>
-                <span>NGN 30,000</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="hw-filter-actions">
-            <button
-              type="button"
-              className="hw-btn hw-btn-ghost"
-              onClick={() => {
-                setActiveCategory('All')
-                setSearchTerm('')
-                setLocationFilter('All locations')
-                setMinimumRating('0')
-                setMaximumPrice(30000)
-              }}
-            >
-              Reset all
-            </button>
-            <button
-              type="button"
-              className="hw-btn hw-btn-primary hw-hide-desktop"
-              onClick={() => setShowFilters(false)}
-            >
-              Show results
-            </button>
-          </div>
-        </section>
 
         {/* ============================================
             SECTION 7: SERVICE DISCOVERY GRID
@@ -451,7 +343,7 @@ function Services() {
           {dataError && (
             <Card variant="outlined" className="hw-error-card">
               <p className="hw-error">
-                Supabase services could not load. {dataError}
+                We could not load services right now. Please try again.
               </p>
               <button
                 type="button"
@@ -481,20 +373,20 @@ function Services() {
                 className="services-empty-state"
                 title="Unable to load services"
               >
-                Please check your Supabase connection and try again.
+                Please refresh the page or try again shortly.
               </EmptyState>
             ) : filteredServices.length > 0 ? (
               <>
                 {filteredServices.map((service) => (
-                  <ServiceCard key={service.title} service={service} />
+                  <ServiceCard key={service.id} service={service} />
                 ))}
               </>
             ) : availableServices.length === 0 ? (
               <EmptyState
                 className="services-empty-state"
-                title="No services in Supabase yet"
+                title="Services are being prepared"
               >
-                Run the Handiwave service seed SQL in Supabase to populate this page.
+                Handiwave is adding service categories for the Kaduna and Abuja pilot. Please check back shortly.
               </EmptyState>
             ) : (
               <EmptyState
@@ -504,9 +396,6 @@ function Services() {
                     onClick={() => {
                       setActiveCategory('All')
                       setSearchTerm('')
-                      setLocationFilter('All locations')
-                      setMinimumRating('0')
-                      setMaximumPrice(30000)
                     }}
                   >
                     Reset filters
@@ -548,10 +437,10 @@ function Services() {
         <section className="hw-services-cta">
           <Card variant="elevated" className="hw-cta-card">
             <div className="hw-cta-content">
-              <h3>Ready to book?</h3>
-              <p>Find and compare verified professionals in your area.</p>
-              <Link to="/artisans" className="hw-btn hw-btn-primary hw-btn-lg">
-                Find professionals
+              <h3>Not sure which service fits?</h3>
+              <p>Tell us what happened in your own words. You do not need to diagnose the fault yourself.</p>
+              <Link to="/requests" className="hw-btn hw-btn-primary hw-btn-lg">
+                Describe your job
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M5 12h14"/>
                   <path d="m12 5 7 7-7 7"/>

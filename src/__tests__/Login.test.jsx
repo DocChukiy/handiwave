@@ -65,14 +65,14 @@ describe('Login Page', () => {
     expect(screen.getByText(/log in to handiwave/i)).toBeInTheDocument()
   })
 
-  it('displays customer and artisan roles without exposing admin by default', () => {
+  it('displays customer and professional roles without exposing admin by default', () => {
     render(
       <MemoryRouter>
         <Login />
       </MemoryRouter>
     )
     expect(screen.getByText('Customer')).toBeInTheDocument()
-    expect(screen.getByText('Artisan')).toBeInTheDocument()
+    expect(screen.getByText('Professional')).toBeInTheDocument()
     expect(screen.queryByText('Admin')).not.toBeInTheDocument()
   })
 

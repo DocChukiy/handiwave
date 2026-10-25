@@ -6,37 +6,13 @@ import SkeletonPreview from '../components/Skeletons.jsx'
 import { getArtisanByProfileId } from '../services/artisanService.js'
 import { getAvailabilityForArtisanId } from '../services/availabilityService.js'
 import { getBookingsForUser } from '../services/bookingService.js'
+import { updateProfile } from '../services/profileService.js'
 import CustomerProfile from '../components/profile/CustomerProfile.jsx'
 import ArtisanProfileView from '../components/profile/ArtisanProfileView.jsx'
-
-function formatMoney(value) {
-  return value ? `NGN ${Number(value).toLocaleString()}` : 'By quote'
-}
-
-function completionForArtisan(artisan) {
-  if (!artisan) {
-    return 0
-  }
-
-  const fields = [
-    artisan.businessName,
-    artisan.bio,
-    artisan.primaryService,
-    artisan.serviceArea,
-    artisan.city,
-    artisan.state,
-    artisan.startingPrice,
-  ]
-
-  return Math.round((fields.filter(Boolean).length / fields.length) * 100)
-}
-
-function getNextAvailabilitySlot(slots) {
-  return slots.find((slot) => slot.isActive) || null
-}
+import { showToast } from '../utils/toast.js'
 
 function Profile() {
-  const { user } = useAuth()
+  const { refreshProfile, user } = useAuth()
   const [artisan, setArtisan] = useState(null)
   const [availability, setAvailability] = useState({ slots: [], unavailableDates: [] })
   const [bookings, setBookings] = useState([])
@@ -45,12 +21,25 @@ function Profile() {
 
   const isArtisan = user?.role === 'artisan'
   const summary = useMemo(() => ({
+    active: bookings.filter((booking) => (
+      ['pending', 'reschedule_requested', 'confirmed', 'in_progress', 'artisan_completed'].includes(booking.rawStatus)
+    )).length,
     completed: bookings.filter((booking) => (
       booking.rawStatus === 'customer_confirmed' || booking.rawStatus === 'completed'
     )).length,
     pending: bookings.filter((booking) => booking.rawStatus === 'pending').length,
     total: bookings.length,
   }), [bookings])
+
+  async function handleCustomerProfileSave(updates) {
+    const { data, error: updateError } = await updateProfile(user.id, updates)
+
+    if (updateError) throw updateError
+
+    if (refreshProfile) await refreshProfile()
+    showToast('Profile details updated.')
+    return data
+  }
 
   useEffect(() => {
     let isMounted = true
@@ -139,6 +128,8 @@ function Profile() {
     <CustomerProfile
       user={user}
       bookings={bookings}
+      error={error}
+      onSaveProfile={handleCustomerProfileSave}
       summary={summary}
     />
   )

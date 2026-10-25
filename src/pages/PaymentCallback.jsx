@@ -24,7 +24,7 @@ function PaymentResultCard({ error, result, status }) {
         <p className="section-kicker">Payment successful</p>
         <h1>Your payment is held safely in escrow.</h1>
         <p>
-          The artisan can now see that payment is protected. Funds release after
+          The professional can now see that payment is protected. Funds release after
           you confirm the job is complete.
         </p>
         <div className="hero-actions">
@@ -41,12 +41,9 @@ function PaymentResultCard({ error, result, status }) {
       <p className="section-kicker">Payment failed</p>
       <h1>We could not verify this payment.</h1>
       <p>{error || result?.message || 'Paystack did not confirm a successful payment.'}</p>
-      {result?.debugCode && (
-        <p className="payment-debug-note">Debug: {result.debugCode}</p>
-      )}
       <div className="hero-actions">
         <Link className="primary-cta" to="/bookings">Try Again</Link>
-        <Link className="secondary-cta" to="/messages">Contact Artisan</Link>
+        <Link className="secondary-cta" to="/bookings">Review Booking</Link>
       </div>
     </section>
   )

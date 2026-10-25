@@ -14,25 +14,6 @@ import { ReviewCard } from '../components/cards.jsx'
 import { getAvailabilityForArtisanId } from '../services/availabilityService.js'
 import { getArtisanById, getArtisanByProfileId } from '../services/artisanService.js'
 import { getReviewsForArtisan } from '../services/reviewService.js'
-import { profilePortfolio, reviews as fallbackReviews } from '../data/reviews.js'
-
-const fallbackArtisan = {
-  bio: 'Certified electrician based in Lekki, Lagos. Trusted for clean wiring, lighting upgrades, inverter setup, and fast fault diagnosis.',
-  businessName: 'Ada Electrical Works',
-  completedJobs: 186,
-  fullLocation: 'Lekki, Lagos',
-  fullName: 'Ada Okafor',
-  id: 'demo-artisan',
-  initials: 'AO',
-  rating: 4.9,
-  serviceArea: 'Lekki, Victoria Island, Ikoyi',
-  skill: 'Electrician',
-  skills: ['Electrical repairs', 'Lighting installation', 'Inverter setup'],
-  startingPrice: 7500,
-  verificationStatus: 'verified',
-  verified: true,
-  yearsExperience: 6,
-}
 
 function formatMoney(value) {
   return value ? `NGN ${Number(value).toLocaleString()}` : 'By quote'
@@ -73,7 +54,6 @@ function ArtisanProfile() {
   const [artisan, setArtisan] = useState(null)
   const [error, setError] = useState('')
   const [availability, setAvailability] = useState({ slots: [], unavailableDates: [] })
-  const [isFallback, setIsFallback] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [profileReviews, setProfileReviews] = useState([])
 
@@ -85,10 +65,14 @@ function ArtisanProfile() {
 
     async function loadArtisanProfile() {
       setError('')
-      setIsFallback(false)
       setIsLoading(true)
 
       try {
+        if (!shouldLoadOwnProfile && !requestedArtisanId) {
+          setArtisan(null)
+          return
+        }
+
         const result = shouldLoadOwnProfile
           ? await getArtisanByProfileId(user.id)
           : await getArtisanById(requestedArtisanId)
@@ -98,7 +82,7 @@ function ArtisanProfile() {
         }
 
         if (result.error) {
-          setError(result.error.message)
+          setError('We could not load this professional profile. Please try again.')
         }
 
         if (result.data) {
@@ -130,17 +114,15 @@ function ArtisanProfile() {
           return
         }
 
-        setArtisan(fallbackArtisan)
+        setArtisan(null)
         setAvailability({ slots: [], unavailableDates: [] })
-        setProfileReviews(fallbackReviews)
-        setIsFallback(true)
-      } catch (loadError) {
+        setProfileReviews([])
+      } catch {
         if (isMounted) {
-          setError(loadError.message)
-          setArtisan(shouldLoadOwnProfile ? null : fallbackArtisan)
+          setError('We could not load this professional profile. Please try again.')
+          setArtisan(null)
           setAvailability({ slots: [], unavailableDates: [] })
-          setProfileReviews(shouldLoadOwnProfile ? [] : fallbackReviews)
-          setIsFallback(!shouldLoadOwnProfile)
+          setProfileReviews([])
         }
       } finally {
         if (isMounted) {
@@ -172,18 +154,22 @@ function ArtisanProfile() {
   }
 
   if (!artisan) {
+    const isOwnMissingProfile = shouldLoadOwnProfile
+
     return (
       <PageShell>
         <div className="hw-profile-page">
           <EmptyState
             action={(
-              <Button className="primary-cta" to="/artisan-onboarding">
-                Create Professional Profile
+              <Button className="primary-cta" to={isOwnMissingProfile ? '/artisan-onboarding' : '/artisans'}>
+                {isOwnMissingProfile ? 'Create Professional Profile' : 'Browse Professionals'}
               </Button>
             )}
-            title="No artisan profile yet"
+            title={isOwnMissingProfile ? 'No professional profile yet' : 'Professional profile unavailable'}
           >
-            Complete onboarding so customers can view your professional profile.
+            {isOwnMissingProfile
+              ? 'Complete onboarding so customers can view your professional profile.'
+              : 'This profile may be unavailable or still under review.'}
           </EmptyState>
           {error && <p className="auth-error">{error}</p>}
         </div>
@@ -197,6 +183,8 @@ function ArtisanProfile() {
   const isVerified = artisan.verificationStatus === 'verified' || artisan.verified
   const isTopRated = rating >= 4.5 && reviewCount >= 3
   const jobMilestone = getJobMilestone(completedJobs)
+  const profileLocation = artisan.fullLocation || [artisan.area, artisan.location].filter(Boolean).join(', ') || 'Service area not added yet'
+  const portfolioItems = artisan.portfolio || []
 
   return (
     <PageShell>
@@ -236,7 +224,7 @@ function ArtisanProfile() {
                   <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
                   <circle cx="12" cy="10" r="3"/>
                 </svg>
-                <span>{artisan.fullLocation || `${artisan.area}, ${artisan.location}`}</span>
+                <span>{profileLocation}</span>
                 {artisan.serviceArea && <span className="hw-service-area">• {artisan.serviceArea}</span>}
               </div>
 
@@ -268,8 +256,8 @@ function ArtisanProfile() {
                   Book this professional
                 </Button>
               ) : (
-                <Button className="hw-btn hw-btn-secondary hw-btn-lg" to="/messages">
-                  Message Professional
+                <Button className="hw-btn hw-btn-secondary hw-btn-lg" to={`/bookings?artisan=${artisan.id}`}>
+                  Request a Quote
                 </Button>
               )}
             </div>
@@ -355,7 +343,7 @@ function ArtisanProfile() {
           title={hasAvailability ? 'Available this week' : 'No availability set yet'}
           description={hasAvailability
             ? 'Book one of these time slots when creating your request.'
-            : 'This professional has not added bookable slots yet. You can message them to ask about availability.'}
+            : 'This professional has not added bookable slots yet. Send a request so they can confirm timing and price.'}
           kicker="Booking availability"
           className="hw-availability-section"
         >
@@ -384,9 +372,9 @@ function ArtisanProfile() {
               </>
             ) : (
               <div className="hw-no-availability">
-                <p>Send a message to ask about availability.</p>
-                <Button className="hw-btn hw-btn-secondary" to="/messages">
-                  Message Professional
+                <p>Send a request to ask about availability and receive a quote.</p>
+                <Button className="hw-btn hw-btn-secondary" to={`/bookings?artisan=${artisan.id}`}>
+                  Request a Quote
                 </Button>
               </div>
             )}
@@ -424,10 +412,11 @@ function ArtisanProfile() {
           kicker="Portfolio"
           className="hw-portfolio-section"
         >
-          <div className="hw-portfolio-grid">
-            {profilePortfolio.map((item) => (
+          {portfolioItems.length > 0 ? (
+            <div className="hw-portfolio-grid">
+              {portfolioItems.map((item) => (
               <motion.article
-                key={item.title}
+                key={item.id || item.title}
                 className="hw-portfolio-card"
                 whileHover={{ y: -4 }}
               >
@@ -442,8 +431,13 @@ function ArtisanProfile() {
                 <h4>{item.title}</h4>
                 <p>{item.detail}</p>
               </motion.article>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState compact title="No work samples yet">
+              This professional has not published portfolio samples yet.
+            </EmptyState>
+          )}
         </Section>
 
         {/* ============================================
@@ -492,8 +486,8 @@ function ArtisanProfile() {
                     Book Available Slot
                   </Button>
                 ) : (
-                  <Button className="hw-btn hw-btn-primary hw-btn-lg" to="/messages">
-                    Send Message
+                  <Button className="hw-btn hw-btn-primary hw-btn-lg" to={`/bookings?artisan=${artisan.id}`}>
+                    Request a Quote
                   </Button>
                 )}
                 <Button className="hw-btn hw-btn-secondary hw-btn-lg" to="/services">
@@ -505,12 +499,6 @@ function ArtisanProfile() {
         </section>
 
         {error && <p className="auth-error">{error}</p>}
-        {isFallback && (
-          <p className="auth-hint">
-            Showing starter profile data because Supabase did not return an artisan for this link.
-          </p>
-        )}
-
       </div>
     </PageShell>
   )

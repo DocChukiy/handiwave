@@ -21,21 +21,67 @@
    ============================================ */
 
 .hw-services-header {
-  padding: var(--hw-space-4) 0;
+  background:
+    radial-gradient(circle at 88% 14%, rgba(134, 239, 172, 0.3), transparent 30%),
+    linear-gradient(135deg, #052e24, #087443 72%, #16a34a);
+  border-radius: var(--hw-radius-xl);
+  overflow: hidden;
+  padding: clamp(24px, 5vw, 52px);
 }
 
 .hw-services-header h1 {
-  color: var(--hw-text-primary);
-  font-size: var(--hw-text-2xl);
+  color: #ffffff;
+  font-size: clamp(2rem, 5vw, 3.8rem);
   font-weight: var(--hw-font-bold);
   line-height: var(--hw-leading-tight);
   margin: 0;
 }
 
 .hw-services-header p {
-  color: var(--hw-text-muted);
+  color: rgba(255, 255, 255, 0.82);
   font-size: var(--hw-text-base);
   margin: var(--hw-space-2) 0 0;
+  max-width: 620px;
+}
+
+.hw-services-eyebrow {
+  color: #86efac;
+  display: block;
+  font-size: var(--hw-text-xs);
+  font-weight: var(--hw-font-bold);
+  letter-spacing: 0.12em;
+  margin-bottom: var(--hw-space-3);
+  text-transform: uppercase;
+}
+
+.hw-services-process {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hw-space-3);
+  margin-top: var(--hw-space-6);
+}
+
+.hw-services-process span {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--hw-radius-pill);
+  color: #ffffff;
+  display: inline-flex;
+  font-size: var(--hw-text-sm);
+  gap: var(--hw-space-2);
+  padding: var(--hw-space-2) var(--hw-space-3);
+}
+
+.hw-services-process strong {
+  align-items: center;
+  background: #86efac;
+  border-radius: 50%;
+  color: #052e24;
+  display: inline-flex;
+  height: 24px;
+  justify-content: center;
+  width: 24px;
 }
 
 /* ============================================
@@ -470,6 +516,8 @@
 }
 
 .hw-cta-card {
+  background: linear-gradient(135deg, rgba(220, 252, 231, 0.88), rgba(240, 253, 244, 0.96));
+  border-color: rgba(22, 163, 74, 0.2);
   padding: var(--hw-space-8);
 }
 
@@ -554,6 +602,25 @@
 
 :root[data-theme='dark'] .hw-popular-card a:hover {
   box-shadow: var(--hw-shadow-lg);
+}
+
+:root[data-theme='dark'] .hw-cta-card {
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.42), rgba(15, 23, 42, 0.92));
+}
+
+@media (max-width: 520px) {
+  .hw-services-header {
+    border-radius: var(--hw-radius-lg);
+  }
+
+  .hw-services-process {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .hw-services-process span {
+    width: 100%;
+  }
 }
 
 :root[data-theme='dark'] .hw-range-input {

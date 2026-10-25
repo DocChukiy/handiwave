@@ -12,6 +12,7 @@ const requestSelect = `
       business_name,
       average_rating,
       completed_jobs,
+      review_count,
       verification_status,
       profile_id,
       profile:profiles!artisans_profile_id_fkey(id, full_name, avatar_url)
@@ -43,6 +44,7 @@ function mapBid(bid) {
     minimumTotal: toNumber(bid.minimum_total),
     pricingType: bid.pricing_type,
     rating: Number(artisan.average_rating) || 0,
+    reviewCount: artisan.review_count || 0,
     status: bid.status,
     verified: artisan.verification_status === 'verified',
   }

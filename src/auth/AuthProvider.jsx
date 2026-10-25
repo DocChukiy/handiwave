@@ -13,7 +13,7 @@ import logger from '../utils/logger.js'
 function AuthProvider({ children }) {
   const supabaseConfigured = isSupabaseConfigured()
   const [authError, setAuthError] = useState(
-    supabaseConfigured ? '' : 'Supabase is not configured.',
+    supabaseConfigured ? '' : 'Sign-in is temporarily unavailable. Please try again later.',
   )
   const [isLoading, setIsLoading] = useState(supabaseConfigured)
   const [session, setSession] = useState(null)
@@ -40,7 +40,7 @@ function AuthProvider({ children }) {
         if (error) {
           setAuthError(error.message)
         } else if (data.session && !data.profile) {
-          setAuthError('You are signed in, but no Handiwave profile was found yet. Try logging in again or check the Supabase profiles trigger.')
+          setAuthError('You are signed in, but your Handiwave profile is not ready yet. Please log out and try again.')
         } else {
           setAuthError('')
         }
@@ -106,7 +106,7 @@ function AuthProvider({ children }) {
           if (error) {
             setAuthError(error.message)
           } else if (!profile) {
-            setAuthError('You are signed in, but no Handiwave profile was found yet. Try logging in again or check the Supabase profiles trigger.')
+            setAuthError('You are signed in, but your Handiwave profile is not ready yet. Please log out and try again.')
           } else {
             setAuthError('')
           }
@@ -206,12 +206,27 @@ function AuthProvider({ children }) {
       setUser(null)
     }
 
+    async function refreshProfile() {
+      const { data, error } = await getCurrentSessionProfile({ profileRetries: 1 })
+
+      if (error) {
+        setAuthError(error.message)
+        throw error
+      }
+
+      setAuthError('')
+      setSession(data.session)
+      setUser(data.profile)
+      return data.profile
+    }
+
     return {
       authError,
       isAuthenticated: Boolean(session && user),
       isLoading,
       login,
       logout,
+      refreshProfile,
       session,
       signup,
       user,

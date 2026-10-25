@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import Card from '../ui/Card.jsx'
-import Avatar from '../ui/Avatar.jsx'
 
 function getArtisanName(artisan) {
   return artisan.profile?.full_name || artisan.business_name || 'Handiwave artisan'
@@ -33,7 +32,7 @@ function BookingArtisanTrustCard({ artisan }) {
       <div className="hw-booking-artisan-trust-header">
         <div>
           <strong>{getArtisanName(artisan)}</strong>
-          <span>{trust.primaryService} in {artisan.city}, {artisan.state}</span>
+          <span>{trust.primaryService}{[artisan.city, artisan.state].filter(Boolean).length ? ` in ${[artisan.city, artisan.state].filter(Boolean).join(', ')}` : ''}</span>
         </div>
         {trust.isVerified && <span className="hw-booking-trust-badge verified">Verified Artisan</span>}
       </div>
@@ -48,14 +47,13 @@ function BookingArtisanTrustCard({ artisan }) {
           Completed jobs
         </span>
         <span>
-          <strong>{trust.isTopRated ? 'Yes' : 'Building'}</strong>
-          Top rated
+          <strong>Available</strong>
+          Accepting work
         </span>
       </div>
 
       <div className="hw-booking-trust-badge-row">
         {trust.isTopRated && <span className="hw-booking-trust-badge top-rated">Top Rated</span>}
-        <span className="hw-booking-trust-badge fast">Fast Responder</span>
         {trust.completedJobs >= 10 && (
           <span className="hw-booking-trust-badge jobs">
             {trust.completedJobs >= 100
@@ -85,8 +83,6 @@ export default function BookingForm({
   availabilityError,
   availableDayLabels,
   availableBookingDates,
-  availableTimesForSelectedDate,
-  dateDayOfWeek,
   slotsForSelectedDate,
   isSelectedDateUnavailable,
   isLoadingAvailability,
@@ -145,14 +141,15 @@ export default function BookingForm({
   return (
     <form onSubmit={handleSubmit}>
       <Card variant="default" padding="lg" className="hw-booking-form">
-        <h2>Book a Service</h2>
+        <h2>Request a Professional</h2>
+        <p className="hw-booking-form-intro">Use this form when you already know who you want. If not, post a job and compare offers instead.</p>
 
       <div className="hw-booking-form-section">
         <h3 className="hw-booking-form-section-title">Choose Professional</h3>
         <div className="hw-booking-form-grid">
           <div style={{ gridColumn: '1 / -1' }}>
             <label className="hw-booking-label">
-              Preferred artisan
+              Professional
               <select
                 className="hw-booking-select"
                 disabled={isLoading || isSaving}
@@ -162,7 +159,7 @@ export default function BookingForm({
                 <option value="">Select an artisan</option>
                 {options.artisans.map((artisan) => (
                   <option key={artisan.id} value={artisan.id}>
-                    {getArtisanName(artisan)} • {artisan.city}, {artisan.state}
+                    {getArtisanName(artisan)}{[artisan.city, artisan.state].filter(Boolean).length ? ` • ${[artisan.city, artisan.state].filter(Boolean).join(', ')}` : ''}
                   </option>
                 ))}
               </select>
@@ -230,8 +227,8 @@ export default function BookingForm({
             ) : (
               <>
                 <p>This artisan has not added bookable availability yet.</p>
-                <Link className="secondary-cta compact-cta" to="/messages">
-                  Message Artisan
+                <Link className="secondary-cta compact-cta" to="/artisans">
+                  Choose another professional
                 </Link>
               </>
             )}
@@ -289,16 +286,16 @@ export default function BookingForm({
 
         {selectedArtisan && !isLoadingAvailability && availableBookingDates.length === 0 && (
           <div className="hw-booking-empty-slot-panel">
-            <p>No available slots for this date. Try another date or message artisan.</p>
-            <Link className="secondary-cta compact-cta" to="/messages">
-              Message Artisan
+            <p>This professional has no bookable slots right now.</p>
+            <Link className="secondary-cta compact-cta" to="/artisans">
+              Choose another professional
             </Link>
           </div>
         )}
 
         {form.scheduledDate && slotsForSelectedDate.length === 0 && (
           <p className="auth-hint">
-            No available slots for this date. Try another date or message artisan.
+            No available slots for this date. Try another date or choose another professional.
           </p>
         )}
 
@@ -310,9 +307,9 @@ export default function BookingForm({
 
         {form.scheduledDate && slotsForSelectedDate.length > 0 && timesForSelectedDate.length === 0 && !isSelectedDateUnavailable && (
           <div className="hw-booking-empty-slot-panel">
-            <p>No available slots for this date. Try another date or message artisan.</p>
-            <Link className="secondary-cta compact-cta" to="/messages">
-              Message Artisan
+            <p>No available times remain on this date.</p>
+            <Link className="secondary-cta compact-cta" to="/artisans">
+              Choose another professional
             </Link>
           </div>
         )}
@@ -327,7 +324,7 @@ export default function BookingForm({
               <input
                 className="hw-booking-input"
                 disabled={isSaving}
-                placeholder="House 12, Admiralty Way"
+                placeholder="House number and street"
                 value={form.address}
                 onChange={(event) => updateForm('address', event.target.value)}
               />
@@ -340,7 +337,7 @@ export default function BookingForm({
               <input
                 className="hw-booking-input"
                 disabled={isSaving}
-                placeholder="Lekki"
+                placeholder="Abuja"
                 value={form.city}
                 onChange={(event) => updateForm('city', event.target.value)}
               />
@@ -351,7 +348,7 @@ export default function BookingForm({
               <input
                 className="hw-booking-input"
                 disabled={isSaving}
-                placeholder="Lagos"
+                placeholder="FCT"
                 value={form.state}
                 onChange={(event) => updateForm('state', event.target.value)}
               />
@@ -435,7 +432,7 @@ export default function BookingForm({
           type="submit"
           style={{ width: '100%' }}
         >
-          {isSaving ? 'Sending request...' : 'Send Booking Request'}
+          {isSaving ? 'Sending request...' : 'Request This Professional'}
         </button>
       </div>
     </Card>

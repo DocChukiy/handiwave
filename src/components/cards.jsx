@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { cardVariants } from '../utils/animations.js'
 import Badge from './Badge.jsx'
 import Button from './Button.jsx'
-import Rating from './Rating.jsx'
 import Avatar from './ui/Avatar.jsx'
 
 function getJobMilestone(completedJobs = 0) {
@@ -73,13 +72,12 @@ export function ServiceCard({ service }) {
       <h3>{service.title}</h3>
       <p>{service.description}</p>
       <div className="service-card-meta">
-        <span>{service.price}</span>
-        <span>{service.rating}+ rating</span>
-        <span>{service.duration}</span>
-        <span>{service.locations[0]}</span>
+        <span>Verified professionals</span>
+        <span>Sealed offers</span>
+        <span>No diagnosis needed</span>
       </div>
-      <Button className="service-book-link" to="/artisans">
-        Find Professionals
+      <Button className="service-book-link" to={`/requests?service=${service.id}`}>
+        Request Offers
       </Button>
     </motion.article>
   )
@@ -103,6 +101,7 @@ export function ArtisanCard({ artisan, featured = false }) {
       >
         <div className="profile-image-placeholder">
           <Avatar
+            className="featured-profile-avatar"
             name={artisan.name}
             src={artisan.avatarUrl}
             initials={artisan.initials}
@@ -137,7 +136,7 @@ export function ArtisanCard({ artisan, featured = false }) {
 
         <p className="artisan-location">{artisan.fullLocation}</p>
 
-        <Button className="book-now-button" to="/bookings">
+        <Button className="book-now-button" to={artisan.id ? `/bookings?artisan=${artisan.id}` : '/bookings'}>
           Book Now
         </Button>
       </motion.article>
@@ -180,16 +179,16 @@ export function ArtisanCard({ artisan, featured = false }) {
       <div className="hw-professional-stats">
         <div className="hw-stat">
           <span className="hw-stat-value">
-            <strong>{Number(artisan.rating || 0).toFixed(1)}</strong>
-            <span className="hw-star">★</span>
+            <strong>{artisan.reviewCount ? Number(artisan.rating || 0).toFixed(1) : 'New'}</strong>
+            {artisan.reviewCount > 0 && <span className="hw-star">★</span>}
           </span>
-          <span className="hw-stat-label">{artisan.reviewCount || 0} reviews</span>
+          <span className="hw-stat-label">{artisan.reviewCount ? `${artisan.reviewCount} reviews` : 'No reviews yet'}</span>
         </div>
         <div className="hw-stat">
           <span className="hw-stat-value">
             <strong>{artisan.completedJobs || 0}</strong>
           </span>
-          <span className="hw-stat-label">Jobs</span>
+          <span className="hw-stat-label">Handiwave jobs</span>
         </div>
         <div className="hw-availability-status">
           {hasAvailability ? (
@@ -204,8 +203,8 @@ export function ArtisanCard({ artisan, featured = false }) {
       </div>
 
       <div className="hw-professional-price">
-        <span className="hw-price-label">From</span>
-        <span className="hw-price-value">{artisan.price || artisan.priceValue ? `NGN ${Number(artisan.priceValue || artisan.price?.replace(/[^0-9]/g, '') || 0).toLocaleString()}` : 'By quote'}</span>
+        <span className="hw-price-label">Pricing</span>
+        <span className="hw-price-value">{artisan.startingPrice ? `From NGN ${Number(artisan.startingPrice).toLocaleString()}` : 'Quote after job details'}</span>
       </div>
 
       <div className="hw-professional-actions">
@@ -219,7 +218,7 @@ export function ArtisanCard({ artisan, featured = false }) {
           to={`/bookings?artisan=${artisan.id}`}
           className="hw-btn hw-btn-primary hw-btn-full"
         >
-          Book Now
+          Request This Professional
         </Link>
       </div>
     </motion.article>
@@ -259,10 +258,20 @@ export function ReelCard({ preview = false, reel, index = 0 }) {
       whileHover={{ y: preview ? -8 : -10, scale: 1.01 }}
     >
       <div className="video-placeholder">
+        {reel.videoUrl && (
+          <video
+            controls
+            playsInline
+            poster={reel.thumbnailUrl || undefined}
+            src={reel.videoUrl}
+          />
+        )}
         {!preview && <div className="reel-location">{reel.location}</div>}
-        <div className="play-button" aria-hidden="true">
-          ▶
-        </div>
+        {!reel.videoUrl && (
+          <div className="play-button" aria-hidden="true">
+            ▶
+          </div>
+        )}
 
         <div className="reel-side-actions">
           <span className="like-icon" aria-label={`${reel.likes} likes`}>
@@ -289,17 +298,26 @@ export function ReelCard({ preview = false, reel, index = 0 }) {
           </div>
           <p className="reel-caption">{preview ? reel.previewCaption : reel.caption}</p>
           {preview ? (
-            <Button className="reel-book-button" to="/bookings">
-              Book
-            </Button>
+            <div className="reel-actions">
+              <Button className="reel-book-button" to={reel.bookingPath || '/requests'}>
+                Request Service
+              </Button>
+              {reel.profilePath && (
+                <Button className="reel-profile-button" to={reel.profilePath}>
+                  View profile
+                </Button>
+              )}
+            </div>
           ) : (
             <div className="reel-actions">
-              <Button className="reel-book-button" to="/bookings">
-                Book
+              <Button className="reel-book-button" to={reel.bookingPath || '/requests'}>
+                Request Service
               </Button>
-              <Button className="reel-profile-button" to="/artisan-profile">
-                View profile
-              </Button>
+              {reel.profilePath && (
+                <Button className="reel-profile-button" to={reel.profilePath}>
+                  View profile
+                </Button>
+              )}
             </div>
           )}
         </div>

@@ -46,10 +46,7 @@ function PublicReelCard({ reel }) {
           <p className="reel-caption">{reel.caption}</p>
           <div className="reel-actions">
             <Button className="reel-book-button" to={reel.bookingPath}>
-              Book Now
-            </Button>
-            <Button className="reel-profile-button" to="/messages">
-              Message Artisan
+              Request Service
             </Button>
             <Button className="reel-profile-button" to={reel.profilePath}>
               View Profile

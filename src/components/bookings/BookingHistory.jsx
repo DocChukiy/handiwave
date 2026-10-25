@@ -1,5 +1,5 @@
+import { useMemo, useState } from 'react'
 import EmptyState from '../EmptyState.jsx'
-import SkeletonPreview from '../Skeletons.jsx'
 import BookingCard from './BookingCard.jsx'
 import BookingQuotePanel from './BookingQuotePanel.jsx'
 import BookingPaymentPanel from './BookingPaymentPanel.jsx'
@@ -32,9 +32,29 @@ export default function BookingHistory({
   updatingQuoteId,
   payingBookingId,
 }) {
+  const [activeView, setActiveView] = useState('active')
   const rescheduleRequestCount = bookings.filter((booking) => (
     (booking.rawStatus || booking.status) === 'reschedule_requested'
   )).length
+  const bookingViews = useMemo(() => {
+    const needsAction = (booking) => {
+      const status = booking.rawStatus || booking.status
+      const paymentStatus = booking.paymentStatus || 'unpaid'
+      const hasPendingQuote = Boolean(booking.quoteSentAt && !booking.quoteAcceptedAt && !booking.quoteRejectedAt)
+      const needsPayment = Boolean(booking.quoteAcceptedAt && ['unpaid', 'failed'].includes(paymentStatus))
+
+      return status === 'reschedule_requested' || status === 'artisan_completed' || hasPendingQuote || needsPayment
+    }
+    const isFinished = (booking) => ['customer_confirmed', 'completed', 'cancelled'].includes(booking.rawStatus || booking.status)
+
+    return {
+      active: bookings.filter((booking) => !isFinished(booking)),
+      attention: bookings.filter(needsAction),
+      completed: bookings.filter((booking) => ['customer_confirmed', 'completed'].includes(booking.rawStatus || booking.status)),
+      all: bookings,
+    }
+  }, [bookings])
+  const visibleBookings = bookingViews[activeView]
 
   return (
     <div className="hw-booking-history-section">
@@ -45,20 +65,27 @@ export default function BookingHistory({
         <h2>{title}</h2>
       </div>
 
-      {!isLoading && showActions && (
+      {!isLoading && bookings.length > 0 && (
+        <div className="hw-booking-view-tabs" aria-label="Filter bookings">
+          {[
+            ['active', 'Active'],
+            ['attention', 'Needs you'],
+            ['completed', 'Completed'],
+            ['all', 'All'],
+          ].map(([value, label]) => (
+            <button className={activeView === value ? 'active' : ''} key={value} type="button" onClick={() => setActiveView(value)}>
+              {label} <span>{bookingViews[value].length}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {!isLoading && showActions && rescheduleRequestCount > 0 && (
         <div className="hw-booking-customer-reschedule-summary">
-          {rescheduleRequestCount > 0 ? (
-            <>
-              <span className="hw-booking-awaiting-response-badge">Awaiting Your Response</span>
-              <p>
-                {rescheduleRequestCount} booking{rescheduleRequestCount === 1 ? '' : 's'} need your schedule decision.
-              </p>
-            </>
-          ) : (
-            <EmptyState compact title="No reschedule requests">
-              Artisan time-change requests will appear here when they need your response.
-            </EmptyState>
-          )}
+          <span className="hw-booking-awaiting-response-badge">Awaiting Your Response</span>
+          <p>
+            {rescheduleRequestCount} booking{rescheduleRequestCount === 1 ? '' : 's'} need your schedule decision.
+          </p>
         </div>
       )}
 
@@ -72,9 +99,9 @@ export default function BookingHistory({
             </div>
           ))}
         </div>
-      ) : bookings.length > 0 ? (
+      ) : bookings.length > 0 && visibleBookings.length > 0 ? (
         <div className="hw-booking-list">
-          {bookings.map((booking) => {
+          {visibleBookings.map((booking) => {
             const bookingStatus = booking.rawStatus || booking.status
 
             return (
@@ -227,6 +254,12 @@ export default function BookingHistory({
               </div>
             )
           })}
+        </div>
+      ) : bookings.length > 0 ? (
+        <div className="hw-booking-empty-state">
+          <EmptyState compact title={`No ${activeView === 'attention' ? 'bookings need your attention' : `${activeView} bookings`}`}>
+            Choose another tab to view the rest of your bookings.
+          </EmptyState>
         </div>
       ) : (
         <div className="hw-booking-empty-state">
