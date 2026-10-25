@@ -1,4 +1,3 @@
-import { artisans } from '../data/artisans.js'
 import { getSupabaseClient } from '../lib/supabaseClient.js'
 import { updateProfile } from './profileService.js'
 
@@ -88,13 +87,6 @@ export function mapArtisanDetail(artisan) {
   }
 }
 
-export async function getArtisans() {
-  return {
-    data: artisans,
-    error: null,
-  }
-}
-
 export async function getVerifiedArtisans() {
   const supabase = getSupabaseClient()
   const { data, error } = await supabase
@@ -110,7 +102,8 @@ export async function getVerifiedArtisans() {
     `)
     .eq('verification_status', 'verified')
     .eq('is_available', true)
-    .order('average_rating', { ascending: false })
+    .order('verified_at', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false })
 
   return {
     data: (data || []).map(mapArtisanRow),
@@ -145,20 +138,6 @@ export async function getArtisanById(artisanId) {
   return {
     data: mapArtisanDetail(data),
     error,
-  }
-}
-
-export async function getArtisanByName(name) {
-  return {
-    data: artisans.find((artisan) => artisan.name === name) || null,
-    error: null,
-  }
-}
-
-export async function getArtisansByCategory(category) {
-  return {
-    data: artisans.filter((artisan) => artisan.category === category),
-    error: null,
   }
 }
 
