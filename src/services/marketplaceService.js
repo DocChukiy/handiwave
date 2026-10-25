@@ -5,7 +5,7 @@ import { createNotificationSafely } from './notificationService.js'
 const requestSelect = `
   *,
   service:services!service_requests_service_id_fkey(id, name, slug, category, icon),
-  bids:service_request_bids(
+  bids:service_request_bids!service_request_bids_request_id_fkey(
     *,
     artisan:artisans!service_request_bids_artisan_id_fkey(
       id,

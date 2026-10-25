@@ -39,8 +39,15 @@ function getBidPrice(bid) {
   return `${formatMoney(bid.inspectionFee)} inspection`
 }
 
-function getErrorMessage(error) {
-  return [error?.message, error?.details, error?.hint].filter(Boolean).join(' ')
+function getErrorMessage(error, fallback = 'Something went wrong. Please try again.') {
+  const message = [error?.message, error?.details, error?.hint]
+    .find((value) => typeof value === 'string' && value.trim())
+
+  if (!message || message.includes('relationship') || message.includes('service_request')) {
+    return fallback
+  }
+
+  return message
 }
 
 const requestStatusLabels = {
@@ -90,7 +97,7 @@ export default function ServiceRequests() {
       getCustomerServiceRequests(user.id),
     ])
     const loadError = serviceResult.error || requestResult.error
-    if (loadError) setError(getErrorMessage(loadError))
+    if (loadError) setError(getErrorMessage(loadError, 'We could not load your job requests. Please refresh and try again.'))
     setServices(serviceResult.data || [])
     setRequests(requestResult.data || [])
     setIsLoading(false)
@@ -104,7 +111,7 @@ export default function ServiceRequests() {
     ]).then(([serviceResult, requestResult]) => {
       if (!isMounted) return
       const loadError = serviceResult.error || requestResult.error
-      if (loadError) setError(getErrorMessage(loadError))
+      if (loadError) setError(getErrorMessage(loadError, 'We could not load your job requests. Please refresh and try again.'))
       setServices(serviceResult.data || [])
       if (requestedServiceId && serviceResult.data?.some((service) => service.id === requestedServiceId)) {
         setForm((current) => ({ ...current, serviceId: requestedServiceId }))
@@ -162,7 +169,7 @@ export default function ServiceRequests() {
     setIsSaving(true)
     const { error: createError } = await createServiceRequest(form)
     if (createError) {
-      setError(getErrorMessage(createError))
+      setError(getErrorMessage(createError, 'We could not post your job request. Please try again.'))
       setIsSaving(false)
       return
     }
@@ -183,7 +190,7 @@ export default function ServiceRequests() {
     setAcceptingBidId(bid.id)
     const { data, error: acceptError } = await acceptServiceRequestBid({ bid, requestId: request.id })
     if (acceptError) {
-      setError(getErrorMessage(acceptError))
+      setError(getErrorMessage(acceptError, 'We could not confirm that offer. Please try again.'))
       setAcceptingBidId('')
       return
     }
