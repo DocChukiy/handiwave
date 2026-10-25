@@ -40,10 +40,12 @@ const PilotProfessionalRedirect = lazy(() =>
   })),
 )
 const Messages = lazy(() => import('./pages/Messages.jsx'))
+const Opportunities = lazy(() => import('./pages/Opportunities.jsx'))
 const PaymentCallback = lazy(() => import('./pages/PaymentCallback.jsx'))
 const Profile = lazy(() => import('./pages/Profile.jsx'))
 const Reels = lazy(() => import('./pages/Reels.jsx'))
 const Services = lazy(() => import('./pages/Services.jsx'))
+const ServiceRequests = lazy(() => import('./pages/ServiceRequests.jsx'))
 const Signup = lazy(() => import('./pages/Signup.jsx'))
 const Wallet = lazy(() => import('./pages/Wallet.jsx'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy.jsx'))
@@ -174,6 +176,14 @@ function AnimatedRoutes() {
             )}
           />
           <Route
+            path="/opportunities"
+            element={(
+              <ProtectedRoute allowedRoles={['artisan']}>
+                <Opportunities />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
             path="/artisan-availability"
             element={(
               <ProtectedRoute allowedRoles={['artisan']}>
@@ -212,6 +222,14 @@ function AnimatedRoutes() {
             element={(
               <ProtectedRoute allowedRoles={['customer', 'artisan', 'admin']}>
                 <Bookings />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/requests"
+            element={(
+              <ProtectedRoute allowedRoles={['customer']}>
+                <ServiceRequests />
               </ProtectedRoute>
             )}
           />

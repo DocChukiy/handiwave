@@ -8839,6 +8839,283 @@ a:active {
   }
 }
 
+/* Request-to-bid marketplace */
+.marketplace-page {
+  background: linear-gradient(180deg, rgba(220, 252, 231, 0.35), transparent 520px);
+}
+
+.marketplace-hero {
+  background: linear-gradient(135deg, #052e24, #087443 72%, #16a34a);
+  color: #fff;
+}
+
+.marketplace-hero h1,
+.marketplace-hero p,
+.marketplace-hero .section-kicker {
+  color: inherit;
+}
+
+.marketplace-layout {
+  align-items: start;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(0, 1.05fr) minmax(340px, 0.95fr);
+}
+
+.marketplace-request-form,
+.marketplace-request-list,
+.opportunity-feed {
+  background: var(--hw-surface, #fff);
+  border: 1px solid rgba(15, 118, 74, 0.14);
+  border-radius: 24px;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.07);
+  padding: clamp(20px, 3vw, 32px);
+}
+
+.marketplace-form-grid,
+.opportunity-bid-form {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 22px;
+}
+
+.marketplace-form-grid label,
+.marketplace-diagnosis-panel label,
+.opportunity-bid-form label {
+  display: grid;
+  gap: 7px;
+}
+
+.marketplace-form-grid label > span,
+.marketplace-diagnosis-panel label > span,
+.opportunity-bid-form label > span {
+  color: var(--hw-text-muted, #475569);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.marketplace-form-grid input,
+.marketplace-form-grid select,
+.marketplace-form-grid textarea,
+.marketplace-diagnosis-panel input,
+.opportunity-bid-form input,
+.opportunity-bid-form select,
+.opportunity-bid-form textarea {
+  background: var(--hw-surface, #fff);
+  border: 1px solid rgba(100, 116, 139, 0.28);
+  border-radius: 12px;
+  color: var(--hw-text, #0f172a);
+  font: inherit;
+  min-width: 0;
+  padding: 12px 14px;
+}
+
+.marketplace-form-grid textarea,
+.opportunity-bid-form textarea {
+  min-height: 108px;
+  resize: vertical;
+}
+
+.marketplace-form-grid .full-width,
+.opportunity-bid-form .full-width {
+  grid-column: 1 / -1;
+}
+
+.marketplace-diagnosis-panel {
+  background: rgba(220, 252, 231, 0.48);
+  border: 1px solid rgba(22, 163, 74, 0.18);
+  border-radius: 18px;
+  display: grid;
+  gap: 14px;
+  margin-bottom: 22px;
+  padding: 18px;
+}
+
+.marketplace-diagnosis-panel p {
+  margin: 4px 0 0;
+}
+
+.marketplace-request-list,
+.opportunity-feed {
+  display: grid;
+  gap: 16px;
+}
+
+.marketplace-request-card,
+.opportunity-card {
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 20px;
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+}
+
+.marketplace-card-header {
+  align-items: start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.marketplace-card-header h3 {
+  margin: 5px 0 0;
+}
+
+.marketplace-card-header > div > span {
+  color: #15803d;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.request-status,
+.urgency-badge {
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 850;
+  padding: 7px 10px;
+  text-transform: capitalize;
+}
+
+.request-status.status-open,
+.urgency-flexible,
+.urgency-this_week {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.request-status.status-awarded,
+.urgency-today,
+.urgency-urgent {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.marketplace-bid-card {
+  background: rgba(248, 250, 252, 0.82);
+  border: 1px solid rgba(15, 118, 74, 0.14);
+  border-radius: 16px;
+  display: grid;
+  gap: 9px;
+  padding: 16px;
+}
+
+.marketplace-bid-card > div:first-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.marketplace-bid-price {
+  color: #087443;
+  font-size: 1.12rem;
+}
+
+.marketplace-bid-card button,
+.opportunity-bid-form button {
+  background: #087443;
+  border: 0;
+  border-radius: 12px;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 12px 16px;
+}
+
+.marketplace-awarded-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.marketplace-awarded-actions a {
+  color: #087443;
+  font-weight: 800;
+}
+
+.opportunity-feed {
+  margin: 0 auto;
+  max-width: 1060px;
+}
+
+.opportunity-facts,
+.opportunity-diagnosis {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.opportunity-facts span,
+.opportunity-diagnosis span {
+  background: rgba(248, 250, 252, 0.9);
+  border-radius: 12px;
+  display: grid;
+  font-size: 0.84rem;
+  gap: 3px;
+  padding: 11px;
+}
+
+.opportunity-diagnosis {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.offer-submitted-note {
+  background: #ecfdf5;
+  border-radius: 12px;
+  color: #166534;
+  font-weight: 750;
+  padding: 12px;
+}
+
+.opportunity-bid-form {
+  background: rgba(220, 252, 231, 0.35);
+  border-radius: 18px;
+  margin: 0;
+  padding: 18px;
+}
+
+:root[data-theme='dark'] .marketplace-request-form,
+:root[data-theme='dark'] .marketplace-request-list,
+:root[data-theme='dark'] .opportunity-feed,
+:root[data-theme='dark'] .marketplace-form-grid input,
+:root[data-theme='dark'] .marketplace-form-grid select,
+:root[data-theme='dark'] .marketplace-form-grid textarea,
+:root[data-theme='dark'] .marketplace-diagnosis-panel input,
+:root[data-theme='dark'] .opportunity-bid-form input,
+:root[data-theme='dark'] .opportunity-bid-form select,
+:root[data-theme='dark'] .opportunity-bid-form textarea {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+:root[data-theme='dark'] .marketplace-bid-card,
+:root[data-theme='dark'] .opportunity-facts span,
+:root[data-theme='dark'] .opportunity-diagnosis span {
+  background: rgba(30, 41, 59, 0.85);
+}
+
+@media (max-width: 900px) {
+  .marketplace-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .marketplace-form-grid,
+  .opportunity-bid-form,
+  .opportunity-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .marketplace-form-grid .full-width,
+  .opportunity-bid-form .full-width {
+    grid-column: auto;
+  }
+
+  .marketplace-card-header {
+    flex-direction: column;
+  }
+}
+
 /* Artisan job card readability fixes. */
 .job-card {
   gap: 18px;

@@ -31,6 +31,7 @@ function Navbar({
         { path: '/services', label: 'Services' },
         { path: '/artisans', label: 'Professionals' },
         { path: '/artisan-dashboard', label: 'Dashboard' },
+        { path: '/opportunities', label: 'Opportunities' },
         { path: '/artisan-jobs', label: 'Jobs' },
         { path: '/messages', label: 'Messages' },
         { path: '/wallet', label: 'Wallet' },
@@ -46,7 +47,7 @@ function Navbar({
         ]
       : [
           { path: '/', label: 'Home' },
-          { path: '/services', label: 'Services' },
+          { path: '/requests', label: 'Post a Job' },
           { path: '/artisans', label: 'Professionals' },
           { path: '/bookings', label: 'Bookings' },
           { path: '/messages', label: 'Messages' },

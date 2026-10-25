@@ -22,7 +22,7 @@ export async function getServiceOptions() {
   const supabase = getSupabaseClient()
   const { data, error } = await supabase
     .from('services')
-    .select('id, name, category')
+    .select('id, name, slug, category, icon')
     .eq('is_active', true)
     .order('name', { ascending: true })
 

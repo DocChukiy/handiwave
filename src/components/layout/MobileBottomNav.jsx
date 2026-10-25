@@ -14,8 +14,8 @@ function MobileBottomNav() {
       icon: House,
     },
     {
-      path: '/services',
-      label: 'Services',
+      path: '/requests',
+      label: 'Post Job',
       icon: () => <span className="hw-mobile-nav-icon-search">⌕</span>,
     },
     {
@@ -42,6 +42,11 @@ function MobileBottomNav() {
       icon: House,
     },
     {
+      path: '/opportunities',
+      label: 'Opportunities',
+      icon: Briefcase,
+    },
+    {
       path: '/artisan-jobs',
       label: 'Jobs',
       icon: Briefcase,
@@ -55,11 +60,6 @@ function MobileBottomNav() {
       path: '/wallet',
       label: 'Wallet',
       icon: WalletCards,
-    },
-    {
-      path: '/profile',
-      label: 'Profile',
-      icon: UserRound,
     },
   ]
 
