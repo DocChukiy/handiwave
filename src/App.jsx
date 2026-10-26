@@ -28,6 +28,7 @@ const ArtisanJobs = lazy(() => import('./pages/ArtisanJobs.jsx'))
 const ArtisanOnboarding = lazy(() => import('./pages/ArtisanOnboarding.jsx'))
 const ArtisanProfile = lazy(() => import('./pages/ArtisanProfile.jsx'))
 const ArtisanReels = lazy(() => import('./pages/ArtisanReels.jsx'))
+const ArtisanServices = lazy(() => import('./pages/ArtisanServices.jsx'))
 const Artisans = lazy(() => import('./pages/Artisans.jsx'))
 const Bookings = lazy(() => import('./pages/Bookings.jsx'))
 const Disputes = lazy(() => import('./pages/Disputes.jsx'))
@@ -157,6 +158,14 @@ function AnimatedRoutes() {
             element={(
               <ProtectedRoute allowedRoles={['artisan']}>
                 <ArtisanJobs />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/artisan-services"
+            element={(
+              <ProtectedRoute allowedRoles={['artisan']}>
+                <ArtisanServices />
               </ProtectedRoute>
             )}
           />

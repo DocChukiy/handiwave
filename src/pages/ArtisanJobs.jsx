@@ -272,6 +272,9 @@ function ArtisanJobs() {
         <h1>Manage incoming bookings</h1>
         <p>Accept new requests, start confirmed jobs, and mark completed work from Supabase.</p>
         <div className="hero-actions">
+          <Button className="primary-cta" to="/opportunities">
+            Find Opportunities
+          </Button>
           <Button className="secondary-cta" to="/disputes">
             View Disputes
           </Button>

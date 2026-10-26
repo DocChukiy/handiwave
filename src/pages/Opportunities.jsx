@@ -122,6 +122,10 @@ export default function Opportunities() {
         <p className="section-kicker">Nearby opportunities</p>
         <h1>Compete on fit, reliability, and clear pricing.</h1>
         <p>These requests match your verified service and state. Other professionals cannot see your offer price.</p>
+        <div className="hero-actions">
+          <Link className="primary-cta" to="/artisan-services">Improve My Services</Link>
+          <Link className="secondary-cta" to="/artisan-availability">Set Availability</Link>
+        </div>
       </section>
 
       {error && <p className="auth-error page-error">{error}</p>}

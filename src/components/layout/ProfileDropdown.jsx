@@ -29,6 +29,18 @@ function ProfileDropdown({ onClose, onLogout }) {
               Platform Finance
             </NavLink>
           </>
+        ) : isArtisan ? (
+          <>
+            <NavLink className="hw-profile-dropdown-link" to="/artisan-onboarding" onClick={onClose} role="menuitem">
+              Professional Profile
+            </NavLink>
+            <NavLink className="hw-profile-dropdown-link" to="/messages" onClick={onClose} role="menuitem">
+              Messages
+            </NavLink>
+            <NavLink className="hw-profile-dropdown-link" to="/wallet" onClick={onClose} role="menuitem">
+              Earnings & Wallet
+            </NavLink>
+          </>
         ) : (
           <>
             <NavLink className="hw-profile-dropdown-link" to="/profile" onClick={onClose} role="menuitem">
@@ -45,28 +57,16 @@ function ProfileDropdown({ onClose, onLogout }) {
 
         {isArtisan && (
           <>
-            <NavLink
-              className="hw-profile-dropdown-link"
-              to="/artisan-availability"
-              onClick={onClose}
-              role="menuitem"
-            >
+            <NavLink className="hw-profile-dropdown-link" to="/artisan-services" onClick={onClose} role="menuitem">
+              Manage Services
+            </NavLink>
+            <NavLink className="hw-profile-dropdown-link" to="/artisan-availability" onClick={onClose} role="menuitem">
               Manage Availability
             </NavLink>
-            <NavLink
-              className="hw-profile-dropdown-link"
-              to="/artisan-reels"
-              onClick={onClose}
-              role="menuitem"
-            >
-              Manage Reels
+            <NavLink className="hw-profile-dropdown-link" to="/artisan-reels" onClick={onClose} role="menuitem">
+              Manage Showcase
             </NavLink>
-            <NavLink
-              className="hw-profile-dropdown-link"
-              to="/artisan-analytics"
-              onClick={onClose}
-              role="menuitem"
-            >
+            <NavLink className="hw-profile-dropdown-link" to="/artisan-analytics" onClick={onClose} role="menuitem">
               Analytics
             </NavLink>
           </>

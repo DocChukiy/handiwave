@@ -97,6 +97,25 @@
   color: var(--hw-primary);
 }
 
+.hw-nav-links-artisan {
+  gap: 0;
+}
+
+.hw-nav-links-artisan .hw-nav-link {
+  padding-inline: var(--hw-space-2);
+}
+
+@media (max-width: 1180px) and (min-width: 769px) {
+  .hw-nav-links-artisan .hw-nav-link {
+    font-size: var(--hw-text-xs);
+    padding-inline: 7px;
+  }
+
+  .hw-nav-links-artisan + .hw-navbar-actions .hw-role-pill {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   .hw-nav-links {
     display: none;

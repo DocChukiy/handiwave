@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { House, CalendarDays, UserRound, Briefcase, WalletCards, MessageCircle, ShieldCheck } from 'lucide-react'
+import { House, CalendarDays, UserRound, Briefcase, WalletCards, MessageCircle, ShieldCheck, Wrench } from 'lucide-react'
 import { useAuth } from '../../auth/useAuth.js'
 
 function MobileBottomNav() {
@@ -42,6 +42,11 @@ function MobileBottomNav() {
       icon: House,
     },
     {
+      path: '/artisan-services',
+      label: 'Services',
+      icon: Wrench,
+    },
+    {
       path: '/opportunities',
       label: 'Opportunities',
       icon: Briefcase,
@@ -49,17 +54,12 @@ function MobileBottomNav() {
     {
       path: '/artisan-jobs',
       label: 'Jobs',
-      icon: Briefcase,
+      icon: CalendarDays,
     },
     {
-      path: '/messages',
-      label: 'Messages',
-      icon: MessageCircle,
-    },
-    {
-      path: '/wallet',
-      label: 'Wallet',
-      icon: WalletCards,
+      path: '/artisan-onboarding',
+      label: 'Profile',
+      icon: UserRound,
     },
   ]
 

@@ -27,14 +27,13 @@ function Navbar({
 
   const navLinks = user?.role === 'artisan'
     ? [
-        { path: '/', label: 'Home' },
-        { path: '/services', label: 'Services' },
-        { path: '/artisans', label: 'Professionals' },
         { path: '/artisan-dashboard', label: 'Dashboard' },
+        { path: '/artisan-services', label: 'My Services' },
         { path: '/opportunities', label: 'Opportunities' },
         { path: '/artisan-jobs', label: 'Jobs' },
-        { path: '/messages', label: 'Messages' },
-        { path: '/wallet', label: 'Wallet' },
+        { path: '/artisan-availability', label: 'Availability' },
+        { path: '/artisan-reels', label: 'Showcase' },
+        { path: '/wallet', label: 'Earnings' },
       ]
     : user?.role === 'admin'
       ? [
@@ -75,7 +74,7 @@ function Navbar({
           {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
 
-        <nav className={`hw-nav-links ${isMobileMenuOpen ? 'open' : ''}`} aria-label="Main navigation">
+        <nav className={`hw-nav-links hw-nav-links-${user?.role || 'guest'} ${isMobileMenuOpen ? 'open' : ''}`} aria-label="Main navigation">
           {visibleNavLinks.map((link) => (
             <NavLink
               key={link.path}
