@@ -32,13 +32,14 @@ function getInitials(name) {
     .toUpperCase()
 }
 
-function getPublicUrl(bucket, path) {
+async function getSignedUrl(bucket, path) {
   if (!path) {
     return ''
   }
 
   const supabase = getSupabaseClient()
-  return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl
+  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 60)
+  return error ? '' : data?.signedUrl || ''
 }
 
 export function mapReelRow(reel) {
@@ -46,8 +47,8 @@ export function mapReelRow(reel) {
     reel.artisan?.business_name ||
     reel.artisan?.profile?.full_name ||
     'Handiwave artisan'
-  const videoUrl = reel.video_url || getPublicUrl(videoBucket, reel.video_path)
-  const thumbnailUrl = reel.thumbnail_url || getPublicUrl(thumbnailBucket, reel.thumbnail_path)
+  const videoUrl = reel.video_url || ''
+  const thumbnailUrl = reel.thumbnail_url || ''
 
   return {
     artisan: artisanName,
@@ -76,6 +77,20 @@ export function mapReelRow(reel) {
   }
 }
 
+async function mapReelRowWithMedia(reel) {
+  const mappedReel = mapReelRow(reel)
+  const [videoUrl, thumbnailUrl] = await Promise.all([
+    mappedReel.videoUrl || getSignedUrl(videoBucket, mappedReel.videoPath),
+    mappedReel.thumbnailUrl || getSignedUrl(thumbnailBucket, mappedReel.thumbnailPath),
+  ])
+
+  return {
+    ...mappedReel,
+    thumbnailUrl,
+    videoUrl,
+  }
+}
+
 export async function getPublishedReels() {
   const supabase = getSupabaseClient()
   const { data, error } = await supabase
@@ -85,7 +100,7 @@ export async function getPublishedReels() {
     .order('published_at', { ascending: false, nullsFirst: false })
 
   return {
-    data: (data || []).map(mapReelRow),
+    data: await Promise.all((data || []).map(mapReelRowWithMedia)),
     error,
   }
 }
@@ -117,7 +132,7 @@ export async function getReelsForArtisanProfile(profileId) {
   return {
     data: {
       artisan,
-      reels: (data || []).map(mapReelRow),
+      reels: await Promise.all((data || []).map(mapReelRowWithMedia)),
     },
     error,
   }
@@ -131,7 +146,6 @@ async function uploadFile({
   if (!file) {
     return {
       path: '',
-      publicUrl: '',
       error: null,
     }
   }
@@ -146,7 +160,6 @@ async function uploadFile({
 
   return {
     path: data?.path || path,
-    publicUrl: error ? '' : getPublicUrl(bucket, data?.path || path),
     error,
   }
 }
@@ -198,7 +211,6 @@ export async function createReelUpload({
 
   let thumbnailResult = {
     path: '',
-    publicUrl: '',
     error: null,
   }
 
@@ -222,16 +234,16 @@ export async function createReelUpload({
     .from('reels')
     .update({
       thumbnail_path: thumbnailResult.path || null,
-      thumbnail_url: thumbnailResult.publicUrl || null,
+      thumbnail_url: null,
       video_path: videoResult.path,
-      video_url: videoResult.publicUrl,
+      video_url: null,
     })
     .eq('id', draftReel.id)
     .select(reelSelect)
     .single()
 
   return {
-    data: data ? mapReelRow(data) : null,
+    data: data ? await mapReelRowWithMedia(data) : null,
     error,
   }
 }
@@ -256,7 +268,7 @@ export async function updateReelDetails({
     .single()
 
   return {
-    data: data ? mapReelRow(data) : null,
+    data: data ? await mapReelRowWithMedia(data) : null,
     error,
   }
 }

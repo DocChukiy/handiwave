@@ -48,6 +48,7 @@ export function mapArtisanRow(artisan) {
       : 'By quote',
     priceValue,
     profileId: artisan.profile_id,
+    profileCompletion: artisan.profile_completion || 0,
     raw: artisan,
     rating,
     reviewCount,
@@ -55,9 +56,75 @@ export function mapArtisanRow(artisan) {
     skill: serviceName,
     startingPrice: artisan.starting_price,
     verificationStatus: artisan.verification_status || 'pending',
+    verificationReady: Boolean(artisan.verification_ready),
+    verificationTier: artisan.verification_tier || 'building',
+    workEvidenceCount: artisan.work_evidence_count || 0,
+    bidActivityCount: artisan.bid_activity_count || 0,
     topRated: rating >= 4.5 && reviewCount >= 3,
     verified: artisan.verification_status === 'verified',
     yearsExperience: artisan.years_experience || 0,
+  }
+}
+
+export function mapProfessionalDirectoryRow(professional) {
+  const name = professional.full_name || professional.business_name || 'New Handiwave professional'
+  const city = professional.city || ''
+  const state = professional.state || ''
+  const serviceName = professional.primary_service_name || 'Profile setup in progress'
+  const verificationStatus = professional.verification_status || 'incomplete'
+  const isVerified = verificationStatus === 'verified'
+
+  return {
+    avatarUrl: professional.avatar_url || '',
+    bio: professional.bio || '',
+    bidActivityCount: professional.bid_activity_count || 0,
+    businessName: professional.business_name || '',
+    area: city,
+    canBook: Boolean(professional.artisan_id && isVerified && professional.is_available),
+    category: professional.primary_service_category || serviceName,
+    completedJobs: professional.completed_jobs || 0,
+    createdAt: professional.joined_at || '',
+    featuredSkill: serviceName,
+    fullLocation: [city, state].filter(Boolean).join(', ') || 'Location being added',
+    id: professional.artisan_id || '',
+    initials: getInitials(name),
+    isAvailable: Boolean(professional.is_available),
+    jobs: professional.completed_jobs || 0,
+    location: state,
+    name,
+    price: professional.starting_price
+      ? `From NGN ${Number(professional.starting_price).toLocaleString()}`
+      : 'Quote after job details',
+    priceValue: Number(professional.starting_price) || 0,
+    profileCompletion: professional.profile_completion || 0,
+    profileId: professional.profile_id,
+    rankingScore: Number(professional.ranking_score) || 0,
+    rating: Number(professional.average_rating) || 0,
+    reviewCount: professional.review_count || 0,
+    serviceArea: professional.service_area || '',
+    skill: serviceName,
+    startingPrice: professional.starting_price,
+    topRated: professional.verification_tier === 'trusted' || professional.verification_tier === 'elite',
+    verificationReady: Boolean(professional.verification_ready),
+    verificationStatus,
+    verificationTier: professional.verification_tier || 'building',
+    verified: isVerified,
+    workEvidenceCount: professional.work_evidence_count || 0,
+    yearsExperience: professional.years_experience || 0,
+  }
+}
+
+export async function getPublicProfessionals() {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('public_professional_directory')
+    .select('*')
+    .order('ranking_score', { ascending: false })
+    .order('joined_at', { ascending: false })
+
+  return {
+    data: (data || []).map(mapProfessionalDirectoryRow),
+    error,
   }
 }
 
@@ -165,6 +232,7 @@ export async function getArtisanByProfileId(profileId) {
 }
 
 export async function createArtisanOnboardingProfile({
+  artisanId,
   bio,
   businessName,
   city,
@@ -189,19 +257,22 @@ export async function createArtisanOnboardingProfile({
     }
   }
 
-  const { data: artisan, error: artisanError } = await supabase
-    .from('artisans')
-    .insert({
-      bio,
-      business_name: businessName,
-      city,
-      primary_service_id: primaryServiceId,
-      profile_id: profileId,
-      service_area: serviceArea,
-      state,
-      starting_price: Number(startingPrice) || null,
-      years_experience: Number(yearsExperience) || 0,
-    })
+  const artisanPayload = {
+    bio,
+    business_name: businessName,
+    city,
+    primary_service_id: primaryServiceId,
+    profile_id: profileId,
+    service_area: serviceArea,
+    state,
+    starting_price: Number(startingPrice) || null,
+    years_experience: Number(yearsExperience) || 0,
+  }
+  const artisanQuery = artisanId
+    ? supabase.from('artisans').update(artisanPayload).eq('id', artisanId)
+    : supabase.from('artisans').insert(artisanPayload)
+
+  const { data: artisan, error: artisanError } = await artisanQuery
     .select(`
       *,
       primary_service:services!${artisanPrimaryServiceRelation}(id, name, category, icon)

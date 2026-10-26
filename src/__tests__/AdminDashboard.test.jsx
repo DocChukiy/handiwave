@@ -38,6 +38,7 @@ const dashboardData = {
       id: 'artisan-id',
       phone: '+2348012345678',
       portfolioCount: 1,
+      profileCompletion: 71,
       primaryService: 'Electrician',
       referenceCount: 0,
       reviewCount: 0,
@@ -45,7 +46,10 @@ const dashboardData = {
       startingPrice: 10000,
       state: 'Kaduna',
       verificationNotes: '',
+      verificationReady: false,
       verificationStatus: 'pending',
+      verificationTier: 'building',
+      workEvidenceCount: 0,
       yearsExperience: 5,
     },
   ],
@@ -85,11 +89,10 @@ describe('AdminDashboard', () => {
 
     fireEvent.click(screen.getByText('Musa Electrical Services'))
 
-    expect(screen.getByText('Government ID')).toBeInTheDocument()
-    expect(screen.getByText('At least 3 work samples')).toBeInTheDocument()
-    expect(screen.getByText('At least 2 customer references')).toBeInTheDocument()
-    expect(screen.getByText(/some requirements are still missing/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Approve' })).toBeEnabled()
+    expect(screen.getByText('Experience and detailed bio')).toBeInTheDocument()
+    expect(screen.getByText('Work evidence video')).toBeInTheDocument()
+    expect(screen.getByText(/approval unlocks automatically/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Approve' })).toBeDisabled()
   })
 
   it('shows professional signups before onboarding is complete', async () => {

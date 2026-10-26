@@ -7,7 +7,7 @@ import PageShell from '../components/ui/PageShell.jsx'
 import Card from '../components/ui/Card.jsx'
 import Badge from '../components/ui/Badge.jsx'
 import { ArtisanCard } from '../components/cards.jsx'
-import { getVerifiedArtisans } from '../services/artisanService.js'
+import { getPublicProfessionals } from '../services/artisanService.js'
 import {
   Laptop,
   Zap,
@@ -94,6 +94,14 @@ const sortOptions = [
   { label: 'Recently Joined', value: 'recently-joined' },
 ]
 
+const verificationTierRank = {
+  building: 1,
+  ready: 2,
+  verified: 3,
+  trusted: 4,
+  elite: 5,
+}
+
 function getSearchText(artisan) {
   return [
     artisan.name,
@@ -127,7 +135,7 @@ function Artisans() {
       setIsLoading(true)
 
       try {
-        const { data, error } = await getVerifiedArtisans()
+        const { data, error } = await getPublicProfessionals()
 
         if (!isMounted) {
           return
@@ -176,6 +184,13 @@ function Artisans() {
     })
 
     return [...filtered].sort((first, second) => {
+      const tierDifference = (verificationTierRank[second.verificationTier] || 0) -
+        (verificationTierRank[first.verificationTier] || 0)
+
+      if (tierDifference !== 0) {
+        return tierDifference
+      }
+
       if (sortBy === 'highest-rated') {
         return (second.rating || 0) - (first.rating || 0)
       }
@@ -185,10 +200,8 @@ function Artisans() {
       }
 
       return (
-        Number(second.verified) - Number(first.verified) ||
-        Number(second.topRated) - Number(first.topRated) ||
-        (second.rating || 0) - (first.rating || 0) ||
-        (second.completedJobs || 0) - (first.completedJobs || 0)
+        (second.rankingScore || 0) - (first.rankingScore || 0) ||
+        new Date(second.createdAt || 0) - new Date(first.createdAt || 0)
       )
     })
   }, [
@@ -230,13 +243,13 @@ function Artisans() {
             SECTION 1: CONTEXT HEADER
             ============================================ */}
         <header className="hw-professionals-header">
-          <span className="hw-professionals-eyebrow">Verified Handiwave network</span>
+          <span className="hw-professionals-eyebrow">Growing Handiwave network</span>
           <h1>Find a professional</h1>
-          <p>Review real profiles, work history, and customer feedback before choosing who you want to contact.</p>
+          <p>Explore real professionals, compare their progress and work history, and book verified profiles with confidence.</p>
           <div className="hw-professionals-trust-row">
-            <span>Identity reviewed</span>
-            <span>Profiles approved by Handiwave</span>
-            <span>New professionals are clearly labelled</span>
+            <span>Verified profiles rank first</span>
+            <span>Trust grows through completed work</span>
+            <span>New profiles are clearly labelled</span>
           </div>
         </header>
 
@@ -353,7 +366,7 @@ function Artisans() {
                 ))}
               </select>
             </div>
-            <p className="hw-filter-note">Every profile shown here is verified and currently accepting work.</p>
+            <p className="hw-filter-note">Verified professionals appear first. Profiles still completing verification remain visible but cannot receive direct bookings yet.</p>
           </div>
 
           <div className="hw-filter-actions">
@@ -416,7 +429,7 @@ function Artisans() {
         ) : dataError ? null : availableArtisans.length === 0 ? (
           <EmptyState
             action={<Link className="hw-btn hw-btn-primary" to="/requests">Post a service request</Link>}
-            title="Verified professionals are joining"
+            title="Professionals are joining"
           >
             Tell us what you need and Handiwave will share your request with suitable professionals as they become available.
           </EmptyState>

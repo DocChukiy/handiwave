@@ -90,6 +90,15 @@ export function ArtisanCard({ artisan, featured = false }) {
     Number(artisan.reviewCount || 0) >= 3
   )
   const hasAvailability = artisan.isAvailable !== false
+  const canBook = artisan.canBook ?? (Boolean(artisan.id) && isVerified && hasAvailability)
+  const tierLabels = {
+    building: 'Building Profile',
+    ready: 'Ready for Review',
+    verified: 'Verified',
+    trusted: 'Trusted Pro',
+    elite: 'Elite Pro',
+  }
+  const tierLabel = tierLabels[artisan.verificationTier] || tierLabels.building
 
   if (featured) {
     return (
@@ -159,8 +168,10 @@ export function ArtisanCard({ artisan, featured = false }) {
           size="lg"
         />
         <div className="hw-professional-badges">
-          {isVerified && <Badge variant="verified">Verified</Badge>}
-          {isTopRated && <Badge variant="success">Top Rated</Badge>}
+          <Badge variant={isVerified ? 'verified' : artisan.verificationReady ? 'info' : 'neutral'}>
+            {tierLabel}
+          </Badge>
+          {isTopRated && <Badge variant="success">Priority Profile</Badge>}
         </div>
       </div>
 
@@ -191,13 +202,13 @@ export function ArtisanCard({ artisan, featured = false }) {
           <span className="hw-stat-label">Handiwave jobs</span>
         </div>
         <div className="hw-availability-status">
-          {hasAvailability ? (
+          {canBook ? (
             <Badge variant="success">
               <span className="hw-available-dot"></span>
               Available
             </Badge>
           ) : (
-            <Badge variant="neutral">Unavailable</Badge>
+            <Badge variant="neutral">{isVerified ? 'Unavailable' : 'Not bookable yet'}</Badge>
           )}
         </div>
       </div>
@@ -207,19 +218,35 @@ export function ArtisanCard({ artisan, featured = false }) {
         <span className="hw-price-value">{artisan.startingPrice ? `From NGN ${Number(artisan.startingPrice).toLocaleString()}` : 'Quote after job details'}</span>
       </div>
 
+      {!isVerified && (
+        <div className="hw-verification-progress" aria-label={`${artisan.profileCompletion || 0}% verification profile complete`}>
+          <div>
+            <span>Verification progress</span>
+            <strong>{artisan.profileCompletion || 0}%</strong>
+          </div>
+          <span className="hw-verification-progress-track">
+            <span style={{ width: `${artisan.profileCompletion || 0}%` }} />
+          </span>
+        </div>
+      )}
+
       <div className="hw-professional-actions">
-        <Link
-          to={`/artisan-profile/${artisan.id}`}
-          className="hw-btn hw-btn-secondary hw-btn-full"
-        >
-          View Profile
-        </Link>
-        <Link
-          to={`/bookings?artisan=${artisan.id}`}
-          className="hw-btn hw-btn-primary hw-btn-full"
-        >
-          Request This Professional
-        </Link>
+        {artisan.id && isVerified ? (
+          <Link to={`/artisan-profile/${artisan.id}`} className="hw-btn hw-btn-secondary hw-btn-full">
+            View Profile
+          </Link>
+        ) : (
+          <span className="hw-btn hw-btn-secondary hw-btn-full hw-btn-disabled">
+            {artisan.id ? 'Preview after verification' : 'Profile being completed'}
+          </span>
+        )}
+        {canBook ? (
+          <Link to={`/bookings?artisan=${artisan.id}`} className="hw-btn hw-btn-primary hw-btn-full">
+            Request This Professional
+          </Link>
+        ) : (
+          <span className="hw-btn hw-btn-primary hw-btn-full hw-btn-disabled">Verification required</span>
+        )}
       </div>
     </motion.article>
   )

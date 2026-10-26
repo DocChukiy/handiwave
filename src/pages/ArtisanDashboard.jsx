@@ -24,13 +24,23 @@ function VerificationBadge({ status }) {
 function profileChecklist(artisan) {
   return [
     { done: Boolean(artisan.businessName), label: 'Business name added' },
-    { done: Boolean(artisan.bio), label: 'Bio completed' },
+    { done: artisan.bio?.trim().length >= 40, label: 'Detailed bio added' },
     { done: Boolean(artisan.primaryService), label: 'Primary service selected' },
-    { done: Boolean(artisan.serviceArea), label: 'Service area added' },
+    { done: Boolean(artisan.city && artisan.state && artisan.serviceArea), label: 'Location and service area added' },
+    { done: artisan.yearsExperience > 0, label: 'Experience added' },
     { done: Boolean(artisan.startingPrice), label: 'Starting price added' },
+    { done: artisan.workEvidenceCount > 0, label: 'Work evidence video uploaded' },
     { done: artisan.verificationStatus === 'verified', label: 'Verification approved' },
   ]
 }
+
+const verificationStages = [
+  { key: 'building', label: 'Building', detail: 'Complete your core profile and upload work evidence.' },
+  { key: 'ready', label: 'Ready', detail: 'Your profile enters the admin verification queue.' },
+  { key: 'verified', label: 'Verified', detail: 'Receive direct bookings and rank above incomplete profiles.' },
+  { key: 'trusted', label: 'Trusted', detail: 'Unlock stronger placement through jobs and customer reviews.' },
+  { key: 'elite', label: 'Elite', detail: 'Earn top visibility through sustained excellent performance.' },
+]
 
 function getNextAvailabilitySlot(slots) {
   return slots.find((slot) => slot.isActive) || null
@@ -62,6 +72,7 @@ function ArtisanDashboard() {
 
   const checklist = useMemo(() => artisan ? profileChecklist(artisan) : [], [artisan])
   const isSetupComplete = checklist.every((item) => item.done || item.label === 'Verification approved')
+  const activeVerificationStage = verificationStages.findIndex((stage) => stage.key === artisan?.verificationTier)
   const acceptedJobs = bookings.filter((booking) => booking.rawStatus === 'confirmed').length
   const inProgressJobs = bookings.filter((booking) => booking.rawStatus === 'in_progress').length
   const awaitingCustomerConfirmation = bookings.filter((booking) => (
@@ -258,10 +269,33 @@ function ArtisanDashboard() {
 
       {artisan.verificationStatus === 'pending' && (
         <section className="verification-warning">
-          <strong>Verification pending</strong>
-          <p>Your dashboard is active, but customers will only see your profile publicly after verification.</p>
+          <strong>{artisan.verificationReady ? 'Ready for verification review' : 'Complete your verification checklist'}</strong>
+          <p>
+            {artisan.verificationReady
+              ? 'Handiwave has notified the admin team. Your profile is visible and will become bookable after approval.'
+              : `Your profile is visible in the directory at ${artisan.profileCompletion || 0}% completion, but customers cannot book it until verification.`}
+          </p>
         </section>
       )}
+
+      <section className="artisan-profile-panel verification-journey-panel">
+        <div className="section-heading-row">
+          <div>
+            <p className="section-kicker">Professional trust level</p>
+            <h2>Your verification journey</h2>
+          </div>
+          <span className="verification-score">{artisan.profileCompletion || 0}% core profile</span>
+        </div>
+        <div className="verification-stage-grid">
+          {verificationStages.map((stage, index) => (
+            <article className={index <= activeVerificationStage ? 'active' : ''} key={stage.key}>
+              <span>{index + 1}</span>
+              <strong>{stage.label}</strong>
+              <p>{stage.detail}</p>
+            </article>
+          ))}
+        </div>
+      </section>
 
       <section className="artisan-insight-grid">
         <article className="artisan-profile-panel">
@@ -315,6 +349,11 @@ function ArtisanDashboard() {
           {!isSetupComplete && (
             <Button className="secondary-cta" to="/artisan-onboarding">
               Continue Setup
+            </Button>
+          )}
+          {artisan.workEvidenceCount === 0 && (
+            <Button className="secondary-cta" to="/artisan-reels">
+              Upload Work Evidence
             </Button>
           )}
         </article>

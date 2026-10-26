@@ -130,7 +130,12 @@ function AdminDashboard() {
   const [updatingWithdrawalId, setUpdatingWithdrawalId] = useState('')
 
   const pendingArtisans = useMemo(() => (
-    data?.artisans.filter((artisan) => ['incomplete', 'pending'].includes(artisan.verificationStatus)) || []
+    (data?.artisans.filter((artisan) => ['incomplete', 'pending'].includes(artisan.verificationStatus)) || [])
+      .sort((first, second) => (
+        Number(second.verificationReady) - Number(first.verificationReady) ||
+        (second.profileCompletion || 0) - (first.profileCompletion || 0) ||
+        new Date(first.createdAt || 0) - new Date(second.createdAt || 0)
+      ))
   ), [data])
 
   const filteredProfessionals = useMemo(() => {
@@ -148,7 +153,11 @@ function AdminDashboard() {
       ].some((value) => value?.toLowerCase().includes(search))
 
       return matchesStatus && matchesSearch
-    })
+    }).sort((first, second) => (
+      Number(second.verificationReady) - Number(first.verificationReady) ||
+      (second.profileCompletion || 0) - (first.profileCompletion || 0) ||
+      new Date(first.createdAt || 0) - new Date(second.createdAt || 0)
+    ))
   }, [data, professionalFilter, professionalSearch])
 
   async function loadAdminDashboard() {
@@ -323,8 +332,8 @@ function AdminDashboard() {
       {activeTab === 'overview' && <section className="admin-layout">
         <div className="admin-card">
           <p className="section-kicker">Professional applications</p>
-          <h3>{pendingArtisans.length} awaiting a decision</h3>
-          <p>Open each application, check submitted details, add an internal note, and approve only completed profiles.</p>
+          <h3>{pendingArtisans.filter((artisan) => artisan.verificationReady).length} ready for review</h3>
+          <p>{pendingArtisans.length} profiles are progressing through verification. Ready profiles are automatically moved to the top.</p>
           <button type="button" onClick={() => openSection('professionals')}>
             Review Professionals
           </button>
@@ -368,7 +377,7 @@ function AdminDashboard() {
                 <div>
                   <h3>{artisan.businessName || artisan.fullName}</h3>
                   <p>{artisan.primaryService} • {artisan.city || 'City pending'}, {artisan.state || 'State pending'}</p>
-                  <small>Applied {formatDate(artisan.createdAt)}</small>
+                  <small>{artisan.verificationReady ? 'Ready for admin review' : `${artisan.profileCompletion || 0}% complete`} • Applied {formatDate(artisan.createdAt)}</small>
                 </div>
                 <button className="secondary-mini-link" type="button" onClick={() => openSection('professionals')}>Review</button>
               </article>
@@ -428,14 +437,10 @@ function AdminDashboard() {
               ['Contact information', Boolean(artisan.email && artisan.phone)],
               ['Business name and trade', Boolean(artisan.businessName && artisan.primaryService !== 'No primary service')],
               ['Service location and coverage', Boolean(artisan.city && artisan.state && artisan.serviceArea)],
-              ['Experience and professional bio', Boolean(artisan.yearsExperience && artisan.bio)],
+              ['Experience and detailed bio', Boolean(artisan.yearsExperience && artisan.bio?.trim().length >= 40)],
               ['Starting price', artisan.startingPrice > 0],
-              ['Government ID', artisan.governmentIdSubmitted],
-              ['At least 3 work samples', artisan.portfolioCount >= 3],
-              ['At least 2 customer references', artisan.referenceCount >= 2],
+              ['Work evidence video', artisan.workEvidenceCount >= 1],
             ]
-            const completedRequirements = requirements.filter(([, complete]) => complete).length
-
             return (
               <details className="admin-professional-card" key={artisan.id}>
                 <summary>
@@ -446,9 +451,13 @@ function AdminDashboard() {
                   </div>
                   <div className="admin-professional-summary-status">
                     <StatusPill tone={artisan.verificationStatus}>
-                      {artisan.verificationStatus === 'incomplete' ? 'onboarding incomplete' : artisan.verificationStatus}
+                      {artisan.verificationReady
+                        ? 'ready for review'
+                        : artisan.verificationStatus === 'incomplete'
+                          ? 'onboarding incomplete'
+                          : artisan.verificationTier || 'building'}
                     </StatusPill>
-                    <strong>{completedRequirements}/{requirements.length} requirements</strong>
+                    <strong>{artisan.profileCompletion || 0}% complete</strong>
                   </div>
                 </summary>
                 <div className="admin-professional-detail-grid">
@@ -461,6 +470,8 @@ function AdminDashboard() {
                       <div><dt>Experience</dt><dd>{artisan.yearsExperience ? `${artisan.yearsExperience} years` : 'Not provided'}</dd></div>
                       <div><dt>Starting price</dt><dd>{artisan.startingPrice ? formatMoney(artisan.startingPrice) : 'Not provided'}</dd></div>
                       <div><dt>Previous admin note</dt><dd>{artisan.verificationNotes || 'No note yet'}</dd></div>
+                      <div><dt>Current tier</dt><dd>{(artisan.verificationTier || 'building').replaceAll('_', ' ')}</dd></div>
+                      <div><dt>Bid activity</dt><dd>{artisan.bidActivityCount || 0} offers submitted</dd></div>
                     </dl>
                     <p className="admin-professional-bio">{artisan.bio || 'No professional bio provided yet.'}</p>
                   </section>
@@ -485,14 +496,14 @@ function AdminDashboard() {
                   ) : (
                     <>
                       <div className="admin-row-actions">
-                        <button disabled={isUpdating} type="button" onClick={() => handleVerificationUpdate(artisan, 'verified')}>
+                        <button disabled={isUpdating || !artisan.verificationReady} type="button" onClick={() => handleVerificationUpdate(artisan, 'verified')}>
                           {isUpdating ? 'Saving...' : 'Approve'}
                         </button>
                         <button disabled={isUpdating} type="button" onClick={() => handleVerificationUpdate(artisan, 'pending')}>Request updates</button>
                         <button disabled={isUpdating} type="button" onClick={() => handleVerificationUpdate(artisan, 'rejected')}>Reject</button>
                         <button className="danger-action" disabled={isUpdating} type="button" onClick={() => handleVerificationUpdate(artisan, 'suspended')}>Suspend</button>
                       </div>
-                      {completedRequirements < requirements.length && <small>Some requirements are still missing. Confirm any checks completed outside the app in the internal note before approving.</small>}
+                      {!artisan.verificationReady && <small>Approval unlocks automatically after every core requirement is complete and at least one work video is uploaded.</small>}
                     </>
                   )}
                 </div>

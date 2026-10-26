@@ -48,6 +48,7 @@ function mapProfile(profile) {
 function mapSignupOnlyProfessional(profile) {
   return {
     bio: '',
+    bidActivityCount: 0,
     businessName: '',
     city: profile.city,
     completedJobs: 0,
@@ -60,6 +61,7 @@ function mapSignupOnlyProfessional(profile) {
     isSignupOnly: true,
     phone: profile.phone,
     portfolioCount: 0,
+    profileCompletion: 0,
     primaryService: 'Onboarding not completed',
     profileId: profile.id,
     rating: 0,
@@ -69,7 +71,10 @@ function mapSignupOnlyProfessional(profile) {
     startingPrice: 0,
     state: profile.state,
     verificationNotes: '',
+    verificationReady: false,
     verificationStatus: 'incomplete',
+    verificationTier: 'building',
+    workEvidenceCount: 0,
     yearsExperience: 0,
   }
 }
@@ -80,6 +85,7 @@ function mapArtisan(artisan) {
 
   return {
     bio: artisan.bio || '',
+    bidActivityCount: artisan.bid_activity_count || 0,
     businessName: artisan.business_name || '',
     city: artisan.city || '',
     completedJobs: artisan.completed_jobs || 0,
@@ -91,6 +97,7 @@ function mapArtisan(artisan) {
     isAvailable: artisan.is_available,
     phone: artisan.profile?.phone || '',
     portfolioCount: Array.isArray(portfolioItems) ? portfolioItems.length : 0,
+    profileCompletion: artisan.profile_completion || 0,
     primaryService: artisan.primary_service?.name || 'No primary service',
     profileId: artisan.profile_id || '',
     rating: Number(artisan.average_rating) || 0,
@@ -100,7 +107,10 @@ function mapArtisan(artisan) {
     startingPrice: Number(artisan.starting_price) || 0,
     state: artisan.state || '',
     verificationNotes: artisan.verification_notes || '',
+    verificationReady: Boolean(artisan.verification_ready),
     verificationStatus: artisan.verification_status || 'pending',
+    verificationTier: artisan.verification_tier || 'building',
+    workEvidenceCount: artisan.work_evidence_count || 0,
     yearsExperience: artisan.years_experience || 0,
   }
 }

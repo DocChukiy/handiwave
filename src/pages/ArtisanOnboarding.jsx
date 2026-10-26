@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
-import Button from '../components/Button.jsx'
 import EmptyState from '../components/EmptyState.jsx'
 import {
   createArtisanOnboardingProfile,
@@ -52,8 +51,17 @@ function ArtisanOnboarding() {
       }
 
       setServices(servicesResult.data)
-      setPrimaryServiceId(servicesResult.data[0]?.id || '')
+      setPrimaryServiceId(artisanResult.data?.primaryService?.id || servicesResult.data[0]?.id || '')
       setArtisanProfile(artisanResult.data)
+      if (artisanResult.data) {
+        setBio(artisanResult.data.bio || '')
+        setBusinessName(artisanResult.data.businessName || '')
+        setCity(artisanResult.data.area || user?.city || '')
+        setServiceArea(artisanResult.data.serviceArea || '')
+        setState(artisanResult.data.location || user?.state || '')
+        setStartingPrice(artisanResult.data.startingPrice || '')
+        setYearsExperience(artisanResult.data.yearsExperience || '')
+      }
       setIsLoading(false)
     }
 
@@ -62,7 +70,7 @@ function ArtisanOnboarding() {
     return () => {
       isMounted = false
     }
-  }, [user.id])
+  }, [user.id, user?.city, user?.state])
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -70,6 +78,7 @@ function ArtisanOnboarding() {
     setIsSaving(true)
 
     const { data, error: saveError } = await createArtisanOnboardingProfile({
+      artisanId: artisanProfile?.id,
       bio,
       businessName,
       city,
@@ -89,8 +98,8 @@ function ArtisanOnboarding() {
 
     setArtisanProfile(data)
     setIsSaving(false)
-    showToast('Artisan profile created successfully.')
-    navigate('/artisan-profile')
+    showToast(artisanProfile ? 'Professional profile updated.' : 'Professional profile created successfully.')
+    navigate('/artisan-dashboard')
   }
 
   if (isLoading) {
@@ -102,36 +111,13 @@ function ArtisanOnboarding() {
     )
   }
 
-  if (artisanProfile) {
-    return (
-      <div className="starter-page">
-        <section className="page-hero compact">
-          <p className="section-kicker">Artisan onboarding</p>
-          <h1>Your artisan profile is ready</h1>
-          <p>
-            Customers can now discover your profile once verification is complete.
-          </p>
-          <div className="hero-actions">
-            <Button className="primary-cta" to="/artisan-profile">
-              View Profile
-            </Button>
-            <Button className="secondary-cta" to="/artisans">
-              View Marketplace
-            </Button>
-          </div>
-        </section>
-      </div>
-    )
-  }
-
   return (
     <div className="starter-page">
       <section className="page-hero compact">
-        <p className="section-kicker">Artisan onboarding</p>
-        <h1>Create your artisan profile</h1>
+        <p className="section-kicker">Professional profile</p>
+        <h1>{artisanProfile ? 'Strengthen your professional profile' : 'Create your professional profile'}</h1>
         <p>
-          Add your business details so customers can understand your skills,
-          location, and experience.
+          Complete these core details to improve your visibility and become eligible for verification.
         </p>
       </section>
 
@@ -154,17 +140,19 @@ function ArtisanOnboarding() {
           <label>
             Bio
             <textarea
+              minLength="40"
               placeholder="Tell customers about your experience, specialties, and work style."
               value={bio}
               onChange={(event) => setBio(event.target.value)}
               required
             />
+            <small>Use at least 40 characters so customers can understand your experience.</small>
           </label>
           <div className="form-split">
             <label>
               Years of experience
               <input
-                min="0"
+                min="1"
                 type="number"
                 value={yearsExperience}
                 onChange={(event) => setYearsExperience(event.target.value)}
@@ -210,7 +198,7 @@ function ArtisanOnboarding() {
             <label>
               Starting price
               <input
-                min="0"
+                min="1"
                 placeholder="7500"
                 type="number"
                 value={startingPrice}
@@ -230,7 +218,7 @@ function ArtisanOnboarding() {
           </div>
           {error && <p className="auth-error">{error}</p>}
           <button disabled={isSaving} type="submit">
-            {isSaving ? 'Saving profile...' : 'Create Artisan Profile'}
+            {isSaving ? 'Saving profile...' : artisanProfile ? 'Save Profile Changes' : 'Create Professional Profile'}
           </button>
         </form>
       )}
