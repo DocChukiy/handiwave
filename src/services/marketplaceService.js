@@ -1,6 +1,7 @@
 import { getSupabaseClient } from '../lib/supabaseClient.js'
 import { getArtisanByProfileId } from './artisanService.js'
 import { createNotificationSafely } from './notificationService.js'
+import { normalizeNigerianState } from '../utils/locations.js'
 
 const requestSelect = `
   *,
@@ -84,7 +85,7 @@ export async function createServiceRequest(payload) {
     target_preferred_date: payload.preferredDate || null,
     target_preferred_time: payload.preferredTime || null,
     target_service_id: payload.serviceId,
-    target_state: payload.state,
+    target_state: normalizeNigerianState(payload.state),
     target_urgency: payload.urgency,
   })
 

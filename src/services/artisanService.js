@@ -1,5 +1,6 @@
 import { getSupabaseClient } from '../lib/supabaseClient.js'
 import { updateProfile } from './profileService.js'
+import { normalizeNigerianState } from '../utils/locations.js'
 
 const artisanPrimaryServiceRelation = 'artisans_primary_service_id_fkey'
 const artisanServicesArtisanRelation = 'artisan_services_artisan_id_fkey'
@@ -150,6 +151,12 @@ export function mapArtisanDetail(artisan) {
     fullName: artisan.profile?.full_name || summary.name,
     phone: artisan.profile?.phone || '',
     primaryService: artisan.primary_service || null,
+    services: serviceLinks
+      .filter((link) => link.service)
+      .map((link) => ({
+        ...link.service,
+        priceFrom: Number(link.price_from) || 0,
+      })),
     skills: [...new Set(skills.filter(Boolean))],
   }
 }
@@ -238,6 +245,7 @@ export async function createArtisanOnboardingProfile({
   city,
   primaryServiceId,
   profileId,
+  selectedServices = [],
   serviceArea,
   state,
   startingPrice,
@@ -245,9 +253,10 @@ export async function createArtisanOnboardingProfile({
 }) {
   const supabase = getSupabaseClient()
 
+  const normalizedState = normalizeNigerianState(state)
   const { error: profileError } = await updateProfile(profileId, {
     city,
-    state,
+    state: normalizedState,
   })
 
   if (profileError) {
@@ -264,7 +273,7 @@ export async function createArtisanOnboardingProfile({
     primary_service_id: primaryServiceId,
     profile_id: profileId,
     service_area: serviceArea,
-    state,
+    state: normalizedState,
     starting_price: Number(startingPrice) || null,
     years_experience: Number(yearsExperience) || 0,
   }
@@ -286,18 +295,53 @@ export async function createArtisanOnboardingProfile({
     }
   }
 
+  const serviceRows = [
+    ...selectedServices,
+    { priceFrom: Number(startingPrice) || null, serviceId: primaryServiceId },
+  ].reduce((rows, service) => {
+    if (!service.serviceId) return rows
+    rows.set(service.serviceId, {
+      artisan_id: artisan.id,
+      price_from: Number(service.priceFrom) || null,
+      service_id: service.serviceId,
+    })
+    return rows
+  }, new Map())
+
   const { error: artisanServiceError } = await supabase
     .from('artisan_services')
-    .upsert({
-      artisan_id: artisan.id,
-      service_id: primaryServiceId,
-      price_from: Number(startingPrice) || null,
-    })
+    .upsert([...serviceRows.values()])
 
   if (artisanServiceError) {
     return {
       data: null,
       error: artisanServiceError,
+    }
+  }
+
+  const { data: existingServices, error: existingServicesError } = await supabase
+    .from('artisan_services')
+    .select('service_id')
+    .eq('artisan_id', artisan.id)
+
+  if (existingServicesError) {
+    return { data: null, error: existingServicesError }
+  }
+
+  const selectedServiceIds = new Set(serviceRows.keys())
+  const removedServiceIds = (existingServices || [])
+    .map((service) => service.service_id)
+    .filter((serviceId) => !selectedServiceIds.has(serviceId))
+
+  if (removedServiceIds.length > 0) {
+    const { error: deleteServicesError } = await supabase
+      .from('artisan_services')
+      .delete()
+      .eq('artisan_id', artisan.id)
+      .in('service_id', removedServiceIds)
+
+    if (deleteServicesError) {
+      return { data: null, error: deleteServicesError }
     }
   }
 

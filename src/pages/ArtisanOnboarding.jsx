@@ -22,6 +22,7 @@ function ArtisanOnboarding() {
   const [primaryServiceId, setPrimaryServiceId] = useState('')
   const [serviceArea, setServiceArea] = useState('')
   const [services, setServices] = useState([])
+  const [selectedServices, setSelectedServices] = useState({})
   const [state, setState] = useState(user?.state || '')
   const [startingPrice, setStartingPrice] = useState('')
   const [yearsExperience, setYearsExperience] = useState('')
@@ -52,6 +53,17 @@ function ArtisanOnboarding() {
 
       setServices(servicesResult.data)
       setPrimaryServiceId(artisanResult.data?.primaryService?.id || servicesResult.data[0]?.id || '')
+      setSelectedServices(() => {
+        const nextServices = {}
+        artisanResult.data?.services?.forEach((service) => {
+          nextServices[service.id] = String(service.priceFrom || '')
+        })
+        const primaryId = artisanResult.data?.primaryService?.id || servicesResult.data[0]?.id
+        if (primaryId && !nextServices[primaryId]) {
+          nextServices[primaryId] = String(artisanResult.data?.startingPrice || '')
+        }
+        return nextServices
+      })
       setArtisanProfile(artisanResult.data)
       if (artisanResult.data) {
         setBio(artisanResult.data.bio || '')
@@ -84,6 +96,10 @@ function ArtisanOnboarding() {
       city,
       primaryServiceId,
       profileId: user.id,
+      selectedServices: Object.entries(selectedServices).map(([serviceId, priceFrom]) => ({
+        priceFrom,
+        serviceId,
+      })),
       serviceArea,
       state,
       startingPrice,
@@ -100,6 +116,32 @@ function ArtisanOnboarding() {
     setIsSaving(false)
     showToast(artisanProfile ? 'Professional profile updated.' : 'Professional profile created successfully.')
     navigate('/artisan-dashboard')
+  }
+
+  function handlePrimaryServiceChange(serviceId) {
+    setPrimaryServiceId(serviceId)
+    setSelectedServices((current) => ({
+      ...current,
+      [serviceId]: current[serviceId] || startingPrice,
+    }))
+  }
+
+  function toggleService(serviceId) {
+    if (serviceId === primaryServiceId) return
+
+    setSelectedServices((current) => {
+      const nextServices = { ...current }
+      if (Object.prototype.hasOwnProperty.call(nextServices, serviceId)) {
+        delete nextServices[serviceId]
+      } else {
+        nextServices[serviceId] = ''
+      }
+      return nextServices
+    })
+  }
+
+  function updateServicePrice(serviceId, value) {
+    setSelectedServices((current) => ({ ...current, [serviceId]: value }))
   }
 
   if (isLoading) {
@@ -163,7 +205,7 @@ function ArtisanOnboarding() {
               Primary service
               <select
                 value={primaryServiceId}
-                onChange={(event) => setPrimaryServiceId(event.target.value)}
+                onChange={(event) => handlePrimaryServiceChange(event.target.value)}
                 required
               >
                 {services.map((service) => (
@@ -174,6 +216,44 @@ function ArtisanOnboarding() {
               </select>
             </label>
           </div>
+          <fieldset className="artisan-service-selector">
+            <legend>Services you offer</legend>
+            <p>Select every service customers can hire you for and add a starting price for each one.</p>
+            <div className="artisan-service-selector-grid">
+              {services.map((service) => {
+                const isPrimary = service.id === primaryServiceId
+                const isSelected = Object.prototype.hasOwnProperty.call(selectedServices, service.id)
+                return (
+                  <label className={isSelected ? 'selected' : ''} key={service.id}>
+                    <span>
+                      <input
+                        checked={isSelected}
+                        disabled={isPrimary}
+                        type="checkbox"
+                        onChange={() => toggleService(service.id)}
+                      />
+                      {service.icon || '🛠️'} {service.name}
+                      {isPrimary && <small>Primary</small>}
+                    </span>
+                    {isSelected && (
+                      <input
+                        aria-label={`${service.name} starting price`}
+                        min="1"
+                        placeholder="Starting price"
+                        type="number"
+                        value={isPrimary ? startingPrice : selectedServices[service.id]}
+                        onChange={(event) => {
+                          if (isPrimary) setStartingPrice(event.target.value)
+                          else updateServicePrice(service.id, event.target.value)
+                        }}
+                        required
+                      />
+                    )}
+                  </label>
+                )
+              })}
+            </div>
+          </fieldset>
           <div className="form-split">
             <label>
               City
@@ -194,28 +274,16 @@ function ArtisanOnboarding() {
               />
             </label>
           </div>
-          <div className="form-split">
-            <label>
-              Starting price
-              <input
-                min="1"
-                placeholder="7500"
-                type="number"
-                value={startingPrice}
-                onChange={(event) => setStartingPrice(event.target.value)}
-                required
-              />
-            </label>
-            <label>
-              Service area
-              <input
-                placeholder="Lekki, Victoria Island, Ikoyi"
-                value={serviceArea}
-                onChange={(event) => setServiceArea(event.target.value)}
-                required
-              />
-            </label>
-          </div>
+          <label>
+            Service area
+            <input
+              placeholder="Kaduna North, Barnawa, Wuse, Gwarinpa"
+              value={serviceArea}
+              onChange={(event) => setServiceArea(event.target.value)}
+              required
+            />
+            <small>List the neighbourhoods and nearby areas where you can accept jobs.</small>
+          </label>
           {error && <p className="auth-error">{error}</p>}
           <button disabled={isSaving} type="submit">
             {isSaving ? 'Saving profile...' : artisanProfile ? 'Save Profile Changes' : 'Create Professional Profile'}

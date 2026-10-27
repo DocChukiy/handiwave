@@ -93,7 +93,7 @@ function RoleHome() {
   return <Home />
 }
 
-function NonAdminRoute({ children }) {
+function CustomerOrGuestRoute({ children }) {
   const { isLoading, user } = useAuth()
 
   if (isLoading) {
@@ -103,6 +103,10 @@ function NonAdminRoute({ children }) {
         <p>Loading Handiwave...</p>
       </section>
     )
+  }
+
+  if (user?.role === 'artisan') {
+    return <Navigate replace to="/artisan-dashboard" />
   }
 
   return user?.role === 'admin' ? <Navigate replace to="/admin" /> : children
@@ -135,8 +139,8 @@ function AnimatedRoutes() {
         )}>
           <Routes location={location}>
           <Route path="/" element={<RoleHome />} />
-          <Route path="/services" element={<NonAdminRoute><Services /></NonAdminRoute>} />
-          <Route path="/artisans" element={<NonAdminRoute><Artisans /></NonAdminRoute>} />
+          <Route path="/services" element={<CustomerOrGuestRoute><Services /></CustomerOrGuestRoute>} />
+          <Route path="/artisans" element={<CustomerOrGuestRoute><Artisans /></CustomerOrGuestRoute>} />
           <Route
             path="/artisan-onboarding"
             element={(
@@ -214,7 +218,7 @@ function AnimatedRoutes() {
           <Route
             path="/bookings"
             element={(
-              <ProtectedRoute allowedRoles={['customer', 'artisan', 'admin']}>
+              <ProtectedRoute allowedRoles={['customer']}>
                 <Bookings />
               </ProtectedRoute>
             )}
@@ -227,11 +231,11 @@ function AnimatedRoutes() {
               </ProtectedRoute>
             )}
           />
-          <Route path="/reels" element={<Reels />} />
+          <Route path="/reels" element={<CustomerOrGuestRoute><Reels /></CustomerOrGuestRoute>} />
           <Route
             path="/profile"
             element={(
-              <ProtectedRoute allowedRoles={['customer', 'artisan', 'admin']}>
+              <ProtectedRoute allowedRoles={['customer', 'artisan']}>
                 <Profile />
               </ProtectedRoute>
             )}

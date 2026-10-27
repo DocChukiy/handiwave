@@ -9135,6 +9135,29 @@ a:active {
   padding: 8px 12px;
 }
 
+.artisan-service-price-list {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-block: 20px;
+}
+
+.artisan-service-price-list span {
+  background: var(--hw-primary-lighter);
+  border: 1px solid var(--hw-border);
+  border-radius: 14px;
+  color: var(--hw-text-secondary);
+  display: grid;
+  font-size: 0.82rem;
+  gap: 5px;
+  padding: 13px;
+}
+
+.artisan-service-price-list strong {
+  color: var(--hw-text-primary);
+  font-size: 0.92rem;
+}
+
 .artisan-service-detail-grid {
   border-top: 1px solid var(--hw-border);
   display: grid;
@@ -9205,6 +9228,69 @@ a:active {
   margin: 0;
 }
 
+.artisan-service-selector {
+  border: 1px solid var(--hw-border);
+  border-radius: 18px;
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: clamp(16px, 3vw, 24px);
+}
+
+.artisan-service-selector legend {
+  color: var(--hw-text-primary);
+  font-size: 1.05rem;
+  font-weight: 800;
+  padding-inline: 6px;
+}
+
+.artisan-service-selector > p {
+  color: var(--hw-text-secondary);
+  margin: 0 0 8px;
+}
+
+.artisan-service-selector-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.artisan-service-selector-grid > label {
+  background: var(--hw-surface);
+  border: 1px solid var(--hw-border);
+  border-radius: 14px;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.artisan-service-selector-grid > label.selected {
+  background: var(--hw-primary-lighter);
+  border-color: var(--hw-primary);
+}
+
+.artisan-service-selector-grid label > span {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  font-weight: 750;
+}
+
+.artisan-service-selector-grid input[type='checkbox'] {
+  min-height: auto;
+  width: auto;
+}
+
+.artisan-service-selector-grid small {
+  background: var(--hw-primary);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.65rem;
+  margin-left: auto;
+  padding: 3px 7px;
+  text-transform: uppercase;
+}
+
 .artisan-service-growth-grid p {
   color: var(--hw-text-secondary);
   margin-top: 5px;
@@ -9237,6 +9323,10 @@ a:active {
   .artisan-service-summary-grid,
   .artisan-service-growth-grid,
   .artisan-service-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .artisan-service-selector-grid {
     grid-template-columns: 1fr;
   }
 }

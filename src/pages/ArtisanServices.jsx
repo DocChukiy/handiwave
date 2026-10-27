@@ -104,8 +104,13 @@ function ArtisanServices() {
             </span>
           </div>
           <p className="artisan-service-description">{artisan.bio || 'Add a clear description of the problems you solve and what customers can expect.'}</p>
-          <div className="artisan-service-chip-list">
-            {artisan.skills.map((service) => <span key={service}>{service}</span>)}
+          <div className="artisan-service-price-list">
+            {artisan.services.map((service) => (
+              <span key={service.id}>
+                <strong>{service.icon || '🛠️'} {service.name}</strong>
+                {formatMoney(service.priceFrom)}
+              </span>
+            ))}
           </div>
           <div className="artisan-service-detail-grid">
             <span><strong>{artisan.yearsExperience || 0} years</strong>Experience</span>

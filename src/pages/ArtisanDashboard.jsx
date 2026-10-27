@@ -8,9 +8,14 @@ import { getArtisanByProfileId } from '../services/artisanService.js'
 import { getAvailabilityForArtisanId } from '../services/availabilityService.js'
 import { getBookingsForUser } from '../services/bookingService.js'
 import { getReviewsForArtisan } from '../services/reviewService.js'
+import { getWalletOverview } from '../services/walletService.js'
 
 function formatMoney(value) {
   return value ? `NGN ${Number(value).toLocaleString()}` : 'By quote'
+}
+
+function formatWalletMoney(value) {
+  return `NGN ${Number(value || 0).toLocaleString()}`
 }
 
 function VerificationBadge({ status }) {
@@ -54,6 +59,7 @@ function ArtisanDashboard() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [recentReviews, setRecentReviews] = useState([])
+  const [wallet, setWallet] = useState(null)
 
   const metrics = useMemo(() => {
     const pending = bookings.filter((booking) => booking.rawStatus === 'pending').length
@@ -92,7 +98,7 @@ function ArtisanDashboard() {
 
       try {
         const artisanResult = await getArtisanByProfileId(user.id)
-        const [bookingResult, availabilityResult, reviewResult] = await Promise.all([
+        const [bookingResult, availabilityResult, reviewResult, walletResult] = await Promise.all([
           getBookingsForUser(user),
           artisanResult.data
             ? getAvailabilityForArtisanId(artisanResult.data.id)
@@ -100,18 +106,20 @@ function ArtisanDashboard() {
           artisanResult.data
             ? getReviewsForArtisan(artisanResult.data.id, 3)
             : Promise.resolve({ data: [], error: null }),
+          getWalletOverview(user.id),
         ])
 
         if (!isMounted) {
           return
         }
 
-        if (artisanResult.error || bookingResult.error || availabilityResult.error || reviewResult.error) {
+        if (artisanResult.error || bookingResult.error || availabilityResult.error || reviewResult.error || walletResult.error) {
           setError(
             artisanResult.error?.message ||
               bookingResult.error?.message ||
               availabilityResult.error?.message ||
               reviewResult.error?.message ||
+              walletResult.error?.message ||
               'Unable to load artisan dashboard.',
           )
         }
@@ -120,6 +128,7 @@ function ArtisanDashboard() {
         setAvailability(availabilityResult.data)
         setBookings(bookingResult.data)
         setRecentReviews(reviewResult.data)
+        setWallet(walletResult.data?.wallet || null)
       } catch (loadError) {
         if (isMounted) {
           setError(loadError.message)
@@ -300,8 +309,9 @@ function ArtisanDashboard() {
       <section className="artisan-insight-grid">
         <article className="artisan-profile-panel">
           <p className="section-kicker">Earnings / wallet</p>
-          <h2>NGN 0</h2>
-          <p>Wallet and payout summaries will appear here after completed paid jobs.</p>
+          <h2>{formatWalletMoney(wallet?.availableBalance)}</h2>
+          <p>{formatWalletMoney(wallet?.escrowBalance)} in escrow • {formatWalletMoney(wallet?.totalCredited)} earned to date.</p>
+          <Button className="secondary-cta" to="/wallet">Open Earnings</Button>
         </article>
         <article className="artisan-profile-panel">
           <p className="section-kicker">Ratings / reviews</p>
